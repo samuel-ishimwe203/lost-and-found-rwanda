@@ -33,7 +33,7 @@ function AppRoutes() {
       setIsAuthenticated(true);
       setUserRole("found_user");
     }
-  }, [location.pathnamse]);
+  }, [location.pathname]);
 
   const handleLoginSuccess = (role) => {
     setIsAuthenticated(true);
