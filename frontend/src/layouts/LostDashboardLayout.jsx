@@ -1,12 +1,62 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import apiClient from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function LostDashboardLayout() {
+  const { user } = useAuth();
+  const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    
+    // Listen for messagesRead event to update badge immediately
+    const handleMessagesRead = () => {
+      fetchUnreadCount();
+    };
+    window.addEventListener('messagesRead', handleMessagesRead);
+    
+    // If on messages page, check more frequently
+    const interval = location.pathname.includes('/messages') 
+      ? setInterval(fetchUnreadCount, 3000) // Every 3 seconds on messages page
+      : setInterval(fetchUnreadCount, 15000); // Every 15 seconds elsewhere
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
+  }, [location.pathname]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const response = await apiClient.get('/messages');
+      const messages = response.data.data || [];
+      
+      // Get unique senders who have sent unread messages TO ME
+      const uniqueSendersWithUnread = new Set();
+      messages.forEach(msg => {
+        // Only count if: message is unread AND I am the receiver
+        if (!msg.is_read && msg.receiver_id === user.id) {
+          uniqueSendersWithUnread.add(msg.sender_id);
+        }
+      });
+      
+      // Count number of unique conversations (senders) with unread messages
+      setUnreadCount(uniqueSendersWithUnread.size);
+    } catch (err) {
+      console.error('Error fetching unread count:', err);
+    }
+  };
+
   const navLinks = [
-    { path: "", label: "Dashboard", end: true },
-    { path: "profile", label: "My Profile" },
-    { path: "my-postings", label: "My Postings" },
-    { path: "create-post", label: "Create Post" },
-    { path: "messages", label: "Messages" },
+    { path: "/lost-dashboard", label: "Dashboard", end: true },
+    { path: "/lost-dashboard/profile", label: "My Profile" },
+    { path: "/lost-dashboard/my-postings", label: "My Postings" },
+    { path: "/lost-dashboard/create-post", label: "Create Post" },
+    { path: "/lost-dashboard/messages", label: "Messages", badge: unreadCount },
   ];
 
   return (
@@ -32,14 +82,21 @@ export default function LostDashboardLayout() {
                 to={link.path}
                 end={link.end}
                 className={({ isActive }) =>
-                  `block px-4 py-3 rounded-lg transition font-semibold ${
+                  `block px-4 py-3 rounded-lg transition font-semibold relative ${
                     isActive
                       ? "bg-gradient-to-r from-green-400 to-emerald-500 text-green-900 shadow-lg"
                       : "text-green-100 hover:bg-green-700/60 hover:text-white"
                   }`
                 }
               >
-                {link.label}
+                <span className="flex items-center justify-between">
+                  {link.label}
+                  {link.badge > 0 && (
+                    <span className="ml-2 bg-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg animate-pulse">
+                      {link.badge > 9 ? '9+' : link.badge}
+                    </span>
+                  )}
+                </span>
               </NavLink>
             ))}
           </nav>

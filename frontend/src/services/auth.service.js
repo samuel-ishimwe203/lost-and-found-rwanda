@@ -6,18 +6,25 @@ export const authService = {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token)
     }
+    if (response.data.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+    }
     return response.data
   },
 
   logout: () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
   },
 
   register: async (userData) => {
-    return await apiClient.post('/auth/register', userData)
+    const response = await apiClient.post('/auth/register', userData)
+    // Don't auto-login - user should login manually after registration
+    return response.data
   },
 
   getCurrentUser: async () => {
-    return await apiClient.get('/auth/me')
+    const response = await apiClient.get('/auth/me')
+    return response.data
   }
 }

@@ -1,90 +1,181 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
+  const { login, register } = useAuth();
   const [currentMode, setCurrentMode] = useState(mode);
-  const [resetMethod, setResetMethod] = useState("email"); // email | phone
-  const [role, setRole] = useState("lost_user");
+  const [role, setRole] = useState("loser");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // Form states
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({
-    fullName: "",
+    full_name: "",
     email: "",
-    phone: "",
+    phone_number: "",
     password: "",
+    confirmPassword: ""
   });
 
   useEffect(() => {
     setCurrentMode(mode);
+    setError("");
   }, [mode]);
 
-  // Handle login submission
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login data:", loginData);
+    setError("");
     
-    // Simulate login success
-    // In real app, you'd verify credentials with backend
-    onClose(); // Close modal
-    
-    // Notify parent that login was successful
-    if (onLoginSuccess) {
-      onLoginSuccess(role);
+    // Validate fields
+    if (!loginData.email || !loginData.password) {
+      setError("Please enter both email and password.");
+      return;
     }
     
-    // Redirect to lost dashboard if user is a lost user
-    if (role === "lost_user") {
-      navigate("/lost-dashboard");
-    } else {
-      navigate("/found-dashboard"); // or wherever found users go
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(loginData.email)) {
+      setError("Please provide a valid email address.");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const response = await login(loginData);
+      const userRole = response.user.role;
+      
+      onClose();
+      
+      if (onLoginSuccess) {
+        onLoginSuccess(userRole);
+      }
+      
+      const dashboardMap = {
+        'loser': '/lost-dashboard',
+        'finder': '/found-dashboard',
+        'police': '/police-dashboard',
+        'admin': '/admin-dashboard'
+      };
+      
+      navigate(dashboardMap[userRole] || '/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle register submission
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    console.log("Register data:", { ...registerData, role });
+    setError("");
     
-    // Simulate registration success
-    // In real app, you'd send data to backend
+    // Validate all fields are filled
+    if (!registerData.full_name || !registerData.email || !registerData.password || !registerData.confirmPassword) {
+      setError("Please fill in all required fields.");
+      return;
+    }
     
-    // After successful registration, switch to login mode
-    setCurrentMode("login");
-    setLoginData({ email: "", password: "" });
-    alert(`Registration successful as ${role === "lost_user" ? "Lost User" : "Found User"}! Now please login.`);
+    // Validate full name
+    if (registerData.full_name.trim().length < 2) {
+      setError("Please enter your full name (at least 2 characters).");
+      return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(registerData.email)) {
+      setError("Please provide a valid email address (e.g., name@gmail.com).");
+      return;
+    }
+    
+    // Validate email domain
+    const validDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'protonmail.com', 'lostandfound.rw'];
+    const emailDomain = registerData.email.split('@')[1]?.toLowerCase();
+    if (!validDomains.includes(emailDomain)) {
+      setError("Please use a valid email provider (Gmail, Yahoo, Outlook, Hotmail, iCloud, ProtonMail).");
+      return;
+    }
+    
+    // Validate password length
+    if (registerData.password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+    
+    // Validate passwords match
+    if (registerData.password !== registerData.confirmPassword) {
+      setError("Passwords do not match. Please check and try again.");
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const userData = {
+        email: registerData.email,
+        password: registerData.password,
+        full_name: registerData.full_name,
+        phone_number: registerData.phone_number,
+        role: role,
+        language_preference: 'en'
+      };
+
+      await register(userData);
+      
+      onClose();
+      
+      if (onLoginSuccess) {
+        onLoginSuccess(role);
+      }
+      
+      const dashboardMap = {
+        'loser': '/lost-dashboard',
+        'finder': '/found-dashboard'
+      };
+      
+      navigate(dashboardMap[role] || '/');
+    } catch (err) {
+      console.error('Registration error:', err);
+      console.error('Error response:', err.response);
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-8 relative">
+      <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-8 relative max-h-[90vh] overflow-y-auto">
 
-        {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-4 text-gray-500 text-xl"
+          className="absolute top-3 right-4 text-gray-500 text-xl hover:text-gray-700"
+          disabled={loading}
         >
           ✕
         </button>
 
-        {/* ================= TITLE ================= */}
         <h2 className="text-2xl font-bold text-center text-green-700 mb-2">
           {currentMode === "login" && "Welcome Back"}
           {currentMode === "register" && "Create Account"}
-          {currentMode === "forgot" && "Reset Your Password"}
         </h2>
 
         <p className="text-center text-gray-500 mb-6">
           {currentMode === "login" && "Login to continue"}
           {currentMode === "register" && "Register to report or find items"}
-          {currentMode === "forgot" &&
-            "Choose how you want to receive your reset code"}
         </p>
 
-        {/* ================= LOGIN ================= */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
         {currentMode === "login" && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <input
@@ -94,6 +185,7 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
               onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
               className="w-full border px-4 py-3 rounded-lg"
               required
+              disabled={loading}
             />
 
             <input
@@ -145,9 +237,9 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setRole("lost_user")}
+                  onClick={() => setRole("loser")}
                   className={`flex-1 px-4 py-2 rounded-lg border ${
-                    role === "lost_user"
+                    role === "loser"
                       ? "bg-green-600 text-white"
                       : "bg-white"
                   }`}
@@ -157,9 +249,9 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
 
                 <button
                   type="button"
-                  onClick={() => setRole("found_user")}
+                  onClick={() => setRole("finder")}
                   className={`flex-1 px-4 py-2 rounded-lg border ${
-                    role === "found_user"
+                    role === "finder"
                       ? "bg-green-600 text-white"
                       : "bg-white"
                   }`}
@@ -172,8 +264,8 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
             <input
               type="text"
               placeholder="Full Name"
-              value={registerData.fullName}
-              onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+              value={registerData.full_name}
+              onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
               className="w-full border px-4 py-3 rounded-lg"
               required
             />
@@ -189,18 +281,27 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
 
             <input
               type="tel"
-              placeholder="Phone Number"
-              value={registerData.phone}
-              onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+              placeholder="Phone Number (e.g., +250788123456)"
+              value={registerData.phone_number}
+              onChange={(e) => setRegisterData({ ...registerData, phone_number: e.target.value })}
               className="w-full border px-4 py-3 rounded-lg"
               required
             />
 
             <input
               type="password"
-              placeholder="Password"
+              placeholder="Password (min 6 characters)"
               value={registerData.password}
               onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+              className="w-full border px-4 py-3 rounded-lg"
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={registerData.confirmPassword}
+              onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
               className="w-full border px-4 py-3 rounded-lg"
               required
             />
