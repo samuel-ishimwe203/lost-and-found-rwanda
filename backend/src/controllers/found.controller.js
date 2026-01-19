@@ -1,6 +1,6 @@
 import { query } from '../db/index.js';
 import { logAudit } from '../services/audit.service.js';
-import { checkForMatches } from '../services/matching.service.js';
+import { checkForMatches, checkForDuplicatesInSection } from '../services/matching.service.js';
 
 // Post a new found item
 export const postFoundItem = async (req, res) => {
@@ -44,6 +44,28 @@ export const postFoundItem = async (req, res) => {
     }
 
     const isPoliceUpload = req.user.role === 'police';
+
+    // Check for duplicates in the found items section
+    // Prevent multiple people from posting the same found item
+    const duplicateCheck = await checkForDuplicatesInSection(
+      { category, image_url, item_type, district },
+      'found'
+    );
+
+    if (duplicateCheck && duplicateCheck.isDuplicate) {
+      return res.status(409).json({
+        success: false,
+        message: 'Duplicate item detected! ' + duplicateCheck.message,
+        error: 'DUPLICATE_ITEM',
+        existingItem: {
+          id: duplicateCheck.existingItem.id,
+          item_type: duplicateCheck.existingItem.item_type,
+          category: duplicateCheck.existingItem.category,
+          district: duplicateCheck.existingItem.district,
+          contact: duplicateCheck.existingItem.full_name
+        }
+      });
+    }
 
     // Create found item
     const result = await query(
@@ -429,13 +451,13 @@ export const getFoundDashboardStats = async (req, res) => {
       [userId]
     );
 
-    // Active found items
+    // Active found items (not matched, not returned)
     const activeResult = await query(
       'SELECT COUNT(*) FROM found_items WHERE user_id = $1 AND status = $2',
       [userId, 'active']
     );
 
-    // Matched items
+    // Matched items (waiting for confirmation/return)
     const matchedResult = await query(
       'SELECT COUNT(*) FROM found_items WHERE user_id = $1 AND status = $2',
       [userId, 'matched']
@@ -447,7 +469,7 @@ export const getFoundDashboardStats = async (req, res) => {
       [userId, 'returned']
     );
 
-    // Total rewards earned (from completed matches)
+    // Total rewards earned (from completed matches with rewards paid)
     const rewardsResult = await query(
       `SELECT SUM(l.reward_amount) as total_rewards
        FROM matches m

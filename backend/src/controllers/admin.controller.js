@@ -443,3 +443,217 @@ export const getAllMatches = async (req, res) => {
     });
   }
 };
+
+// Get pending police registration requests
+export const getPendingPoliceRegistrations = async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT pp.*, u.id as user_id, u.email, u.full_name, u.phone_number, u.created_at
+       FROM police_profiles pp
+       JOIN users u ON pp.user_id = u.id
+       WHERE pp.is_verified = false
+       ORDER BY u.created_at DESC`
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { 
+        pendingRequests: result.rows,
+        count: result.rows.length
+      }
+    });
+  } catch (error) {
+    console.error('Get pending police registrations error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error retrieving pending police registrations',
+      error: error.message 
+    });
+  }
+};
+
+// Approve police registration
+export const approvePoliceRegistration = async (req, res) => {
+  try {
+    const { police_profile_id } = req.params;
+    const { remarks } = req.body;
+    const adminId = req.user.id;
+
+    // Get police profile and user
+    const profileResult = await query(
+      'SELECT * FROM police_profiles WHERE id = $1',
+      [police_profile_id]
+    );
+
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Police profile not found' 
+      });
+    }
+
+    const profile = profileResult.rows[0];
+
+    // Get user
+    const userResult = await query(
+      'SELECT * FROM users WHERE id = $1',
+      [profile.user_id]
+    );
+
+    const user = userResult.rows[0];
+
+    // Update police profile to verified
+    const updateProfileResult = await query(
+      `UPDATE police_profiles 
+       SET is_verified = true, verified_by = $1, verified_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [adminId, police_profile_id]
+    );
+
+    // Update user to active
+    await query(
+      'UPDATE users SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [profile.user_id]
+    );
+
+    // Send notification to police officer
+    try {
+      await query(
+        `INSERT INTO messages (sender_id, receiver_id, subject, message, is_read, created_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+        [
+          adminId,
+          profile.user_id,
+          'Police Registration Approved',
+          `Your police officer registration has been approved by the admin. Your official documents have been verified. You can now login to your account. ${remarks ? '\n\nAdmin Remarks: ' + remarks : ''}`
+        ]
+      );
+    } catch (msgError) {
+      console.error('Error sending approval message:', msgError);
+      // Continue even if message fails
+    }
+
+    // Log audit
+    await logAudit({
+      userId: adminId,
+      action: 'POLICE_REGISTRATION_APPROVED',
+      entityType: 'police_profile',
+      entityId: police_profile_id,
+      details: { badge_number: profile.badge_number, police_station: profile.police_station, remarks },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Police registration approved successfully',
+      data: { 
+        profile: updateProfileResult.rows[0],
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          is_active: true
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Approve police registration error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error approving police registration',
+      error: error.message 
+    });
+  }
+};
+
+// Reject police registration
+export const rejectPoliceRegistration = async (req, res) => {
+  try {
+    const { police_profile_id } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+
+    if (!reason) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Please provide a reason for rejection' 
+      });
+    }
+
+    // Get police profile and user
+    const profileResult = await query(
+      'SELECT * FROM police_profiles WHERE id = $1',
+      [police_profile_id]
+    );
+
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Police profile not found' 
+      });
+    }
+
+    const profile = profileResult.rows[0];
+
+    // Get user
+    const userResult = await query(
+      'SELECT * FROM users WHERE id = $1',
+      [profile.user_id]
+    );
+
+    const user = userResult.rows[0];
+
+    // Send rejection notification to police officer
+    try {
+      await query(
+        `INSERT INTO messages (sender_id, receiver_id, subject, message, is_read, created_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+        [
+          adminId,
+          profile.user_id,
+          'Police Registration Rejected',
+          `Your police officer registration has been rejected. Reason: ${reason}\n\nPlease resubmit with correct official documents or contact the admin for more information.`
+        ]
+      );
+    } catch (msgError) {
+      console.error('Error sending rejection message:', msgError);
+      // Continue with deletion even if message fails
+    }
+
+    // Delete police profile and user account
+    await query('DELETE FROM police_profiles WHERE id = $1', [police_profile_id]);
+    await query('DELETE FROM users WHERE id = $1', [profile.user_id]);
+
+    // Log audit
+    await logAudit({
+      userId: adminId,
+      action: 'POLICE_REGISTRATION_REJECTED',
+      entityType: 'police_profile',
+      entityId: police_profile_id,
+      details: { badge_number: profile.badge_number, police_station: profile.police_station, reason },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Police registration rejected successfully',
+      data: { 
+        rejectedUser: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Reject police registration error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error rejecting police registration',
+      error: error.message 
+    });
+  }
+};

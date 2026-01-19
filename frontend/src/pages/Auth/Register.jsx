@@ -238,7 +238,7 @@ export default function Register() {
         </div>
 
         {/* Login link */}
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-gray-600 mb-4">
           <span 
             onClick={() => navigate("/login")}
             className="text-green-700 font-medium cursor-pointer hover:underline"
@@ -246,6 +246,18 @@ export default function Register() {
             Login here
           </span>
         </p>
+
+        {/* Police Registration link */}
+        <div className="text-center pt-4 border-t">
+          <p className="text-sm text-gray-600 mb-2">Are you a police officer?</p>
+          <button
+            type="button"
+            onClick={() => navigate("/register-police")}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+          >
+            👮 Register as Police Officer
+          </button>
+        </div>
       </div>
 
       {/* Confirmation Modal */}

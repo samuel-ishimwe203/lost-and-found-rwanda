@@ -15,6 +15,7 @@ export function PostsProvider({ children }) {
       const lostItems = response.data.data?.lostItems || [];
       const foundItems = response.data.data?.foundItems || [];
       const items = [...lostItems, ...foundItems];
+      console.log(`📍 Fetched ${lostItems.length} lost + ${foundItems.length} found = ${items.length} total posts`);
       setAllPosts(items);
     } catch (error) {
       console.error('Error loading posts:', error);
@@ -26,6 +27,7 @@ export function PostsProvider({ children }) {
 
   useEffect(() => {
     fetchPosts();
+    
   }, []);
 
   const addPost = async (postData) => {

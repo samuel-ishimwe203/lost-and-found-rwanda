@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUsers, createOfficialAccount, updateUser, deleteUser, getSystemStats, getLogs, getAllItems, getAllMatches } from '../controllers/admin.controller.js';
+import { getUsers, createOfficialAccount, updateUser, deleteUser, getSystemStats, getLogs, getAllItems, getAllMatches, getPendingPoliceRegistrations, approvePoliceRegistration, rejectPoliceRegistration } from '../controllers/admin.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { adminOnly } from '../middleware/role.middleware.js';
 
@@ -16,5 +16,10 @@ router.get('/stats', getSystemStats);
 router.get('/logs', getLogs);
 router.get('/items', getAllItems);
 router.get('/matches', getAllMatches);
+
+// Police registration approval routes
+router.get('/police/pending', getPendingPoliceRegistrations);
+router.post('/police/approve/:police_profile_id', approvePoliceRegistration);
+router.post('/police/reject/:police_profile_id', rejectPoliceRegistration);
 
 export default router;

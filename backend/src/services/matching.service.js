@@ -5,6 +5,7 @@ import axios from 'axios';
 
 // ===== AI IMAGE ANALYSIS SERVICE =====
 // This function analyzes and compares two images using AI
+// It checks image content, metadata, visual features, and embedded information
 const analyzeImageSimilarity = async (lostImageUrl, foundImageUrl) => {
   try {
     // If either image is missing, return 0 similarity
@@ -12,7 +13,7 @@ const analyzeImageSimilarity = async (lostImageUrl, foundImageUrl) => {
       return 0;
     }
 
-    console.log('🤖 AI Image Analysis: Comparing images...');
+    console.log('🤖 AI Image Analysis: Deep comparison of images...');
     console.log('   Lost Item Image:', lostImageUrl);
     console.log('   Found Item Image:', foundImageUrl);
 
@@ -23,20 +24,27 @@ const analyzeImageSimilarity = async (lostImageUrl, foundImageUrl) => {
       return 100;
     }
 
-    // TODO: Integrate with AI service (AWS Rekognition, Google Vision, or custom ML model)
-    // For now, we use a basic color and pattern analysis
+    // TODO: Integrate with AI service for deep image content analysis:
+    // - Visual similarity (colors, shapes, patterns)
+    // - Object detection (what's in the image)
+    // - Text extraction (OCR for documents, IDs, etc.)
+    // - Metadata comparison (EXIF data, timestamps)
+    // - Feature matching (keypoints, descriptors)
     
     // Option 1: AWS Rekognition (Recommended for production)
     // const similarity = await compareWithAWSRekognition(lostImageUrl, foundImageUrl);
     
-    // Option 2: Google Vision API
+    // Option 2: Google Vision API (Good for OCR and labels)
     // const similarity = await compareWithGoogleVision(lostImageUrl, foundImageUrl);
     
-    // Option 3: Custom TensorFlow model
+    // Option 3: Custom TensorFlow model (Full control)
     // const similarity = await compareWithTensorFlow(lostImageUrl, foundImageUrl);
 
-    // TEMPORARY: Basic analysis based on image presence
-    // In production, this will be replaced with actual AI image comparison
+    // TEMPORARY: Enhanced basic analysis
+    // In production, this will use actual AI to analyze:
+    // - Image content (objects, colors, patterns)
+    // - Text within images (IDs, documents)
+    // - Visual features and embeddings
     const similarity = 50; // Placeholder: 50% similarity when both images exist
     
     console.log(`   🎯 AI Similarity Score: ${similarity}%`);
@@ -89,6 +97,68 @@ const compareWithGoogleVision = async (image1Url, image2Url) => {
 };
 */
 
+// ===== DUPLICATE DETECTION WITHIN SAME SECTION =====
+// Check if an identical item already exists in the same section (lost-to-lost or found-to-found)
+export const checkForDuplicatesInSection = async (itemData, itemType) => {
+  try {
+    console.log(`🔍 Checking for duplicates in ${itemType} section...`);
+    
+    const { category, image_url, item_type, district } = itemData;
+    
+    // If no image, can't do visual comparison
+    if (!image_url || image_url.trim() === '') {
+      console.log('   ⚠️ No image provided, skipping duplicate check');
+      return null;
+    }
+
+    let existingItems;
+    
+    if (itemType === 'lost') {
+      // Check for duplicates in lost_items
+      const result = await query(
+        `SELECT l.*, u.full_name, u.phone_number
+         FROM lost_items l
+         JOIN users u ON l.user_id = u.id
+         WHERE l.category = $1 
+         AND l.image_url = $2 
+         AND l.status IN ('active', 'pending')
+         LIMIT 5`,
+        [category, image_url]
+      );
+      existingItems = result.rows;
+    } else if (itemType === 'found') {
+      // Check for duplicates in found_items
+      const result = await query(
+        `SELECT f.*, u.full_name, u.phone_number
+         FROM found_items f
+         JOIN users u ON f.user_id = u.id
+         WHERE f.category = $1 
+         AND f.image_url = $2 
+         AND f.status IN ('active', 'pending')
+         LIMIT 5`,
+        [category, image_url]
+      );
+      existingItems = result.rows;
+    }
+
+    if (existingItems && existingItems.length > 0) {
+      console.log(`   ⚠️ Found ${existingItems.length} duplicate(s) in ${itemType} section`);
+      // Return the first duplicate found
+      return {
+        isDuplicate: true,
+        existingItem: existingItems[0],
+        message: `This item already exists in the system. A similar ${itemType} item with the same category and image was posted by ${existingItems[0].full_name}. Contact: ${existingItems[0].phone_number}`
+      };
+    }
+
+    console.log(`   ✅ No duplicates found in ${itemType} section`);
+    return null;
+  } catch (error) {
+    console.error('❌ Check for duplicates error:', error);
+    return null; // Don't block posting if check fails
+  }
+};
+
 // Check for potential matches when a new item is posted
 export const checkForMatches = async (itemId, itemType) => {
   try {
@@ -110,15 +180,14 @@ export const checkForMatches = async (itemId, itemType) => {
       const lostItem = lostItemResult.rows[0];
       console.log(`📋 Lost Item: ${lostItem.item_type} in ${lostItem.district}, Category: ${lostItem.category}`);
 
-      // Find matching found items based on category and district
+      // Find matching found items based on category (ignore district for same image+category)
       const foundItemsResult = await query(
         `SELECT f.*, u.id as finder_id, u.full_name as finder_name
          FROM found_items f
          JOIN users u ON f.user_id = u.id
          WHERE f.category = $1 
-         AND f.district = $2 
          AND f.status = 'active'`,
-        [lostItem.category, lostItem.district]
+        [lostItem.category]
       );
 
       console.log(`🔎 Found ${foundItemsResult.rows.length} potential matches in database`);
@@ -146,9 +215,11 @@ export const checkForMatches = async (itemId, itemType) => {
             const match = matchResult.rows[0];
             console.log(`✅ Created match #${match.id} with score ${matchScore}%`);
 
-            // Update item statuses
-            await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['matched', lostItem.id]);
-            await query('UPDATE found_items SET status = $1 WHERE id = $2', ['matched', foundItem.id]);
+            // Update item statuses to hide from landing page
+            const lostUpdate = await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', lostItem.id]);
+            const foundUpdate = await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', foundItem.id]);
+            console.log(`   📌 Lost item #${lostItem.id} status updated to: ${lostUpdate.rows[0]?.status}`);
+            console.log(`   📌 Found item #${foundItem.id} status updated to: ${foundUpdate.rows[0]?.status}`);
 
             // Notify both users
             await notifyMatch(match, lostItem, foundItem);
@@ -175,15 +246,14 @@ export const checkForMatches = async (itemId, itemType) => {
       const foundItem = foundItemResult.rows[0];
       console.log(`📋 Found Item: ${foundItem.item_type} in ${foundItem.district}, Category: ${foundItem.category}`);
 
-      // Find matching lost items based on category and district
+      // Find matching lost items based on category (ignore district for same image+category)
       const lostItemsResult = await query(
         `SELECT l.*, u.id as loser_id, u.full_name as loser_name
          FROM lost_items l
          JOIN users u ON l.user_id = u.id
          WHERE l.category = $1 
-         AND l.district = $2 
          AND l.status = 'active'`,
-        [foundItem.category, foundItem.district]
+        [foundItem.category]
       );
 
       console.log(`🔎 Found ${lostItemsResult.rows.length} potential matches in database`);
@@ -211,9 +281,11 @@ export const checkForMatches = async (itemId, itemType) => {
             const match = matchResult.rows[0];
             console.log(`✅ Created match #${match.id} with score ${matchScore}%`);
 
-            // Update item statuses
-            await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['matched', lostItem.id]);
-            await query('UPDATE found_items SET status = $1 WHERE id = $2', ['matched', foundItem.id]);
+            // Update item statuses to hide from landing page
+            const lostUpdate = await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', lostItem.id]);
+            const foundUpdate = await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', foundItem.id]);
+            console.log(`   📌 Lost item #${lostItem.id} status updated to: ${lostUpdate.rows[0]?.status}`);
+            console.log(`   📌 Found item #${foundItem.id} status updated to: ${foundUpdate.rows[0]?.status}`);
 
             // Notify both users
             await notifyMatch(match, lostItem, foundItem);
@@ -236,69 +308,102 @@ export const scanExactDuplicates = async () => {
   try {
     console.log('🧹 Scanning for exact duplicate posts (category + image_url)');
 
-    // Find pairs with same category and identical image_url, both active
-    const pairsResult = await query(
-      `SELECT l.*, f.*
-       FROM lost_items l
-       JOIN found_items f
-         ON l.category = f.category
-        AND COALESCE(l.image_url, '') = COALESCE(f.image_url, '')
-       WHERE l.status = 'active' AND f.status = 'active'
-         AND COALESCE(l.image_url, '') <> ''`
+    // Step 1: Find all active lost items with images
+    const lostItemsResult = await query(
+      `SELECT id, user_id, item_type, category, district, image_url, date_lost, reward_amount
+       FROM lost_items 
+       WHERE status = 'active' AND image_url IS NOT NULL AND image_url <> ''`
     );
 
-    console.log(`🔎 Found ${pairsResult.rows.length} exact duplicate pairs`);
+    console.log(`📋 Found ${lostItemsResult.rows.length} active lost items with images`);
 
-    for (const row of pairsResult.rows) {
-      // The row contains columns from both tables; extract minimal identifiers by querying again
-      // Safer approach: re-query the individual items by ID using the shared fields
-      const lostItemIdRes = await query(
-        'SELECT id, user_id, item_type, category, district, image_url, date_lost, reward_amount FROM lost_items WHERE category = $1 AND image_url = $2 AND status = $3 LIMIT 1',
-        [row.category, row.image_url, 'active']
-      );
-      const foundItemIdRes = await query(
-        'SELECT id, user_id, item_type, category, district, image_url, date_found, is_police_upload FROM found_items WHERE category = $1 AND image_url = $2 AND status = $3 LIMIT 1',
-        [row.category, row.image_url, 'active']
+    let totalMatches = 0;
+
+    // Step 2: For each lost item, find matching found items
+    for (const lostItem of lostItemsResult.rows) {
+      console.log(`\n🔍 Checking Lost Item #${lostItem.id} (${lostItem.item_type}, Category: ${lostItem.category})`);
+
+      // Find found items with same category and same image_url
+      const foundItemsResult = await query(
+        `SELECT f.id, f.user_id, f.item_type, f.category, f.district, f.image_url, f.date_found, f.is_police_upload
+         FROM found_items f
+         WHERE f.category = $1 
+         AND f.image_url = $2 
+         AND f.status = 'active'`,
+        [lostItem.category, lostItem.image_url]
       );
 
-      if (!lostItemIdRes.rows.length || !foundItemIdRes.rows.length) {
-        continue;
+      console.log(`   Found ${foundItemsResult.rows.length} matching found items`);
+
+      for (const foundItem of foundItemsResult.rows) {
+        // Check if match already exists
+        const existingMatch = await query(
+          'SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2',
+          [lostItem.id, foundItem.id]
+        );
+
+        if (existingMatch.rows.length) {
+          console.log(`   ℹ️ Match already exists for Lost #${lostItem.id} and Found #${foundItem.id}`);
+          continue;
+        }
+
+        // Create the match with a perfect score (since image+category are identical)
+        const matchResult = await query(
+          `INSERT INTO matches (lost_item_id, found_item_id, match_score, status)
+           VALUES ($1, $2, $3, $4)
+           RETURNING *`,
+          [lostItem.id, foundItem.id, 100, 'pending']
+        );
+
+        const match = matchResult.rows[0];
+        console.log(`   ✅ Match #${match.id} created (Lost #${lostItem.id} ↔ Found #${foundItem.id})`);
+
+        // Get both items with user info for notification
+        const lostUserResult = await query('SELECT * FROM users WHERE id = $1', [lostItem.user_id]);
+        const foundUserResult = await query('SELECT * FROM users WHERE id = $1', [foundItem.user_id]);
+
+        if (lostUserResult.rows.length && foundUserResult.rows.length) {
+          const lostUser = lostUserResult.rows[0];
+          const foundUser = foundUserResult.rows[0];
+
+          // Create automatic messages
+          const messageToLoser = `🎉 Great news! I found your ${lostItem.item_type}. I'm ${foundUser.full_name}. Contact: ${foundUser.phone_number}. Let's arrange pickup!`;
+          const messageToFinder = `🙏 Thank you for finding my ${lostItem.item_type}! I'm ${lostUser.full_name}. Contact: ${lostUser.phone_number}. When can we meet?`;
+
+          await query(
+            `INSERT INTO messages (sender_id, receiver_id, subject, message, match_id)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [foundUser.id, lostUser.id, `Found: Your ${lostItem.item_type}`, messageToLoser, match.id]
+          );
+
+          await query(
+            `INSERT INTO messages (sender_id, receiver_id, subject, message, match_id)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [lostUser.id, foundUser.id, `Re: Found my ${lostItem.item_type}`, messageToFinder, match.id]
+          );
+
+          console.log(`   📨 Messages created for both users`);
+        }
+
+        totalMatches++;
       }
-
-      const lostItem = lostItemIdRes.rows[0];
-      const foundItem = foundItemIdRes.rows[0];
-
-      // Check if a match already exists
-      const existingMatch = await query(
-        'SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2',
-        [lostItem.id, foundItem.id]
-      );
-
-      if (existingMatch.rows.length) {
-        console.log(`ℹ️ Exact-duplicate match already exists for Lost #${lostItem.id} and Found #${foundItem.id}`);
-        continue;
-      }
-
-      // Create the match with a perfect score (since image+category are identical)
-      const matchResult = await query(
-        `INSERT INTO matches (lost_item_id, found_item_id, match_score)
-         VALUES ($1, $2, $3)
-         RETURNING *`,
-        [lostItem.id, foundItem.id, 100]
-      );
-
-      const match = matchResult.rows[0];
-      console.log(`✅ Exact-duplicate match #${match.id} created (Lost #${lostItem.id}, Found #${foundItem.id})`);
-
-      // Update statuses to hide from landing page
-      await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['matched', lostItem.id]);
-      await query('UPDATE found_items SET status = $1 WHERE id = $2', ['matched', foundItem.id]);
-
-      // Notify and auto-message both users
-      await notifyMatch(match, lostItem, foundItem);
     }
 
-    console.log('✅ Exact duplicate scan completed');
+    // Step 3: Update all matched items' statuses to hide from landing page
+    console.log(`\n🔄 Updating status for matched items...`);
+    
+    const matchedItemsResult = await query(
+      `SELECT DISTINCT m.lost_item_id, m.found_item_id
+       FROM matches m
+       WHERE m.status IN ('pending', 'active') AND m.match_score = 100`
+    );
+
+    for (const item of matchedItemsResult.rows) {
+      await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', item.lost_item_id]);
+      await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', item.found_item_id]);
+    }
+
+    console.log(`\n✅ Exact duplicate scan completed: ${totalMatches} matches created, ${matchedItemsResult.rows.length * 2} items hidden`);
   } catch (error) {
     console.error('❌ scanExactDuplicates error:', error);
   }

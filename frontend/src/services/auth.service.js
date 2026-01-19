@@ -23,6 +23,12 @@ export const authService = {
     return response.data
   },
 
+  registerPolice: async (policeData) => {
+    const response = await apiClient.post('/auth/register-police', policeData)
+    // Police registration is pending approval, don't auto-login
+    return response.data
+  },
+
   getCurrentUser: async () => {
     const response = await apiClient.get('/auth/me')
     return response.data

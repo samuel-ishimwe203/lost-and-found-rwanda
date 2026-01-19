@@ -1,3 +1,4 @@
+import { Folder, MapPin, Phone, User, Image } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { PostsContext } from "../../context/PostsContext";
@@ -81,9 +82,7 @@ export default function AllPostings() {
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <svg className="w-12 h-12 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      <Image className="w-12 h-12 text-purple-300" />
                     </div>
                   )}
                   
@@ -112,9 +111,7 @@ export default function AllPostings() {
                     {/* Category */}
                     <div className="flex items-center">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-100 text-indigo-600 mr-2 flex-shrink-0">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                        </svg>
+                        <Folder className="w-3 h-3" />
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500">Category</p>
@@ -125,9 +122,7 @@ export default function AllPostings() {
                     {/* Location */}
                     <div className="flex items-center">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-rose-100 text-rose-600 mr-2 flex-shrink-0">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
+                        <MapPin className="w-3 h-3" />
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-800 truncate">{item.district}</p>
@@ -138,9 +133,7 @@ export default function AllPostings() {
                     {additionalInfo.owner_name && (
                       <div className="flex items-center bg-gradient-to-r from-emerald-50 to-teal-50 p-2 rounded-lg border border-emerald-200">
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-500 text-white mr-2 flex-shrink-0">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                          </svg>
+                          <User className="w-3 h-3" />
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-emerald-700">Name</p>
@@ -153,9 +146,7 @@ export default function AllPostings() {
                     {(item.contact_phone || additionalInfo.contact_phone) && (
                       <div className="flex items-center">
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                          </svg>
+                          <Phone className="w-3 h-3" />
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-gray-800 truncate">{item.contact_phone || additionalInfo.contact_phone}</p>

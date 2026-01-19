@@ -105,7 +105,14 @@ const startServer = async () => {
 
     // On startup, perform a quick scan to auto-resolve exact duplicates
     // (same image URL + same category) and message both parties
-    scanExactDuplicates().catch(err => console.error('Startup duplicate scan failed:', err));
+    console.log('⏳ Initializing duplicate scan...');
+    await scanExactDuplicates().catch(err => console.error('Startup duplicate scan failed:', err));
+
+    // Periodic scan every 30 seconds to catch new matches
+    setInterval(() => {
+      console.log('🔄 Running periodic duplicate scan...');
+      scanExactDuplicates().catch(err => console.error('Periodic scan failed:', err));
+    }, 30000);
 
     // Start server
     app.listen(PORT, () => {

@@ -5,6 +5,11 @@ import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import QAChat from "./components/QAChat";
 
+/* ================= AUTH PAGES ================= */
+import Register from "./pages/Auth/Register";
+import RegisterPolice from "./pages/Auth/RegisterPolice";
+import Login from "./pages/Auth/Login";
+
 /* ================= PUBLIC PAGES ================= */
 import PublicHome from "./pages/PublicDashboard/PublicHome";
 import AllPostings from "./pages/PublicDashboard/AllPostings";
@@ -32,6 +37,7 @@ import AdminHome from "./pages/AdminDashboard/AdminHome";
 import SystemStats from "./pages/AdminDashboard/SystemStats";
 import ManageItems from "./pages/AdminDashboard/ManageItems";
 import ManageUsers from "./pages/AdminDashboard/ManageUsers";
+import ManagePoliceRegistrations from "./pages/AdminDashboard/ManagePoliceRegistrations";
 import Logs from "./pages/AdminDashboard/Logs";
 
 /* ================= POLICE DASHBOARD ================= */
@@ -76,6 +82,11 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<PublicHome />} />
         <Route path="/postings" element={<AllPostings />} />
+        
+        {/* Auth Routes */}
+        <Route path="/register" element={<Register />} />
+        <Route path="/register-police" element={<RegisterPolice />} />
+        <Route path="/login" element={<Login />} />
 
         <Route 
           path="/lost-dashboard/*" 
@@ -120,6 +131,7 @@ function AppRoutes() {
           <Route path="system-stats" element={<SystemStats />} />
           <Route path="manage-items" element={<ManageItems />} />
           <Route path="manage-users" element={<ManageUsers />} />
+          <Route path="manage-police-registrations" element={<ManagePoliceRegistrations />} />
           <Route path="logs" element={<Logs />} />
         </Route>
 

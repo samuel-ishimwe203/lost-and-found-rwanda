@@ -26,6 +26,12 @@ const createTables = async () => {
     `);
     console.log('✅ Users table created');
 
+    // Ensure new profile fields exist
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image VARCHAR(500);`);
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;`);
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS district VARCHAR(100);`);
+    console.log('✅ Users table columns ensured (profile_image, bio, district)');
+
     // Lost items table
     await query(`
       CREATE TABLE IF NOT EXISTS lost_items (
@@ -151,6 +157,7 @@ const createTables = async () => {
         department VARCHAR(100),
         phone_official VARCHAR(20),
         email_official VARCHAR(255),
+        document_url VARCHAR(500),
         assigned_cases INTEGER DEFAULT 0,
         is_verified BOOLEAN DEFAULT false,
         verified_by INTEGER REFERENCES users(id),
@@ -160,6 +167,9 @@ const createTables = async () => {
       )
     `);
     console.log('✅ Police profiles table created');
+
+    // Ensure document_url column exists
+    await query(`ALTER TABLE police_profiles ADD COLUMN IF NOT EXISTS document_url VARCHAR(500);`);
 
     // Create indexes for better performance
     await query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');

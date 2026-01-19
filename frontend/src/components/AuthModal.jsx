@@ -70,6 +70,8 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+     
+    
     setError("");
     
     // Validate all fields are filled
@@ -124,19 +126,7 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
       };
 
       await register(userData);
-      
-      onClose();
-      
-      if (onLoginSuccess) {
-        onLoginSuccess(role);
-      }
-      
-      const dashboardMap = {
-        'loser': '/lost-dashboard',
-        'finder': '/found-dashboard'
-      };
-      
-      navigate(dashboardMap[role] || '/');
+      setCurrentMode("login");
     } catch (err) {
       console.error('Registration error:', err);
       console.error('Error response:', err.response);
@@ -234,11 +224,11 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
                 Register as:
               </p>
 
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole("loser")}
-                  className={`flex-1 px-4 py-2 rounded-lg border ${
+                  className={`px-4 py-2 rounded-lg border ${
                     role === "loser"
                       ? "bg-green-600 text-white"
                       : "bg-white"
@@ -250,13 +240,24 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
                 <button
                   type="button"
                   onClick={() => setRole("finder")}
-                  className={`flex-1 px-4 py-2 rounded-lg border ${
+                  className={`px-4 py-2 rounded-lg border ${
                     role === "finder"
                       ? "bg-green-600 text-white"
                       : "bg-white"
                   }`}
                 >
                   I Found an Item
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate('/register-police');
+                  }}
+                  className="col-span-2 px-4 py-2 rounded-lg border bg-blue-600 text-white hover:bg-blue-700 transition"
+                >
+                  👮 I'm a Police Officer
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { query } from '../db/index.js';
 import { logAudit } from '../services/audit.service.js';
-import { checkForMatches } from '../services/matching.service.js';
+import { checkForMatches, checkForDuplicatesInSection } from '../services/matching.service.js';
 
 // Post a new lost item
 export const postLostItem = async (req, res) => {
@@ -41,6 +41,28 @@ export const postLostItem = async (req, res) => {
       } catch (e) {
         parsedAdditionalInfo = {};
       }
+    }
+
+    // Check for duplicates in the lost items section
+    // Prevent same person or different people from posting identical items
+    const duplicateCheck = await checkForDuplicatesInSection(
+      { category, image_url, item_type, district },
+      'lost'
+    );
+
+    if (duplicateCheck && duplicateCheck.isDuplicate) {
+      return res.status(409).json({
+        success: false,
+        message: 'Duplicate item detected! ' + duplicateCheck.message,
+        error: 'DUPLICATE_ITEM',
+        existingItem: {
+          id: duplicateCheck.existingItem.id,
+          item_type: duplicateCheck.existingItem.item_type,
+          category: duplicateCheck.existingItem.category,
+          district: duplicateCheck.existingItem.district,
+          contact: duplicateCheck.existingItem.full_name
+        }
+      });
     }
 
     // Create lost item
@@ -434,19 +456,19 @@ export const getLostDashboardStats = async (req, res) => {
       [userId]
     );
 
-    // Active postings
+    // Active postings (not matched, not resolved)
     const activeResult = await query(
       'SELECT COUNT(*) FROM lost_items WHERE user_id = $1 AND status = $2',
       [userId, 'active']
     );
 
-    // Matched items
+    // Matched items (waiting for confirmation)
     const matchedResult = await query(
       'SELECT COUNT(*) FROM lost_items WHERE user_id = $1 AND status = $2',
       [userId, 'matched']
     );
 
-    // Pending matches
+    // Pending matches (matches that need action)
     const pendingMatchesResult = await query(
       `SELECT COUNT(*) FROM matches m
        JOIN lost_items l ON m.lost_item_id = l.id
@@ -454,7 +476,7 @@ export const getLostDashboardStats = async (req, res) => {
       [userId]
     );
 
-    // Resolved items
+    // Resolved items (successfully recovered)
     const resolvedResult = await query(
       'SELECT COUNT(*) FROM lost_items WHERE user_id = $1 AND status = $2',
       [userId, 'resolved']

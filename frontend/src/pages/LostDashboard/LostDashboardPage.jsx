@@ -7,6 +7,8 @@ export default function LostDashboardPage() {
     window.location.href = "/";
   };
 
+  
+
   return (
     <>
       {/* LANDING NAVBAR WITH LOGOUT */}

@@ -1,15 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import AuthModal from "./AuthModal";
 import SearchModal from "./SearchModal";
 
-export default function Navbar({ isAuthenticated = false, onLogout, onLoginSuccess }) {
+export default function Navbar({ isAuthenticated = false, onLogout, onLoginSuccess, user, userRole }) {
   // ================= AUTH MODAL STATE =================
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login"); // login | register
 
   // ================= SEARCH MODAL STATE =================
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // ================= DASHBOARD MENU STATE =================
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   // ================= OPEN FUNCTIONS =================
   const openLogin = () => {
@@ -42,6 +46,43 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
     };
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  // Dashboard links based on role
+  const lostLinks = [
+    { label: "Dashboard Home", to: "/lost-dashboard" },
+    { label: "Profile", to: "/lost-dashboard/profile" },
+    { label: "My Postings", to: "/lost-dashboard/my-postings" },
+    { label: "Create Post", to: "/lost-dashboard/create-post" },
+    { label: "Messages", to: "/lost-dashboard/messages" },
+  ];
+
+  const foundLinks = [
+    { label: "Dashboard Home", to: "/found-dashboard" },
+    { label: "Profile", to: "/found-dashboard/profile" },
+    { label: "My Found Items", to: "/found-dashboard/my-found-items" },
+    { label: "Post Found Item", to: "/found-dashboard/post-found-item" },
+    { label: "Matches", to: "/found-dashboard/matches" },
+    { label: "Messages", to: "/found-dashboard/messages" },
+  ];
+
+  const menuLinks = userRole === "lost_user" ? lostLinks : userRole === "found_user" ? foundLinks : [];
+
   return (
     <>
       {/* ================= NAVBAR ================= */}
@@ -62,7 +103,7 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
           </div>
 
           {/* RIGHT ACTIONS */}
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center" ref={menuRef}>
             {!isAuthenticated ? (
               <>
                 <button
@@ -79,6 +120,40 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
                   Register
                 </button>
               </>
+            ) : menuLinks.length > 0 ? (
+              <div className="relative">
+                <button
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                  className="border px-4 py-2 rounded-md hover:bg-gray-50 transition flex items-center gap-2"
+                >
+                  Dashboard
+                  <span className="text-xs">▼</span>
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                    {menuLinks.map((link) => (
+                      <Link
+                        key={link.to}
+                        to={link.to}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onLogout && onLogout();
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 onClick={onLogout}

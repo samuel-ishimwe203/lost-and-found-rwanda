@@ -68,10 +68,25 @@ export default function LostDashboardLayout() {
         {/* SIDEBAR */}
         <aside className="w-64 bg-gradient-to-b from-green-700 to-emerald-800 border-r border-green-400/30 p-6 shadow-2xl sticky top-0 h-screen overflow-y-auto">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl">LF</span>
-            </div>
-            <p className="mt-3 font-bold text-white text-lg">Lost User</p>
+            {user?.profile_image ? (
+              <img
+                src={user.profile_image}
+                alt={user.full_name}
+                className="w-20 h-20 mx-auto rounded-full object-cover border-4 border-green-300 shadow-lg"
+              />
+            ) : (
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">
+                  {user?.full_name
+                    ?.split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2) || 'LU'}
+                </span>
+              </div>
+            )}
+            <p className="mt-3 font-bold text-white text-lg">{user?.full_name || 'Lost User'}</p>
             <p className="text-green-200 text-xs mt-1">Dashboard</p>
           </div>
 

@@ -15,6 +15,8 @@ export default function MyProfile() {
     totalPostings: 0,
     recoveredItems: 0,
   });
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,11 +49,17 @@ export default function MyProfile() {
         lastName,
         email: user?.email || "",
         phone_number: user?.phone_number || "",
+        district: user?.district || "",
         bio: user?.bio || "",
         created_at: user?.created_at || new Date().toISOString(),
         totalPostings,
         recoveredItems,
       });
+
+      // Set profile photo if available
+      if (user?.profile_image) {
+        setPreviewUrl(user.profile_image);
+      }
     } catch (error) {
       console.error('Error loading profile:', error);
       console.error('Error response:', error.response?.data);
@@ -69,6 +77,30 @@ export default function MyProfile() {
     }));
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      setProfilePhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+      setError('');
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setError("");
@@ -76,23 +108,45 @@ export default function MyProfile() {
     setSaving(true);
 
     try {
+      // Only send if photo was changed or other fields have content
+      if (!profilePhoto && !profile.firstName && !profile.lastName && !profile.phone_number && !profile.bio) {
+        setError('Please upload a photo or make changes to save');
+        setSaving(false);
+        return;
+      }
+
       // Combine firstName and lastName back to full_name
-      const full_name = `${profile.firstName} ${profile.lastName}`.trim();
+      const full_name = `${profile.firstName} ${profile.lastName}`.trim() || user?.full_name;
       
-      const response = await apiClient.put('/auth/profile', {
-        full_name,
-        phone_number: profile.phone_number,
-        bio: profile.bio,
+      const formData = new FormData();
+      formData.append('full_name', full_name);
+      if (profile.phone_number) formData.append('phone_number', profile.phone_number);
+      if (profile.bio !== undefined && profile.bio !== null) formData.append('bio', profile.bio);
+      if (profile.district) formData.append('district', profile.district);
+      
+      // Add photo if selected
+      if (profilePhoto) {
+        formData.append('profile_photo', profilePhoto);
+      }
+
+      const response = await apiClient.put('/auth/profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (response.data.user) {
+        // Update context with new user data
         updateUser(response.data.user);
-        setSuccess("Profile updated successfully!");
+        setSuccess("✅ Profile updated successfully!");
+        setProfilePhoto(null);
         setIsEditing(false);
+        setTimeout(() => setSuccess(''), 3000);
         await loadProfile();
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update profile');
+      console.error('Error updating profile:', err);
+      setError(err.response?.data?.message || 'Failed to update profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -147,6 +201,35 @@ export default function MyProfile() {
       <div className="bg-white rounded-2xl shadow-lg p-8 border border-green-200">
         {isEditing ? (
           <form onSubmit={handleSave} className="space-y-6">
+            {/* PROFILE PHOTO UPLOAD */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="relative mb-4">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Profile Preview"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-green-400 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center text-5xl font-bold shadow-lg border-4 border-green-400">
+                    {profile.firstName?.charAt(0) || "U"}
+                    {profile.lastName?.charAt(0) || "S"}
+                  </div>
+                )}
+                <label htmlFor="photoUpload" className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full cursor-pointer hover:bg-green-700 transition shadow-lg">
+                  📷
+                </label>
+              </div>
+              <input
+                id="photoUpload"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+              <p className="text-sm text-gray-600 mt-2">Click camera icon to upload profile photo</p>
+            </div>
+
             {/* FIRST NAME */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
@@ -198,22 +281,22 @@ export default function MyProfile() {
               </label>
               <input
                 type="tel"
-                name="phone"
-                value={profile.phone}
+                name="phone_number"
+                value={profile.phone_number}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
-            {/* LOCATION */}
+            {/* LOCATION (District) */}
             <div>
               <label className="block text-sm font-semibold text-green-900 mb-2">
-                Location
+                District
               </label>
               <input
                 type="text"
-                name="location"
-                value={profile.location}
+                name="district"
+                value={profile.district || ""}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
@@ -246,10 +329,18 @@ export default function MyProfile() {
           <div className="space-y-8">
             {/* AVATAR & BASIC INFO */}
             <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center text-5xl font-bold shadow-lg mb-4">
-                {profile.firstName?.charAt(0) || "U"}
-                {profile.lastName?.charAt(0) || "S"}
-              </div>
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full object-cover border-4 border-green-400 shadow-lg mb-4"
+                />
+              ) : (
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center text-5xl font-bold shadow-lg border-4 border-green-400 mb-4">
+                  {profile.firstName?.charAt(0) || "U"}
+                  {profile.lastName?.charAt(0) || "S"}
+                </div>
+              )}
               <h2 className="text-3xl font-bold text-green-900">{profile.full_name || "User"}</h2>
               <p className="text-green-600 font-semibold mt-2">
                 ✓ Verified User

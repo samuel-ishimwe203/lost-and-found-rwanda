@@ -89,9 +89,9 @@ export function AuthProvider({ children }) {
     try {
       const response = await authService.register(userData)
       if (response.data && response.data.user) {
-        setUser(response.data.user)
-        setIsAuthenticated(true)
-        localStorage.setItem('token', response.data.token)
+        // setUser(response.data.user)
+        // setIsAuthenticated(true)
+        // localStorage.setItem('token', response.data.token)
         return response.data
       }
     } catch (error) {

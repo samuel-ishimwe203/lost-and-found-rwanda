@@ -6,6 +6,7 @@ export default function AdminDashboardLayout() {
     { path: "/admin-dashboard/system-stats", label: "System Stats" },
     { path: "/admin-dashboard/manage-items", label: "Manage Items" },
     { path: "/admin-dashboard/manage-users", label: "Manage Users" },
+    { path: "/admin-dashboard/manage-police-registrations", label: "👮 Police Registrations" },
     { path: "/admin-dashboard/logs", label: "Activity Logs" },
   ];
 

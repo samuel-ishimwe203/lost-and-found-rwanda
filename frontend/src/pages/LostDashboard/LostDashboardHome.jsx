@@ -4,6 +4,13 @@ import apiClient from "../../services/api";
 
 export default function LostDashboardHome() {
   const { user } = useAuth();
+  const avatarUrl = user?.profile_image || user?.avatar || user?.photo || user?.photo_url;
+  const userInitials = (user?.full_name || user?.email || '?')
+    .split(' ')
+    .filter(Boolean)
+    .map((name) => name[0]?.toUpperCase())
+    .slice(0, 2)
+    .join('');
   const [stats, setStats] = useState({
     totalPostings: 0,
     activePostings: 0,
@@ -103,12 +110,27 @@ export default function LostDashboardHome() {
     <div className="space-y-8">
       {/* WELCOME MESSAGE */}
       <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-8 rounded-2xl border border-green-300 shadow-lg">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Welcome back, {user?.full_name || user?.email || 'User'}!
-        </h1>
-        <p className="text-green-100 text-lg">
-          Manage your lost item postings and track potential matches
-        </p>
+        <div className="flex items-center gap-4">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Profile"
+              className="w-16 h-16 rounded-full border-2 border-white object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full border-2 border-white bg-white/20 text-white flex items-center justify-center text-2xl font-semibold">
+              {userInitials || '?'}
+            </div>
+          )}
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">
+              Welcome back, {user?.full_name || user?.email || 'User'}!
+            </h1>
+            <p className="text-green-100 text-lg">
+              Manage your lost item postings and track potential matches
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* STATS CARDS */}

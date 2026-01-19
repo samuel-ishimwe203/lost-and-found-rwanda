@@ -13,6 +13,8 @@ export default function MyProfile() {
     foundItems: 0,
     successfulReturns: 0,
   });
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,6 +40,11 @@ export default function MyProfile() {
           foundItems: 0,
           successfulReturns: 0,
         });
+        
+        // Set profile photo if available
+        if (user?.profile_image) {
+          setPreviewUrl(user.profile_image);
+        }
       }
 
       // Get stats
@@ -65,6 +72,30 @@ export default function MyProfile() {
     }));
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      setProfilePhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+      setError('');
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     
@@ -73,20 +104,38 @@ export default function MyProfile() {
       setError('');
       setSuccess('');
 
-      const updateData = {
-        full_name: profile.full_name,
-        phone_number: profile.phone_number,
-        district: profile.district,
-        bio: profile.bio,
-      };
+      // Only send if photo was changed or other fields have content
+      if (!profilePhoto && !profile.full_name && !profile.phone_number && !profile.bio && !profile.district) {
+        setError('Please upload a photo or make changes to save');
+        setSaving(false);
+        return;
+      }
 
-      const response = await apiClient.put('/auth/profile', updateData);
+      const formData = new FormData();
+      formData.append('full_name', profile.full_name || '');
+      formData.append('phone_number', profile.phone_number || '');
+      formData.append('district', profile.district || '');
+      formData.append('bio', profile.bio || '');
       
-      if (response.data.success) {
-        updateUser(response.data.data.user);
+      // Add photo if selected
+      if (profilePhoto) {
+        formData.append('profile_photo', profilePhoto);
+      }
+
+      const response = await apiClient.put('/auth/profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (response.data.user) {
+        // Update context with new user data
+        updateUser(response.data.user);
         setSuccess('✅ Profile updated successfully!');
+        setProfilePhoto(null);
         setIsEditing(false);
         setTimeout(() => setSuccess(''), 3000);
+        await fetchProfileData();
       }
     } catch (err) {
       console.error('Update profile error:', err);
@@ -95,7 +144,7 @@ export default function MyProfile() {
       } else if (err.message === 'Network Error') {
         setError('🌐 Network error. Please check your connection.');
       } else {
-        setError(`❌ ${err.response?.data?.message || 'Failed to update profile'}`);
+        setError(`❌ ${err.response?.data?.message || 'Failed to update profile. Please try again.'}`);
       }
     } finally {
       setSaving(false);
@@ -148,6 +197,34 @@ export default function MyProfile() {
         <div className="bg-white rounded-2xl shadow-lg p-8 border border-blue-200">
           {isEditing ? (
             <form onSubmit={handleSave} className="space-y-6">
+              {/* PROFILE PHOTO UPLOAD */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative mb-4">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Profile Preview"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-blue-400 shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center text-5xl font-bold shadow-lg border-4 border-blue-400">
+                      {profile.full_name?.charAt(0)?.toUpperCase() || "F"}
+                    </div>
+                  )}
+                  <label htmlFor="photoUpload" className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition shadow-lg">
+                    📷
+                  </label>
+                </div>
+                <input
+                  id="photoUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                <p className="text-sm text-gray-600 mt-2">Click camera icon to upload profile photo</p>
+              </div>
+
               {/* FULL NAME */}
               <div>
                 <label className="block text-sm font-semibold text-blue-900 mb-2">
@@ -252,6 +329,23 @@ export default function MyProfile() {
             </form>
           ) : (
             <div className="space-y-6">
+              {/* AVATAR SECTION */}
+              <div className="flex flex-col items-center text-center mb-8">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-blue-400 shadow-lg mb-4"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center text-5xl font-bold shadow-lg border-4 border-blue-400 mb-4">
+                    {profile.full_name?.charAt(0)?.toUpperCase() || "F"}
+                  </div>
+                )}
+                <h2 className="text-3xl font-bold text-blue-900">{profile.full_name || "User"}</h2>
+                <p className="text-blue-600 font-semibold mt-2">✓ Verified User</p>
+              </div>
+
               {/* PROFILE INFO GRID */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">

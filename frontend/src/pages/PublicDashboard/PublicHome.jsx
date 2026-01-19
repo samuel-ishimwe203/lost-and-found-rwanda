@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PostsContext } from "../../context/PostsContext";
 import { AuthContext } from "../../context/AuthContext";
 import SendMessageModal from "../../components/SendMessageModal";
+import { Bot, Camera, FileText, Folder, Image, MapPin, PartyPopper, Phone, Search, User, Mail, DollarSign, CheckCircle, ShieldAlert } from "lucide-react";
 
 export default function PublicHome() {
   const { allPosts, loading } = useContext(PostsContext);
@@ -94,7 +95,7 @@ export default function PublicHome() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white text-gray-800 p-8 rounded-xl shadow-lg">
-              <div className="text-4xl mb-4">📸</div>
+              <Camera className="w-12 h-12 mb-4 text-blue-600" />
               <h3 className="text-xl font-semibold mb-2">
                 1. Report with Photo
               </h3>
@@ -104,7 +105,7 @@ export default function PublicHome() {
             </div>
 
             <div className="bg-green-600 text-white p-8 rounded-xl shadow-lg">
-              <div className="text-4xl mb-4">🤖</div>
+              <Bot className="w-12 h-12 mb-4" />
               <h3 className="text-xl font-semibold mb-2">
                 2. AI Matches Items
               </h3>
@@ -114,7 +115,7 @@ export default function PublicHome() {
             </div>
 
             <div className="bg-white text-gray-800 p-8 rounded-xl shadow-lg">
-              <div className="text-4xl mb-4">🎉</div>
+              <PartyPopper className="w-12 h-12 mb-4 text-emerald-600" />
               <h3 className="text-xl font-semibold mb-2">
                 3. Secure Recovery
               </h3>
@@ -163,9 +164,9 @@ export default function PublicHome() {
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-2xl shadow-lg">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-3xl font-bold mb-2">🔍 Lost Items - Help Us Find Them!</h3>
+                      <h3 className="text-3xl font-bold mb-2 flex items-center gap-2"><Search className="w-8 h-8" /> Lost Items - Help Us Find Them!</h3>
                       <p className="text-blue-100 text-lg">
-                        These items have been reported lost by their owners. Items with <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-500/30"><svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M13 7H7v6h6V7z" /><path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" /></svg>AI</span> badges are automatically analyzed by our AI system to find matches with found items.
+                        These items have been reported lost by their owners. Items with <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-500/30"><Bot className="w-3 h-3 mr-1" />AI</span> badges are automatically analyzed by our AI system to find matches with found items.
                       </p>
                     </div>
                     <button
@@ -208,16 +209,14 @@ export default function PublicHome() {
                             </>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <svg className="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
+                              <Image className="w-12 h-12 text-blue-300" />
                             </div>
                           )}
                           
                           {/* Status Badge */}
                           <div className="absolute top-2 right-2">
-                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-red-500 to-rose-600 text-white">
-                              🔍 LOST
+                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-red-500 to-rose-600 text-white flex items-center gap-1">
+                              <Search className="w-3 h-3" /> LOST
                             </span>
                           </div>
 
@@ -225,10 +224,7 @@ export default function PublicHome() {
                           {imageUrl && (
                             <div className="absolute top-2 left-2">
                               <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M13 7H7v6h6V7z" />
-                                  <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
-                                </svg>
+                                <Bot className="w-3 h-3" />
                                 AI
                               </span>
                             </div>
@@ -244,9 +240,7 @@ export default function PublicHome() {
                             {/* Category */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                                </svg>
+                                <Folder className="w-3 h-3" />
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs text-gray-500">Category</p>
@@ -257,9 +251,7 @@ export default function PublicHome() {
                             {/* Location */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-sky-100 text-sky-600 mr-2 flex-shrink-0">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                </svg>
+                                <MapPin className="w-3 h-3" />
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-semibold text-gray-800 truncate">{item.district}</p>
@@ -270,9 +262,7 @@ export default function PublicHome() {
                             {additionalInfo.owner_name && (
                               <div className="flex items-center bg-gradient-to-r from-blue-50 to-sky-50 p-2 rounded-lg border border-blue-200">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-500 text-white mr-2 flex-shrink-0">
-                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                  </svg>
+                                  <User className="w-3 h-3" />
                                 </span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-blue-700">Owner</p>
@@ -285,9 +275,7 @@ export default function PublicHome() {
                             {(item.contact_phone || additionalInfo.contact_phone) && (
                               <div className="flex items-center">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                  </svg>
+                                  <Phone className="w-3 h-3" />
                                 </span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-semibold text-gray-800 truncate">{item.contact_phone || additionalInfo.contact_phone}</p>
@@ -300,16 +288,19 @@ export default function PublicHome() {
                           <div className="mt-2 pt-2 border-t border-gray-200">
                             <button
                               onClick={() => handleContactClick(item)}
-                              className="w-full mb-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-blue-700 hover:to-blue-800 transition shadow-md"
+                              className="w-full mb-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-blue-700 hover:to-blue-800 transition shadow-md flex items-center justify-center gap-2"
                             >
-                              📧 Contact Owner
+                              <Mail className="w-4 h-4" /> Contact Owner
                             </button>
 
                             {/* Reward */}
                             {item.reward_amount && item.reward_amount > 0 && (
-                              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-2 rounded-lg border border-yellow-200">
-                                <p className="text-xs text-yellow-700 font-medium">💰 Reward</p>
-                                <p className="text-sm font-bold text-yellow-900">{item.reward_amount.toLocaleString()} RWF</p>
+                              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-2 rounded-lg border border-yellow-200 flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-yellow-700 flex-shrink-0" />
+                                <div>
+                                  <p className="text-xs text-yellow-700 font-medium">Reward</p>
+                                  <p className="text-sm font-bold text-yellow-900">{item.reward_amount.toLocaleString()} RWF</p>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -327,9 +318,9 @@ export default function PublicHome() {
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-6 rounded-2xl shadow-lg">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-3xl font-bold mb-2">✓ Found Items - Claim What's Yours!</h3>
+                      <h3 className="text-3xl font-bold mb-2 flex items-center gap-2"><CheckCircle className="w-8 h-8" /> Found Items - Claim What's Yours!</h3>
                       <p className="text-emerald-100 text-lg">
-                        These items have been found and reported by honest citizens. Items with <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-500/30"><svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M13 7H7v6h6V7z" /><path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" /></svg>AI</span> badges are automatically analyzed by our AI system to match with lost items.
+                        These items have been found and reported by honest citizens. Items with <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-500/30"><Bot className="w-3 h-3 mr-1" />AI</span> badges are automatically analyzed by our AI system to match with lost items.
                       </p>
                     </div>
                     <button
@@ -372,16 +363,14 @@ export default function PublicHome() {
                             </>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <svg className="w-12 h-12 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
+                              <Image className="w-12 h-12 text-emerald-300" />
                             </div>
                           )}
                           
                           {/* Status Badge */}
                           <div className="absolute top-2 right-2">
-                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
-                              ✓ FOUND
+                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> FOUND
                             </span>
                           </div>
 
@@ -389,10 +378,7 @@ export default function PublicHome() {
                           {imageUrl && (
                             <div className="absolute top-2 left-2">
                               <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M13 7H7v6h6V7z" />
-                                  <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
-                                </svg>
+                                <Bot className="w-3 h-3" />
                                 AI
                               </span>
                             </div>
@@ -408,9 +394,7 @@ export default function PublicHome() {
                             {/* Category */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 mr-2 flex-shrink-0">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                                </svg>
+                                <Folder className="w-3 h-3" />
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs text-gray-500">Category</p>
@@ -421,9 +405,7 @@ export default function PublicHome() {
                             {/* Location */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-teal-100 text-teal-600 mr-2 flex-shrink-0">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                </svg>
+                                <MapPin className="w-3 h-3" />
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-semibold text-gray-800 truncate">{item.district}</p>
@@ -434,9 +416,7 @@ export default function PublicHome() {
                             {item.contact_name && (
                               <div className="flex items-center bg-gradient-to-r from-emerald-50 to-teal-50 p-2 rounded-lg border border-emerald-200">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-500 text-white mr-2 flex-shrink-0">
-                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                  </svg>
+                                  <User className="w-3 h-3" />
                                 </span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-emerald-700">Found By</p>
@@ -449,9 +429,7 @@ export default function PublicHome() {
                             {item.contact_phone && (
                               <div className="flex items-center">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                  </svg>
+                                  <Phone className="w-3 h-3" />
                                 </span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-semibold text-gray-800 truncate">{item.contact_phone}</p>
@@ -464,15 +442,16 @@ export default function PublicHome() {
                           <div className="mt-2 pt-2 border-t border-gray-200">
                             <button
                               onClick={() => handleContactClick(item)}
-                              className="w-full mb-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-emerald-700 hover:to-teal-600 transition shadow-md"
+                              className="w-full mb-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-emerald-700 hover:to-teal-600 transition shadow-md flex items-center justify-center gap-2"
                             >
-                              📧 Contact Finder
+                              <Mail className="w-4 h-4" /> Contact Finder
                             </button>
 
                             {/* Police Upload Badge */}
                             {item.is_police_upload && (
-                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-2 rounded-lg border border-blue-200">
-                                <p className="text-xs text-blue-700 font-medium text-center">👮 Police Upload</p>
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-2 rounded-lg border border-blue-200 flex items-center gap-2 justify-center">
+                                <ShieldAlert className="w-4 h-4 text-blue-700" />
+                                <p className="text-xs text-blue-700 font-medium">Police Upload</p>
                               </div>
                             )}
                           </div>
