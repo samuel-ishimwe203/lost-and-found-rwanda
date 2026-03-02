@@ -1,13 +1,13 @@
 import { query } from '../db/index.js';
 import { logAudit } from '../services/audit.service.js';
-import { checkForMatches } from '../services/matching.service.js';
+import { checkForMatches, checkForDuplicatesInSection } from '../services/matching.service.js';
 
 // Post official document/item found at police station
 export const postOfficialDocument = async (req, res) => {
   try {
     const { 
       item_type, category, description, location_found, district, 
-      date_found, image_url, additional_info 
+      date_found, additional_info 
     } = req.body;
     const userId = req.user.id;
 
@@ -27,13 +27,46 @@ export const postOfficialDocument = async (req, res) => {
       });
     }
 
+    // Capture the uploaded image URL from multer
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // Parse additional_info safely
+    let parsedAdditionalInfo = additional_info;
+    if (typeof additional_info === 'string') {
+      try {
+        parsedAdditionalInfo = JSON.parse(additional_info);
+      } catch (e) {
+        parsedAdditionalInfo = {};
+      }
+    }
+
+    // AI Check: Check for duplicates to avoid spam/re-uploads
+    const duplicateCheck = await checkForDuplicatesInSection(
+      { category, image_url, item_type, district },
+      'found'
+    );
+
+    if (duplicateCheck && duplicateCheck.isDuplicate) {
+      return res.status(409).json({
+        success: false,
+        message: 'Duplicate item detected! ' + duplicateCheck.message,
+        error: 'DUPLICATE_ITEM',
+        existingItem: {
+          id: duplicateCheck.existingItem.id,
+          item_type: duplicateCheck.existingItem.item_type,
+          category: duplicateCheck.existingItem.category,
+          district: duplicateCheck.existingItem.district
+        }
+      });
+    }
+
     // Create found item with police flag
     const result = await query(
       `INSERT INTO found_items 
        (user_id, item_type, category, description, location_found, district, date_found, is_police_upload, image_url, additional_info) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
        RETURNING *`,
-      [userId, item_type, category, description, location_found, district, date_found, true, image_url, additional_info ? JSON.stringify(additional_info) : null]
+      [userId, item_type, category, description, location_found, district, date_found, true, image_url, parsedAdditionalInfo ? JSON.stringify(parsedAdditionalInfo) : null]
     );
 
     const foundItem = result.rows[0];
@@ -49,7 +82,7 @@ export const postOfficialDocument = async (req, res) => {
       userAgent: req.get('user-agent')
     });
 
-    // Check for potential matches
+    // AI Check: Trigger AI/Database Matching Service immediately
     await checkForMatches(foundItem.id, 'found');
 
     res.status(201).json({

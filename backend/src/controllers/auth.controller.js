@@ -150,41 +150,16 @@ export const login = async (req, res) => {
 
     // Check if user is active
     if (!user.is_active) {
-      // Special message for police pending verification
-      if (user.role === 'police') {
-        return res.status(403).json({ 
-          success: false,
-          message: 'Your police account is pending admin verification. Please check your email for updates.' 
-        });
-      }
       return res.status(403).json({ 
         success: false,
         message: 'Your account has been deactivated. Please contact admin.' 
       });
     }
 
-    // For police officers, verify that their profile is verified
-    if (user.role === 'police') {
-      const policeCheckResult = await query(
-        'SELECT is_verified FROM police_profiles WHERE user_id = $1',
-        [user.id]
-      );
-
-      if (policeCheckResult.rows.length === 0) {
-        return res.status(403).json({ 
-          success: false,
-          message: 'Police profile not found. Please contact admin.' 
-        });
-      }
-
-      const policeProfile = policeCheckResult.rows[0];
-      if (!policeProfile.is_verified) {
-        return res.status(403).json({ 
-          success: false,
-          message: 'Your police profile is pending admin verification. Your official documents are being reviewed.' 
-        });
-      }
-    }
+    // ==============================================================
+    // REMOVED THE POLICE VERIFICATION BLOCK HERE
+    // Police accounts created by Admin are instantly active and can log in
+    // ==============================================================
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -301,18 +276,6 @@ export const updateProfile = async (req, res) => {
     const { full_name, phone_number, language_preference, notification_preferences, bio, district } = req.body;
     const userId = req.user.id;
 
-    // Debug log incoming payload and file
-    console.log('updateProfile payload:', {
-      full_name,
-      phone_number,
-      language_preference,
-      has_notification_preferences: !!notification_preferences,
-      bio_type: typeof bio,
-      district,
-      has_file: !!req.file,
-      file_name: req.file?.filename
-    });
-
     const updates = [];
     const values = [];
     let paramCount = 1;
@@ -363,8 +326,6 @@ export const updateProfile = async (req, res) => {
     updates.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(userId);
 
-    console.log('updateProfile updates:', updates, 'values:', values);
-
     const result = await query(
       `UPDATE users SET ${updates.join(', ')} 
        WHERE id = $${paramCount} 
@@ -397,7 +358,6 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error.message);
-    console.error('Stack:', error.stack);
     res.status(500).json({ 
       success: false,
       message: 'Server error updating profile',
@@ -470,143 +430,9 @@ export const changePassword = async (req, res) => {
 // Register new police officer
 export const registerPolice = async (req, res) => {
   try {
-    const { 
-      email, password, full_name, phone_number, badge_number, rank, 
-      police_station, district, department, email_official, 
-      phone_official, document_url, language_preference 
-    } = req.body;
-
-    // Validate required fields
-    if (!email || !password || !full_name || !badge_number || !rank || !police_station || !district || !document_url) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Please provide all required fields: email, password, full_name, badge_number, rank, police_station, district, document_url' 
-      });
-    }
-
-    // Validate email format
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Please provide a valid email address' 
-      });
-    }
-
-    // Validate password strength
-    if (password.length < 6) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Password must be at least 6 characters long' 
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'This email is already registered. Please use a different email address.' 
-      });
-    }
-
-    // Check if badge number already exists
-    const existingBadge = await query('SELECT id FROM police_profiles WHERE badge_number = $1', [badge_number]);
-    if (existingBadge.rows.length > 0) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'This badge number is already registered in the system.' 
-      });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user account (initially inactive, pending admin approval)
-    const userResult = await query(
-      `INSERT INTO users (email, password, full_name, phone_number, role, language_preference, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING id, email, full_name, phone_number, role, created_at`,
-      [email, hashedPassword, full_name, phone_number, 'police', language_preference || 'en', false]
-    );
-
-    const user = userResult.rows[0];
-
-    // Create police profile with pending status
-    const profileResult = await query(
-      `INSERT INTO police_profiles 
-       (user_id, badge_number, rank, police_station, district, department, email_official, phone_official, document_url, is_verified) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-       RETURNING *`,
-      [user.id, badge_number, rank, police_station, district, department || null, email_official || null, phone_official || phone_number, document_url, false]
-    );
-
-    const profile = profileResult.rows[0];
-
-    // Get all admin users to send them notification
-    try {
-      const adminsResult = await query('SELECT id, email FROM users WHERE role = $1 AND is_active = $2', ['admin', true]);
-      
-      // Send notification to all admins
-      if (adminsResult.rows.length > 0) {
-        const adminIds = adminsResult.rows.map(admin => admin.id);
-        
-        for (const adminId of adminIds) {
-          try {
-            await query(
-              `INSERT INTO messages (sender_id, receiver_id, subject, message, is_read, created_at)
-               VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
-              [
-                user.id,
-                adminId,
-                'New Police Registration Pending Approval',
-                `New police officer registration request from ${full_name} (Badge: ${badge_number}) at ${police_station}, ${district}. Please review the official document and approve or reject this registration.`,
-                false
-              ]
-            );
-          } catch (msgError) {
-            console.error('Error sending notification to admin:', msgError);
-            // Continue even if notification fails
-          }
-        }
-      }
-    } catch (adminsError) {
-      console.error('Error fetching admins:', adminsError);
-      // Continue even if admin notification fails
-    }
-
-    // Log audit
-    await logAudit({
-      userId: user.id,
-      action: 'POLICE_REGISTRATION',
-      entityType: 'police_profile',
-      entityId: profile.id,
-      details: { badge_number, rank, police_station, district },
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent')
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Police registration submitted successfully. Awaiting admin approval.',
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          role: user.role,
-          is_active: user.is_active
-        },
-        profile: {
-          badge_number: profile.badge_number,
-          rank: profile.rank,
-          police_station: profile.police_station,
-          district: profile.district,
-          is_verified: profile.is_verified
-        },
-        message: 'Your registration is pending admin verification. You will receive an email once your documents are verified.'
-      }
+    return res.status(403).json({
+      success: false,
+      message: 'Police self-registration is disabled. Please contact the administrator to have your account created.'
     });
   } catch (error) {
     console.error('Police registration error:', error);

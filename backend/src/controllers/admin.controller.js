@@ -79,10 +79,10 @@ export const createOfficialAccount = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
+    // Create user - ADDED created_at and updated_at explicitly to fix NOT NULL constraint
     const result = await query(
-      `INSERT INTO users (email, password, full_name, phone_number, role, created_by, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (email, password, full_name, phone_number, role, created_by, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING id, email, full_name, phone_number, role, created_at`,
       [email, hashedPassword, full_name, phone_number, role, adminId, true]
     );
