@@ -8,6 +8,7 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
   const [role, setRole] = useState("loser");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetMethod, setResetMethod] = useState("email");
   const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -28,16 +29,8 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
     e.preventDefault();
     setError("");
     
-    // Validate fields
     if (!loginData.email || !loginData.password) {
       setError("Please enter both email and password.");
-      return;
-    }
-    
-    // Validate email format
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(loginData.email)) {
-      setError("Please provide a valid email address.");
       return;
     }
     
@@ -70,44 +63,13 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-     
-    
     setError("");
     
-    // Validate all fields are filled
-    if (!registerData.full_name || !registerData.email || !registerData.password || !registerData.confirmPassword) {
+    if (!registerData.full_name || !registerData.email || !registerData.password || !registerData.confirmPassword || !registerData.phone_number) {
       setError("Please fill in all required fields.");
       return;
     }
     
-    // Validate full name
-    if (registerData.full_name.trim().length < 2) {
-      setError("Please enter your full name (at least 2 characters).");
-      return;
-    }
-    
-    // Validate email format
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(registerData.email)) {
-      setError("Please provide a valid email address (e.g., name@gmail.com).");
-      return;
-    }
-    
-    // Validate email domain
-    const validDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'protonmail.com', 'lostandfound.rw'];
-    const emailDomain = registerData.email.split('@')[1]?.toLowerCase();
-    if (!validDomains.includes(emailDomain)) {
-      setError("Please use a valid email provider (Gmail, Yahoo, Outlook, Hotmail, iCloud, ProtonMail).");
-      return;
-    }
-    
-    // Validate password length
-    if (registerData.password.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      return;
-    }
-    
-    // Validate passwords match
     if (registerData.password !== registerData.confirmPassword) {
       setError("Passwords do not match. Please check and try again.");
       return;
@@ -117,20 +79,24 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
     
     try {
       const userData = {
-        email: registerData.email,
-        password: registerData.password,
         full_name: registerData.full_name,
+        email: registerData.email,
         phone_number: registerData.phone_number,
-        role: role,
-        language_preference: 'en'
+        password: registerData.password,
+        role: role
       };
 
       await register(userData);
+      
+      // On success, switch to login view and show a success message
       setCurrentMode("login");
+      alert("Registration successful! Please log in.");
+      
     } catch (err) {
       console.error('Registration error:', err);
-      console.error('Error response:', err.response);
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      // Display the exact error message from the backend if available
+      const backendError = err.response?.data?.error || err.response?.data?.message || err.response?.data?.details;
+      setError(backendError || 'Unable to complete registration. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -152,17 +118,20 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
 
         <h2 className="text-2xl font-bold text-center text-green-700 mb-2">
           {currentMode === "login" && "Welcome Back"}
-          {currentMode === "register" && "Create Account"}
+          {currentMode === "register" && "Create an Account"}
+          {currentMode === "forgot" && "Reset Password"}
         </h2>
 
         <p className="text-center text-gray-500 mb-6">
           {currentMode === "login" && "Login to continue"}
-          {currentMode === "register" && "Register to report or find items"}
+          {currentMode === "register" && "Join Rwanda's trusted lost & found network"}
+          {currentMode === "forgot" && "We'll send you a reset code"}
         </p>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4 text-sm flex gap-2 items-start">
+            <span className="mt-0.5">⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
@@ -170,10 +139,10 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <input
               type="email"
-              placeholder="Email"
+              placeholder="Email Address"
               value={loginData.email}
               onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-              className="w-full border px-4 py-3 rounded-lg"
+              className="w-full border px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               required
               disabled={loading}
             />
@@ -183,33 +152,37 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
               placeholder="Password"
               value={loginData.password}
               onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-              className="w-full border px-4 py-3 rounded-lg"
+              className="w-full border px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
 
             <button
               type="submit"
-              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700"
+              disabled={loading}
+              className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
             >
-              Login
+              {loading ? "Logging in..." : "Log in"}
             </button>
 
-            <div className="flex justify-between text-sm mt-2">
+            <div className="flex justify-between text-sm mt-4">
               <button
                 type="button"
                 onClick={() => setCurrentMode("forgot")}
-                className="text-green-700 font-semibold"
+                className="text-gray-500 hover:text-green-700"
               >
                 Forgot password?
               </button>
 
-              <button
-                type="button"
-                onClick={() => setCurrentMode("register")}
-                className="text-green-700 font-semibold"
-              >
-                Register
-              </button>
+              <span className="text-gray-500">
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setCurrentMode("register")}
+                  className="text-green-600 font-semibold hover:underline"
+                >
+                  Sign up
+                </button>
+              </span>
             </div>
           </form>
         )}
@@ -218,113 +191,130 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
         {currentMode === "register" && (
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
 
-            {/* 🔹 ROLE SELECTION (NEW, SIMPLE, CLEAN) */}
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-600">
-                Register as:
+              <p className="text-sm font-medium text-gray-700">
+                I want to...
               </p>
 
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole("loser")}
-                  className={`px-4 py-2 rounded-lg border ${
+                  className={`px-4 py-3 rounded-lg border text-sm font-medium transition ${
                     role === "loser"
-                      ? "bg-green-600 text-white"
-                      : "bg-white"
+                      ? "bg-green-50 border-green-500 text-green-700"
+                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  I Lost an Item
+                  Report Lost Item
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setRole("finder")}
-                  className={`px-4 py-2 rounded-lg border ${
+                  className={`px-4 py-3 rounded-lg border text-sm font-medium transition flex items-center justify-center gap-2 ${
                     role === "finder"
-                      ? "bg-green-600 text-white"
-                      : "bg-white"
+                      ? "bg-green-50 border-green-500 text-green-700"
+                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  I Found an Item
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    navigate('/register-police');
-                  }}
-                  className="col-span-2 px-4 py-2 rounded-lg border bg-blue-600 text-white hover:bg-blue-700 transition"
-                >
-                  👮 I'm a Police Officer
+                  {role === "finder" && <span>✓</span>}
+                  Post Found Item
                 </button>
               </div>
             </div>
 
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={registerData.full_name}
-              onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
-              className="w-full border px-4 py-3 rounded-lg"
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Full Name</label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">👤</span>
+                <input
+                  type="text"
+                  placeholder="Your Name"
+                  value={registerData.full_name}
+                  onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                  className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                />
+              </div>
+            </div>
 
-            <input
-              type="email"
-              placeholder="Email"
-              value={registerData.email}
-              onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-              className="w-full border px-4 py-3 rounded-lg"
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Phone Number</label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">📞</span>
+                <input
+                  type="tel"
+                  placeholder="07..."
+                  value={registerData.phone_number}
+                  onChange={(e) => setRegisterData({ ...registerData, phone_number: e.target.value })}
+                  className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-blue-50"
+                  required
+                />
+              </div>
+            </div>
 
-            <input
-              type="tel"
-              placeholder="Phone Number (e.g., +250788123456)"
-              value={registerData.phone_number}
-              onChange={(e) => setRegisterData({ ...registerData, phone_number: e.target.value })}
-              className="w-full border px-4 py-3 rounded-lg"
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Email Address</label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">✉️</span>
+                <input
+                  type="email"
+                  placeholder="name@example.com"
+                  value={registerData.email}
+                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                  className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                />
+              </div>
+            </div>
 
-            <input
-              type="password"
-              placeholder="Password (min 6 characters)"
-              value={registerData.password}
-              onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-              className="w-full border px-4 py-3 rounded-lg"
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Password</label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">🔒</span>
+                <input
+                  type="password"
+                  placeholder="••••••"
+                  value={registerData.password}
+                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                  className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                />
+              </div>
+            </div>
 
-            <input
-              type="password"
-              placeholder="Confirm Password"
-              value={registerData.confirmPassword}
-              onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-              className="w-full border px-4 py-3 rounded-lg"
-              required
-            />
-
-            {/* Hidden role field (for backend later) */}
-            <input type="hidden" value={role} />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Confirm Password</label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-400">🔒</span>
+                <input
+                  type="password"
+                  placeholder="••••••"
+                  value={registerData.confirmPassword}
+                  onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                  className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                />
+              </div>
+            </div>
 
             <button
               type="submit"
-              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700"
+              disabled={loading}
+              className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition mt-2 disabled:opacity-50"
             >
-              Register
+              {loading ? "Creating..." : "Create Account"}
             </button>
 
-            <div className="text-center text-sm">
+            <div className="text-center text-sm text-gray-500 pt-4 border-t mt-4">
               Already have an account?{" "}
               <button
                 type="button"
                 onClick={() => setCurrentMode("login")}
-                className="text-green-700 font-semibold"
+                className="text-green-600 font-semibold hover:underline"
               >
-                Login
+                Log in here
               </button>
             </div>
           </form>
@@ -333,8 +323,6 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
         {/* ================= FORGOT PASSWORD ================= */}
         {currentMode === "forgot" && (
           <form className="space-y-4">
-
-            {/* Method switch */}
             <div className="flex gap-4 justify-center mb-2">
               <button
                 type="button"
@@ -377,17 +365,17 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
 
             <button
               type="submit"
-              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700"
+              className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700"
             >
               Send Reset Code
             </button>
 
-            <div className="text-center text-sm">
+            <div className="text-center text-sm text-gray-500 pt-4">
               Remembered your password?{" "}
               <button
                 type="button"
                 onClick={() => setCurrentMode("login")}
-                className="text-green-700 font-semibold"
+                className="text-green-600 font-semibold"
               >
                 Back to Login
               </button>

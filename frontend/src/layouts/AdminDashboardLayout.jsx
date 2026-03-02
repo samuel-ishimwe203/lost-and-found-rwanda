@@ -1,14 +1,23 @@
-import { NavLink, Outlet } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 export default function AdminDashboardLayout() {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+
   const navLinks = [
     { path: "/admin-dashboard", label: "Dashboard", end: true },
     { path: "/admin-dashboard/system-stats", label: "System Stats" },
     { path: "/admin-dashboard/manage-items", label: "Manage Items" },
     { path: "/admin-dashboard/manage-users", label: "Manage Users" },
-    { path: "/admin-dashboard/manage-police-registrations", label: "👮 Police Registrations" },
     { path: "/admin-dashboard/logs", label: "Activity Logs" },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-green-100">
@@ -46,54 +55,40 @@ export default function AdminDashboardLayout() {
           </nav>
         </aside>
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-auto p-8 space-y-8">
-          <Outlet />
-        </main>
+        {/* MAIN CONTENT AREA */}
+        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+          {/* HEADER DROPDOWN */}
+          <header className="bg-white shadow-sm border-b border-green-200 px-8 py-4 flex justify-end items-center z-10">
+            <div className="relative">
+              <button 
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center space-x-2 bg-green-50 hover:bg-green-100 text-green-800 px-4 py-2 rounded-full font-semibold transition border border-green-200"
+              >
+                <span>Admin Profile</span>
+                <span className="text-xs">▼</span>
+              </button>
+              
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100 mb-1">
+                    <p className="text-sm font-bold text-gray-800">Administrator</p>
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition font-medium"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-auto p-8 space-y-8">
+            <Outlet />
+          </main>
+        </div>
       </div>
-
-      {/* FOOTER */}
-      <footer className="bg-gray-900 border-t border-gray-700 text-gray-300 py-8 px-6 mt-auto">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-8">
-          <div>
-            <h4 className="font-bold text-white mb-3">About Us</h4>
-            <p className="text-sm">
-              Lost & Found Rwanda is a national platform helping citizens recover
-              lost items efficiently and safely.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white mb-3">Admin Features</h4>
-            <ul className="text-sm space-y-2">
-              <li className="hover:text-green-300 transition cursor-pointer">Dashboard</li>
-              <li className="hover:text-green-300 transition cursor-pointer">System Stats</li>
-              <li className="hover:text-green-300 transition cursor-pointer">Manage Items</li>
-              <li className="hover:text-green-300 transition cursor-pointer">Manage Users</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white mb-3">Support</h4>
-            <ul className="text-sm space-y-2">
-              <li className="hover:text-green-300 transition cursor-pointer">Help Center</li>
-              <li className="hover:text-green-300 transition cursor-pointer">Contact Us</li>
-              <li className="hover:text-green-300 transition cursor-pointer">FAQ</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white mb-3">Contact</h4>
-            <p className="text-sm mb-2">📍 Kigali, Rwanda</p>
-            <p className="text-sm mb-2">✉️ admin@lostfound.rw</p>
-            <p className="text-sm">📱 +250 XXX XXX XXX</p>
-          </div>
-        </div>
-
-        <div className="border-t border-blue-500/40 mt-8 pt-6 text-center text-sm text-blue-200">
-          <p>© {new Date().getFullYear()} Lost & Found Rwanda. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

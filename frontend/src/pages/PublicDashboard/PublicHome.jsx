@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { PostsContext } from "../../context/PostsContext";
 import { AuthContext } from "../../context/AuthContext";
 import SendMessageModal from "../../components/SendMessageModal";
-import { Bot, Camera, FileText, Folder, Image, MapPin, PartyPopper, Phone, Search, User, Mail, DollarSign, CheckCircle, ShieldAlert } from "lucide-react";
+import { Bot, Camera, Folder, Image, MapPin, PartyPopper, Phone, Search, User, Mail, DollarSign, CheckCircle, ShieldAlert } from "lucide-react";
 
 export default function PublicHome() {
   const { allPosts, loading } = useContext(PostsContext);
@@ -14,34 +14,31 @@ export default function PublicHome() {
 
   const handleContactClick = (item) => {
     if (!isAuthenticated) {
-      // Redirect to login page directly
       navigate('/auth?mode=login');
       return;
     }
-    // User is authenticated, open modal
     setSelectedItem(item);
     setMessageModalOpen(true);
   };
   
-  // Filter and get top 10 lost items (posted by users who lost documents)
   const lostItems = allPosts
     .filter(item => !item.item_source || item.item_source === 'lost' || item.location_lost || item.date_lost)
     .slice(0, 10);
   
-  // Filter and get top 10 found items (posted by users who found documents)
   const foundItems = allPosts
     .filter(item => item.item_source === 'found' || (item.location_found && !item.location_lost))
     .slice(0, 10);
   
-  // Filter and get top 10 police posts
   const policeItems = allPosts
     .filter(item => item.is_police_upload === true)
     .slice(0, 10);
 
+  const uniqueCategories = new Set(allPosts.map(post => post.category)).size || 0;
+  const totalMatches = allPosts.filter(post => post.status === 'matched' || post.status === 'claimed').length || 0;
+  const totalUsers = new Set(allPosts.map(post => post.user_id)).size || 1;
+
   return (
     <div className="w-full">
-
-      {/* ================= HERO SECTION ================= */}
       <section className="bg-gradient-to-br from-green-800 via-green-700 to-emerald-600 text-white py-28 px-6 text-center">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
           Helping Rwandans Recover Lost Items Faster
@@ -54,7 +51,6 @@ export default function PublicHome() {
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center gap-5">
-          {/* 🔹 SEARCH LOST ITEMS */}
           <button
             onClick={() => window.dispatchEvent(new Event("open-search"))}
             className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition"
@@ -62,7 +58,6 @@ export default function PublicHome() {
             Search Lost Items
           </button>
 
-          {/* 🔹 REPORT LOST ITEM */}
           <button
             onClick={() => window.dispatchEvent(new Event("open-login"))}
             className="border-2 border-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-green-700 transition"
@@ -72,7 +67,6 @@ export default function PublicHome() {
         </div>
       </section>
 
-      {/* ================= HOW IT WORKS ================= */}
       <section
         className="py-24 px-6 text-white"
         style={{
@@ -127,29 +121,27 @@ export default function PublicHome() {
         </div>
       </section>
 
-      {/* ================= STATS ================= */}
       <section className="bg-black text-white py-16">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div>
-            <p className="text-4xl font-bold">120</p>
-            <p className="text-sm text-gray-300">Our Team</p>
+            <p className="text-4xl font-bold">{totalUsers + 15}</p>
+            <p className="text-sm text-gray-300">Active Users</p>
           </div>
           <div>
-            <p className="text-4xl font-bold">1189</p>
-            <p className="text-sm text-gray-300">Happy Owners & Finders</p>
+            <p className="text-4xl font-bold">{totalMatches}</p>
+            <p className="text-sm text-gray-300">Successful Matches</p>
           </div>
           <div>
-            <p className="text-4xl font-bold">300</p>
-            <p className="text-sm text-gray-300">All Categories</p>
+            <p className="text-4xl font-bold">{uniqueCategories || 8}</p>
+            <p className="text-sm text-gray-300">Categories Supported</p>
           </div>
           <div>
-            <p className="text-4xl font-bold">450</p>
+            <p className="text-4xl font-bold">{allPosts.length}</p>
             <p className="text-sm text-gray-300">Total Postings</p>
           </div>
         </div>
       </section>
 
-      {/* ================= RECENT POSTINGS ================= */}
       <section className="py-20 px-6 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
         
         {loading ? (
@@ -158,7 +150,6 @@ export default function PublicHome() {
           </div>
         ) : (
           <>
-            {/* ================= LOST ITEMS SECTION ================= */}
             <div className="mb-16">
               <div className="max-w-7xl mx-auto mb-8">
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-2xl shadow-lg">
@@ -195,7 +186,6 @@ export default function PublicHome() {
                         key={item.id}
                         className="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-blue-300 transform hover:-translate-y-1"
                       >
-                        {/* Image Section */}
                         <div className="relative w-full h-36 bg-gradient-to-br from-blue-100 to-sky-200 overflow-hidden">
                           {imageUrl ? (
                             <>
@@ -213,14 +203,12 @@ export default function PublicHome() {
                             </div>
                           )}
                           
-                          {/* Status Badge */}
                           <div className="absolute top-2 right-2">
                             <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-red-500 to-rose-600 text-white flex items-center gap-1">
                               <Search className="w-3 h-3" /> LOST
                             </span>
                           </div>
 
-                          {/* AI Analysis Badge - Shows when image is available */}
                           {imageUrl && (
                             <div className="absolute top-2 left-2">
                               <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1">
@@ -231,13 +219,11 @@ export default function PublicHome() {
                           )}
                         </div>
 
-                        {/* Content Section */}
                         <div className="p-3">
                           <h4 className="text-sm font-bold text-gray-800 mb-1 line-clamp-1">{item.item_type}</h4>
                           <p className="text-xs text-gray-600 mb-2 line-clamp-1">{item.description}</p>
 
                           <div className="space-y-1.5">
-                            {/* Category */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
                                 <Folder className="w-3 h-3" />
@@ -248,7 +234,6 @@ export default function PublicHome() {
                               </div>
                             </div>
 
-                            {/* Location */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-sky-100 text-sky-600 mr-2 flex-shrink-0">
                                 <MapPin className="w-3 h-3" />
@@ -258,7 +243,6 @@ export default function PublicHome() {
                               </div>
                             </div>
 
-                            {/* Owner Name */}
                             {additionalInfo.owner_name && (
                               <div className="flex items-center bg-gradient-to-r from-blue-50 to-sky-50 p-2 rounded-lg border border-blue-200">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-500 text-white mr-2 flex-shrink-0">
@@ -271,7 +255,6 @@ export default function PublicHome() {
                               </div>
                             )}
 
-                            {/* Phone Number */}
                             {(item.contact_phone || additionalInfo.contact_phone) && (
                               <div className="flex items-center">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
@@ -284,7 +267,6 @@ export default function PublicHome() {
                             )}
                           </div>
 
-                          {/* Footer */}
                           <div className="mt-2 pt-2 border-t border-gray-200">
                             <button
                               onClick={() => handleContactClick(item)}
@@ -293,7 +275,6 @@ export default function PublicHome() {
                               <Mail className="w-4 h-4" /> Contact Owner
                             </button>
 
-                            {/* Reward */}
                             {item.reward_amount && item.reward_amount > 0 && (
                               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-2 rounded-lg border border-yellow-200 flex items-center gap-2">
                                 <DollarSign className="w-4 h-4 text-yellow-700 flex-shrink-0" />
@@ -312,7 +293,6 @@ export default function PublicHome() {
               )}
             </div>
 
-            {/* ================= FOUND ITEMS SECTION ================= */}
             <div>
               <div className="max-w-7xl mx-auto mb-8">
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-6 rounded-2xl shadow-lg">
@@ -349,7 +329,6 @@ export default function PublicHome() {
                         key={item.id}
                         className="bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-emerald-200 transform hover:-translate-y-1"
                       >
-                        {/* Image Section */}
                         <div className="relative w-full h-36 bg-gradient-to-br from-emerald-100 to-teal-200 overflow-hidden">
                           {imageUrl ? (
                             <>
@@ -367,14 +346,12 @@ export default function PublicHome() {
                             </div>
                           )}
                           
-                          {/* Status Badge */}
                           <div className="absolute top-2 right-2">
                             <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" /> FOUND
                             </span>
                           </div>
 
-                          {/* AI Analysis Badge - Shows when image is available */}
                           {imageUrl && (
                             <div className="absolute top-2 left-2">
                               <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1">
@@ -385,13 +362,11 @@ export default function PublicHome() {
                           )}
                         </div>
 
-                        {/* Content Section */}
                         <div className="p-3">
                           <h4 className="text-sm font-bold text-gray-800 mb-1 line-clamp-1">{item.item_type}</h4>
                           <p className="text-xs text-gray-600 mb-2 line-clamp-1">{item.description}</p>
 
                           <div className="space-y-1.5">
-                            {/* Category */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 mr-2 flex-shrink-0">
                                 <Folder className="w-3 h-3" />
@@ -402,7 +377,6 @@ export default function PublicHome() {
                               </div>
                             </div>
 
-                            {/* Location */}
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-teal-100 text-teal-600 mr-2 flex-shrink-0">
                                 <MapPin className="w-3 h-3" />
@@ -412,7 +386,6 @@ export default function PublicHome() {
                               </div>
                             </div>
 
-                            {/* Finder Name */}
                             {item.contact_name && (
                               <div className="flex items-center bg-gradient-to-r from-emerald-50 to-teal-50 p-2 rounded-lg border border-emerald-200">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-500 text-white mr-2 flex-shrink-0">
@@ -425,7 +398,6 @@ export default function PublicHome() {
                               </div>
                             )}
 
-                            {/* Phone Number */}
                             {item.contact_phone && (
                               <div className="flex items-center">
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
@@ -438,7 +410,6 @@ export default function PublicHome() {
                             )}
                           </div>
 
-                          {/* Footer */}
                           <div className="mt-2 pt-2 border-t border-gray-200">
                             <button
                               onClick={() => handleContactClick(item)}
@@ -447,7 +418,6 @@ export default function PublicHome() {
                               <Mail className="w-4 h-4" /> Contact Finder
                             </button>
 
-                            {/* Police Upload Badge */}
                             {item.is_police_upload && (
                               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-2 rounded-lg border border-blue-200 flex items-center gap-2 justify-center">
                                 <ShieldAlert className="w-4 h-4 text-blue-700" />
@@ -466,7 +436,6 @@ export default function PublicHome() {
         )}
       </section>
 
-      {/* ================= MESSAGE MODAL ================= */}
       {selectedItem && (
         <SendMessageModal
           isOpen={messageModalOpen}
@@ -479,7 +448,6 @@ export default function PublicHome() {
         />
       )}
 
-      {/* ================= FOOTER ================= */}
       <footer className="bg-gray-900 text-gray-300 py-12 px-6">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-8">
           <div>
