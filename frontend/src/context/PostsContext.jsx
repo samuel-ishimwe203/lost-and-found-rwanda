@@ -14,8 +14,12 @@ export function PostsProvider({ children }) {
       // Backend returns lostItems and foundItems arrays
       const lostItems = response.data.data?.lostItems || [];
       const foundItems = response.data.data?.foundItems || [];
-      const items = [...lostItems, ...foundItems];
-      console.log(`📍 Fetched ${lostItems.length} lost + ${foundItems.length} found = ${items.length} total posts`);
+      let items = [...lostItems, ...foundItems];
+      // Log item statuses for debugging
+      console.log('Fetched item statuses:', items.map(i => ({ id: i.id, status: i.status })));
+      // Remove matched and claimed items
+      items = items.filter(item => item.status !== 'matched' && item.status !== 'claimed');
+      console.log(`📍 Fetched ${lostItems.length} lost + ${foundItems.length} found = ${items.length} total posts (filtered)`);
       setAllPosts(items);
     } catch (error) {
       console.error('Error loading posts:', error);

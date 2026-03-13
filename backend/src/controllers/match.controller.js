@@ -1,38 +1,39 @@
-import { getMatches, updateMatchStatus } from '../services/matching.service.js';
-import { query } from '../db/index.js';
+import { getMatches, updateMatchStatus } from '../services/matching.service.js'
+import { query } from '../db/index.js'
 
 // Get all matches for the authenticated user
 export const getMyMatches = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { status } = req.query;
+    const userId = req.user.id
+    const userRole = req.user.role
+    const { status, limit, offset } = req.query
 
     const matches = await getMatches({
       userId,
       userRole,
-      status
-    });
+      status,
+      limit,
+      offset
+    })
 
     res.status(200).json({
       success: true,
       data: { matches }
-    });
+    })
   } catch (error) {
-    console.error('Get matches error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error retrieving matches',
-      error: error.message 
-    });
+      error: error.message
+    })
   }
-};
+}
 
 // Get single match by ID
 export const getMatchById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
+    const { id } = req.params
+    const userId = req.user.id
 
     const result = await query(
       `SELECT m.*, 
@@ -47,119 +48,116 @@ export const getMatchById = async (req, res) => {
        JOIN users finder ON f.user_id = finder.id
        WHERE m.id = $1`,
       [id]
-    );
+    )
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Match not found' 
-      });
+        message: 'Match not found'
+      })
     }
 
-    const match = result.rows[0];
+    const match = result.rows[0]
 
     // Check authorization
     if (match.loser_id !== userId && match.finder_id !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         success: false,
-        message: 'You do not have permission to view this match' 
-      });
+        message: 'You do not have permission to view this match'
+      })
     }
 
     res.status(200).json({
       success: true,
       data: { match }
-    });
+    })
   } catch (error) {
-    console.error('Get match error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error retrieving match',
-      error: error.message 
-    });
+      error: error.message
+    })
   }
-};
+}
 
 // Confirm match (loser or finder confirms)
 export const confirmMatch = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { notes } = req.body;
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    const { id } = req.params
+    const { notes } = req.body
+    const userId = req.user.id
+    const userRole = req.user.role
 
-    const updatedMatch = await updateMatchStatus(id, 'confirmed', userId, userRole, notes);
+    const updatedMatch = await updateMatchStatus(id, 'confirmed', userId, userRole, notes)
 
     res.status(200).json({
       success: true,
       message: 'Match confirmed successfully',
       data: { match: updatedMatch }
-    });
+    })
   } catch (error) {
-    console.error('Confirm match error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: error.message 
-    });
+      message: error.message
+    })
   }
-};
+}
 
 // Reject match
 export const rejectMatch = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { notes } = req.body;
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    const { id } = req.params
+    const { notes } = req.body
+    const userId = req.user.id
+    const userRole = req.user.role
 
-    const updatedMatch = await updateMatchStatus(id, 'rejected', userId, userRole, notes);
+    const updatedMatch = await updateMatchStatus(id, 'rejected', userId, userRole, notes)
 
     // Reactivate items
-    await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['active', updatedMatch.lost_item_id]);
-    await query('UPDATE found_items SET status = $1 WHERE id = $2', ['active', updatedMatch.found_item_id]);
+    if (updatedMatch) {
+      await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['active', updatedMatch.lost_item_id])
+      await query('UPDATE found_items SET status = $1 WHERE id = $2', ['active', updatedMatch.found_item_id])
+    }
 
     res.status(200).json({
       success: true,
       message: 'Match rejected',
       data: { match: updatedMatch }
-    });
+    })
   } catch (error) {
-    console.error('Reject match error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: error.message 
-    });
+      message: error.message
+    })
   }
-};
+}
 
 // Complete match (mark as returned/completed)
 export const completeMatch = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { notes, reward_paid } = req.body;
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    const { id } = req.params
+    const { notes, reward_paid } = req.body
+    const userId = req.user.id
+    const userRole = req.user.role
 
-    const updatedMatch = await updateMatchStatus(id, 'completed', userId, userRole, notes);
+    const updatedMatch = await updateMatchStatus(id, 'completed', userId, userRole, notes)
 
-    // Update reward paid status if provided
     if (reward_paid !== undefined) {
       await query(
         'UPDATE matches SET reward_paid = $1 WHERE id = $2',
         [reward_paid, id]
-      );
+      )
     }
 
     res.status(200).json({
       success: true,
       message: 'Match completed successfully',
       data: { match: updatedMatch }
-    });
+    })
   } catch (error) {
-    console.error('Complete match error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: error.message 
-    });
+      message: error.message
+    })
   }
-};
+}

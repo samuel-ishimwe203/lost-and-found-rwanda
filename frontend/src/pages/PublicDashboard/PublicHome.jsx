@@ -22,11 +22,19 @@ export default function PublicHome() {
   };
   
   const lostItems = allPosts
-    .filter(item => !item.item_source || item.item_source === 'lost' || item.location_lost || item.date_lost)
+    .filter(item =>
+      (!item.item_source || item.item_source === 'lost' || item.location_lost || item.date_lost)
+      && item.status !== 'matched'
+      && item.status !== 'claimed'
+    )
     .slice(0, 10);
-  
+
   const foundItems = allPosts
-    .filter(item => item.item_source === 'found' || (item.location_found && !item.location_lost))
+    .filter(item =>
+      (item.item_source === 'found' || (item.location_found && !item.location_lost))
+      && item.status !== 'matched'
+      && item.status !== 'claimed'
+    )
     .slice(0, 10);
   
   const policeItems = allPosts
