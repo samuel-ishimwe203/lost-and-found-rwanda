@@ -19,8 +19,8 @@ export default function LostDashboardLayout() {
     
     // If on messages page, check more frequently
     const interval = location.pathname.includes('/messages') 
-      ? setInterval(fetchUnreadCount, 3000) // Every 3 seconds on messages page
-      : setInterval(fetchUnreadCount, 15000); // Every 15 seconds elsewhere
+      ? setInterval(fetchUnreadCount, 10000) // Every 10 seconds on messages page
+      : setInterval(fetchUnreadCount, 60000); // Every 60 seconds elsewhere
     
     return () => {
       clearInterval(interval);
@@ -55,7 +55,9 @@ export default function LostDashboardLayout() {
     { path: "/lost-dashboard", label: "Dashboard", end: true },
     { path: "/lost-dashboard/profile", label: "My Profile" },
     { path: "/lost-dashboard/my-postings", label: "My Postings" },
+    { path: "/lost-dashboard/matches", label: "My Matches" },
     { path: "/lost-dashboard/create-post", label: "Create Post" },
+    { path: "/lost-dashboard/document-scanner", label: "Document Scanner" },
     { path: "/lost-dashboard/messages", label: "Messages", badge: unreadCount },
   ];
 

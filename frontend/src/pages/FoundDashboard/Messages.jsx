@@ -18,7 +18,7 @@ export default function FoundMessages() {
 
   useEffect(() => {
     fetchConversations()
-    const interval = setInterval(fetchConversations, 5000)
+    const interval = setInterval(fetchConversations, 10000)
     return () => clearInterval(interval)
   }, [])
 

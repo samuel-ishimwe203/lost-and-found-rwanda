@@ -1,6 +1,7 @@
 import { query } from '../db/index.js'
 import { logAudit } from '../services/audit.service.js'
 import { checkForMatches, checkForDuplicatesInSection } from '../services/matching.service.js'
+import { runOcr } from '../services/ocr.service.js'
 
 export const postLostItem = async (req, res) => {
   try {
@@ -30,6 +31,24 @@ export const postLostItem = async (req, res) => {
       }
     }
 
+    // Run OCR on the uploaded image if available to auto-extract holder name / ID number
+    let ocrName = null
+    let ocrIdNumber = null
+    let rawText = null
+    if (req.file) {
+      try {
+        const ocrResult = await runOcr(req.file.path)
+        ocrName = ocrResult.name
+        ocrIdNumber = ocrResult.idNumber
+        rawText = ocrResult.rawText
+      } catch (e) {
+        console.error('OCR error while processing lost item:', e)
+      }
+    }
+
+    const holderName = ocrName || parsedAdditionalInfo?.owner_name || null
+    const idNumber = ocrIdNumber || parsedAdditionalInfo?.id_number || null
+
     const duplicateCheck = await checkForDuplicatesInSection(
       { category, image_url, item_type, district },
       'lost'
@@ -50,10 +69,24 @@ export const postLostItem = async (req, res) => {
     }
     const result = await query(
       `INSERT INTO lost_items
-       (user_id, item_type, category, description, location_lost, district, date_lost, reward_amount, image_url, additional_info)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       (user_id, item_type, category, description, location_lost, district, date_lost, reward_amount, image_url, additional_info, id_number, holder_name, text, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING *`,
-      [userId, item_type, category, description, location_lost, district, date_lost, reward_amount || 0, image_url, parsedAdditionalInfo ? JSON.stringify(parsedAdditionalInfo) : null]
+      [
+        userId,
+        item_type,
+        category,
+        description,
+        location_lost,
+        district,
+        date_lost,
+        reward_amount || 0,
+        image_url,
+        parsedAdditionalInfo ? JSON.stringify(parsedAdditionalInfo) : null,
+        idNumber,
+        holderName,
+        rawText
+      ]
     )
     const lostItem = result.rows[0]
     await logAudit({
@@ -66,10 +99,30 @@ export const postLostItem = async (req, res) => {
       userAgent: req.get('user-agent')
     })
     await checkForMatches(lostItem.id, 'lost')
+
+    // Quick direct-match check against found_items using ID number or holder name
+    let potentialMatches = []
+    if (idNumber || holderName) {
+      const params = ['active']
+      let sql = `SELECT f.*
+                 FROM found_items f
+                 WHERE f.status = $1`
+
+      if (idNumber) {
+        params.push(idNumber)
+        sql += ` AND f.id_number = $${params.length}`
+      } else if (holderName) {
+        params.push(holderName.toLowerCase())
+        sql += ` AND LOWER(f.holder_name) = $${params.length}`
+      }
+
+      const matchesResult = await query(sql, params)
+      potentialMatches = matchesResult.rows
+    }
     res.status(201).json({
       success: true,
       message: 'Lost item posted successfully',
-      data: { lostItem }
+      data: { lostItem, potentialMatches }
     })
   } catch (error) {
     res.status(500).json({
@@ -217,7 +270,13 @@ export const updateLostItem = async (req, res) => {
   try {
     const { id } = req.params
     const userId = req.user.id
-    const { item_type, category, description, location_lost, district, date_lost, reward_amount, status, image_url, additional_info } = req.body
+    const { item_type, category, description, location_lost, district, date_lost, reward_amount, status, image_url, additional_info, id_number, holder_name } = req.body
+    
+    // Handle image upload if present
+    let finalImageUrl = image_url
+    if (req.file) {
+      finalImageUrl = `/uploads/${req.file.filename}`
+    }
     const checkResult = await query('SELECT * FROM lost_items WHERE id = $1', [id])
     if (checkResult.rows.length === 0) {
       return res.status(404).json({
@@ -267,13 +326,21 @@ export const updateLostItem = async (req, res) => {
       updates.push(`status = $${paramCount++}`)
       values.push(status)
     }
-    if (image_url !== undefined) {
+    if (finalImageUrl !== undefined) {
       updates.push(`image_url = $${paramCount++}`)
-      values.push(image_url)
+      values.push(finalImageUrl)
+    }
+    if (id_number !== undefined) {
+      updates.push(`id_number = $${paramCount++}`)
+      values.push(id_number)
+    }
+    if (holder_name !== undefined) {
+      updates.push(`holder_name = $${paramCount++}`)
+      values.push(holder_name)
     }
     if (additional_info !== undefined) {
       updates.push(`additional_info = $${paramCount++}`)
-      values.push(JSON.stringify(additional_info))
+      values.push(typeof additional_info === 'string' ? additional_info : JSON.stringify(additional_info))
     }
     if (updates.length === 0) {
       return res.status(400).json({

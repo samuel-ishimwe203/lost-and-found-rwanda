@@ -7,6 +7,7 @@ export const getMyMatches = async (req, res) => {
     const userId = req.user.id
     const userRole = req.user.role
     const { status, limit, offset } = req.query
+    console.log(`[DEBUG] getMyMatches for User ${userId} (${userRole})`);
 
     const matches = await getMatches({
       userId,
@@ -159,5 +160,52 @@ export const completeMatch = async (req, res) => {
       success: false,
       message: error.message
     })
+  }
+}
+
+// Delete match
+export const deleteMatch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Check if match exists and get item IDs
+    const result = await query(
+      `SELECT m.lost_item_id, m.found_item_id, l.user_id as loser_id, f.user_id as finder_id 
+       FROM matches m
+       JOIN lost_items l ON m.lost_item_id = l.id
+       JOIN found_items f ON m.found_item_id = f.id
+       WHERE m.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Match not found' });
+    }
+
+    const match = result.rows[0];
+
+    // Authorization
+    if (match.loser_id !== userId && match.finder_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Reactivate items before deleting the match record
+    await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['active', match.lost_item_id]);
+    await query('UPDATE found_items SET status = $1 WHERE id = $2', ['active', match.found_item_id]);
+
+    // Delete the match
+    await query('DELETE FROM matches WHERE id = $1', [id]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Match dismissed and deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error deleting match',
+      error: error.message
+    });
   }
 }

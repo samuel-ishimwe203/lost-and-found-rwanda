@@ -19,6 +19,8 @@ import Login from "./pages/Auth/Login";
 // Public Pages
 import PublicHome from "./pages/PublicDashboard/PublicHome";
 import AllPostings from "./pages/PublicDashboard/AllPostings";
+import OcrIdMatcher from "./pages/PublicDashboard/OcrIdMatcher";
+import DocumentUpload from "./pages/PublicDashboard/DocumentUpload";
 
 // Dashboards (Lost)
 import LostDashboardLayout from "./layouts/LostDashboardLayout";
@@ -27,6 +29,8 @@ import LostMyProfile from "./pages/LostDashboard/MyProfile";
 import LostMyPostings from "./pages/LostDashboard/MyPostings";
 import LostCreatePost from "./pages/LostDashboard/CreatePost";
 import LostMessages from "./pages/LostDashboard/Messages";
+import LostMatches from "./pages/LostDashboard/LostMatches";
+import LostEditPost from "./pages/LostDashboard/EditPost";
 
 // Dashboards (Found)
 import FoundDashboardLayout from "./layouts/FoundDashboardLayout";
@@ -86,6 +90,8 @@ function AppRoutes() {
           {/* Public Routes */}
           <Route path="/" element={<PublicHome />} />
           <Route path="/postings" element={<AllPostings />} />
+          <Route path="/id-ocr-matcher" element={<OcrIdMatcher />} />
+          <Route path="/document-upload" element={<DocumentUpload />} />
           
           {/* Auth Routes */}
           <Route path="/register" element={<Register />} />
@@ -104,8 +110,11 @@ function AppRoutes() {
             <Route index element={<LostDashboardHome />} />
             <Route path="profile" element={<LostMyProfile />} />
             <Route path="my-postings" element={<LostMyPostings />} />
+            <Route path="matches" element={<LostMatches />} />
             <Route path="create-post" element={<LostCreatePost />} />
+            <Route path="edit-post/:id" element={<LostEditPost />} />
             <Route path="messages" element={<LostMessages />} />
+            <Route path="document-scanner" element={<DocumentUpload />} />
           </Route>
 
           {/* Found Dashboard */}
@@ -123,6 +132,7 @@ function AppRoutes() {
             <Route path="post-found-item" element={<PostFoundItem />} />
             <Route path="matches" element={<FoundMatches />} />
             <Route path="messages" element={<FoundMessages />} />
+            <Route path="document-scanner" element={<DocumentUpload />} />
           </Route>
 
           {/* Admin Dashboard */}
@@ -155,6 +165,7 @@ function AppRoutes() {
             <Route path="upload-document" element={<PostOfficialDocument />} />
             <Route path="manage-claims" element={<ManageClaims />} />
             <Route path="returned-documents" element={<ReturnedDocuments />} />
+            <Route path="document-scanner" element={<DocumentUpload />} />
           </Route>
 
           {/* Catch-all route */}

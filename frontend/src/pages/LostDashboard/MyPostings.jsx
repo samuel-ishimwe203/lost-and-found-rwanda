@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import apiClient from "../../services/api";
+import { FiEye, FiEdit2, FiTrash2, FiMapPin, FiCalendar, FiTag, FiClock, FiDollarSign } from "react-icons/fi";
 
 export default function MyPostings() {
+  const navigate = useNavigate();
   const [postings, setPostings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -182,24 +185,27 @@ export default function MyPostings() {
                         {posting.match_count || 0}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm space-x-2">
+                    <td className="px-6 py-4 text-sm flex gap-2">
                       <button 
-                        onClick={() => window.location.href = `/lost-dashboard/postings/${posting.id}`}
-                        className="text-green-600 hover:text-green-800 font-semibold"
+                        onClick={() => navigate(`/lost-dashboard/postings/${posting.id}`)}
+                        className="p-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-lg transition"
+                        title="View"
                       >
-                        View
+                        <FiEye className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => window.location.href = `/lost-dashboard/edit-post/${posting.id}`}
-                        className="text-emerald-600 hover:text-emerald-800 font-semibold"
+                        onClick={() => navigate(`/lost-dashboard/edit-post/${posting.id}`)}
+                        className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition"
+                        title="Edit"
                       >
-                        Edit
+                        <FiEdit2 className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => handleDelete(posting.id)}
-                        className="text-red-600 hover:text-red-800 font-semibold"
+                        className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition"
+                        title="Delete"
                       >
-                        Delete
+                        <FiTrash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
@@ -222,15 +228,24 @@ export default function MyPostings() {
                     <h3 className="text-xl font-bold text-teal-900">{posting.item_type}</h3>
                     <p className="text-teal-700 text-sm mt-1">{posting.description || 'No description provided'}</p>
                   </div>
-                  <span className={`px-4 py-2 rounded-lg font-semibold ml-4 ${
-                    posting.status === "active" 
-                      ? "bg-green-100 text-green-700 border border-green-300" 
-                      : posting.status === "pending"
-                      ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                      : "bg-gray-100 text-gray-700 border border-gray-300"
-                  }`}>
-                    {getStatusLabel(posting.status)}
-                  </span>
+                  <div className="flex flex-col items-end ml-4 gap-2">
+                    <span className={`px-4 py-2 rounded-lg font-semibold ${
+                      posting.status === "active" 
+                        ? "bg-green-100 text-green-700 border border-green-300" 
+                        : posting.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                        : "bg-gray-100 text-gray-700 border border-gray-300"
+                    }`}>
+                      {getStatusLabel(posting.status)}
+                    </span>
+                    <button 
+                      onClick={() => handleDelete(posting.id)}
+                      className="p-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-lg border border-red-200 transition"
+                      title="Delete Posting"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Image Preview */}

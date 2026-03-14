@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import AuthModal from "./AuthModal";
 import SearchModal from "./SearchModal";
@@ -13,6 +13,7 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
   
   const menuRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const openLogin = () => {
     setAuthMode("login");
@@ -61,6 +62,7 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
     { label: "Dashboard Home", to: "/lost-dashboard" },
     { label: "Profile", to: "/lost-dashboard/profile" },
     { label: "My Postings", to: "/lost-dashboard/my-postings" },
+    { label: "My Matches", to: "/lost-dashboard/matches" },
     { label: "Create Post", to: "/lost-dashboard/create-post" },
     { label: "Messages", to: "/lost-dashboard/messages" },
   ];
@@ -120,10 +122,20 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
             >
               Browse Items
             </Link>
-            <span className="px-5 py-2.5 rounded-full font-semibold text-[15px] text-gray-600 hover:text-[#1e3a8a] hover:bg-gray-50 cursor-pointer transition">
+            <span 
+              onClick={() => {
+                if (location.pathname === '/') {
+                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  navigate('/#how-it-works');
+                }
+              }}
+              className="px-5 py-2.5 rounded-full font-semibold text-[15px] text-gray-600 hover:text-[#1e3a8a] hover:bg-gray-50 cursor-pointer transition"
+            >
               How it Works
             </span>
           </div>
+
 
           <div className="flex items-center gap-6" ref={menuRef}>
             

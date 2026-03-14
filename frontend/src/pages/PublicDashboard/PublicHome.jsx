@@ -11,6 +11,14 @@ export default function PublicHome() {
   const navigate = useNavigate();
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  
+  React.useEffect(() => {
+    if (window.location.hash === '#how-it-works') {
+      setTimeout(() => {
+        document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    }
+  }, []);
 
   const handleContactClick = (item) => {
     if (!isAuthenticated) {
@@ -76,6 +84,7 @@ export default function PublicHome() {
       </section>
 
       <section
+        id="how-it-works"
         className="py-24 px-6 text-white"
         style={{
           backgroundImage:
@@ -96,33 +105,39 @@ export default function PublicHome() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white text-gray-800 p-8 rounded-xl shadow-lg">
-              <Camera className="w-12 h-12 mb-4 text-blue-600" />
-              <h3 className="text-xl font-semibold mb-2">
+            <div className="bg-white/95 backdrop-blur-sm text-gray-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group">
+              <div className="bg-blue-100 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors duration-300">
+                <Camera className="w-10 h-10 text-blue-600 group-hover:text-white transition-colors duration-300" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3 text-gray-900">
                 1. Report with Photo
               </h3>
-              <p className="text-gray-600">
-                Upload your lost or found item with a photo. Our AI analyzes images to find potential matches automatically.
+              <p className="text-gray-600 leading-relaxed font-medium">
+                Upload your lost or found item with a photo. Our professional OCR and AI scanner extracts text to find potential matches automatically.
               </p>
             </div>
 
-            <div className="bg-green-600 text-white p-8 rounded-xl shadow-lg">
-              <Bot className="w-12 h-12 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">
-                2. AI Matches Items
+            <div className="bg-gradient-to-br from-green-600 to-emerald-600 text-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group border border-white/20">
+              <div className="bg-white/20 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white transition-colors duration-300">
+                <Bot className="w-10 h-10 text-white group-hover:text-green-600 transition-colors duration-300" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">
+                2. Professional Matching
               </h3>
-              <p>
-                Our AI system compares images and categories to find matches. You'll get notified when we find potential matches!
+              <p className="text-green-50 leading-relaxed font-medium">
+                Our advanced text-first system compares extracted names and unique identifiers to ensure 100% accurate matches between images.
               </p>
             </div>
 
-            <div className="bg-white text-gray-800 p-8 rounded-xl shadow-lg">
-              <PartyPopper className="w-12 h-12 mb-4 text-emerald-600" />
-              <h3 className="text-xl font-semibold mb-2">
+            <div className="bg-white/95 backdrop-blur-sm text-gray-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group">
+              <div className="bg-emerald-100 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 transition-colors duration-300">
+                <PartyPopper className="w-10 h-10 text-emerald-600 group-hover:text-white transition-colors duration-300" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3 text-gray-900">
                 3. Secure Recovery
               </h3>
-              <p className="text-gray-600">
-                Connect with the owner/finder through our messaging system and arrange safe return of the item.
+              <p className="text-gray-600 leading-relaxed font-medium">
+                Connect safely through our encrypted messaging system. Arrange a secure pickup and get your important items back with dignity.
               </p>
             </div>
           </div>
