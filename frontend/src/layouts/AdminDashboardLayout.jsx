@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 
 export default function AdminDashboardLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -11,6 +11,13 @@ export default function AdminDashboardLayout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  // Handle sidebar toggle from Navbar
+  useEffect(() => {
+    const handleToggle = () => setSidebarOpen(prev => !prev);
+    window.addEventListener('toggle-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-sidebar', handleToggle);
+  }, []);
 
   const navLinks = [
     { path: "/admin-dashboard", label: "Overview", end: true },
@@ -30,49 +37,7 @@ export default function AdminDashboardLayout() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8fafc] overflow-x-hidden">
-
-      {/* MOBILE TOP BAR */}
-      <div className="lg:hidden flex items-center justify-between bg-white border-b border-slate-200 px-4 py-3 sticky top-[74px] z-[60] shadow-sm">
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shadow-sm border border-slate-200"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {sidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-        
-        <p className="font-black text-[10px] tracking-widest text-slate-400 uppercase">System Admin</p>
-        
-        <div className="relative">
-          <button 
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white shadow-lg shadow-red-500/20"
-          >
-            <span className="text-[10px] font-black">AD</span>
-          </button>
-          
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-3 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl py-2 z-[130] animate-fadeIn">
-               <div className="px-4 py-2 border-b border-slate-100 mb-2">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signed in as</p>
-                 <p className="text-xs font-bold text-slate-900 truncate">Administrator</p>
-               </div>
-              <button 
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-xs font-black text-red-600 hover:bg-red-50 transition border-none outline-none uppercase tracking-wider"
-              >
-                Terminate Session
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
+      
       {/* MOBILE OVERLAY */}
       {sidebarOpen && (
         <div 
@@ -82,11 +47,11 @@ export default function AdminDashboardLayout() {
       )}
       
       {/* MAIN CONTAINER */}
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative mt-[74px]">
 
         {/* SIDEBAR */}
         <aside className={`
-          fixed lg:sticky top-0 lg:top-[74px] left-0 h-screen lg:h-[calc(100vh-74px)] z-[120] lg:z-30
+          fixed top-[74px] left-0 h-[calc(100vh-74px)] z-[120] lg:z-30
           w-72 bg-[#0f172a] p-8 shadow-2xl overflow-y-auto
           transform transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -141,9 +106,9 @@ export default function AdminDashboardLayout() {
         </aside>
 
         {/* MAIN CONTENT Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 lg:ml-72 flex flex-col min-w-0">
            {/* Desktop Only Sub-Header */}
-           <header className="hidden lg:flex bg-white border-b border-slate-200 px-10 py-5 justify-between items-center sticky top-[74px] z-20">
+           <header className="hidden lg:flex bg-white border-b border-slate-200 px-10 py-5 justify-between items-center sticky top-[0px] z-20">
               <div className="flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Online</span>
@@ -159,21 +124,23 @@ export default function AdminDashboardLayout() {
                 <Outlet />
              </div>
            </main>
+
+           {/* FOOTER */}
+           <footer className="bg-slate-950 border-t border-white/5 text-slate-600 py-12 px-10 mt-auto">
+             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
+               <div className="flex items-center gap-6">
+                 <Link to="/admin-dashboard" className="text-white hover:text-red-500 transition">Admin Root</Link>
+                 <span className="text-slate-800">|</span>
+                 <Link to="/admin-dashboard/logs" className="hover:text-white transition">System Logs</Link>
+                 <span className="text-slate-800">|</span>
+                 <a href="#" className="hover:text-white transition cursor-pointer">Security Policy</a>
+                 <a href="#" className="hover:text-white transition cursor-pointer">Infrastructure Status</a>
+               </div>
+               <p>© {new Date().getFullYear()} Lost & Found Rwanda. Internal Admin Network.</p>
+             </div>
+           </footer>
         </div>
       </div>
-
-      {/* FOOTER */}
-      <footer className="bg-slate-950 border-t border-white/5 text-slate-600 py-12 px-10 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
-          <div className="flex items-center gap-6">
-            <span className="text-white">Admin Engine v2.4</span>
-            <span className="text-slate-800">|</span>
-            <span className="hover:text-white transition cursor-pointer">Security Policy</span>
-            <span className="hover:text-white transition cursor-pointer">Infrastructure Status</span>
-          </div>
-          <p>© {new Date().getFullYear()} Lost & Found Rwanda. Internal Admin Network.</p>
-        </div>
-      </footer>
     </div>
   );
 }

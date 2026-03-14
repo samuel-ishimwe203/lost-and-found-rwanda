@@ -10,7 +10,7 @@ export const postFoundItem = async (req, res) => {
       date_found, additional_info 
     } = req.body;
     const userId = req.user.id;
-    const image_url = req.file ? (req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`) : null;
+    const image_url = req.file ? (req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`) : (req.body.image_url || null);
     let parsedAdditionalInfo = null;
     if (additional_info) {
       try {
@@ -277,9 +277,14 @@ export const updateFoundItem = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     const { 
-      item_type, category, description, location_found, district, 
       date_found, status, image_url, additional_info 
     } = req.body;
+    
+    // Handle image upload if present
+    let finalImageUrl = image_url;
+    if (req.file) {
+      finalImageUrl = req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`;
+    }
     const checkResult = await query(
       'SELECT * FROM found_items WHERE id = $1',
       [id]
@@ -328,9 +333,9 @@ export const updateFoundItem = async (req, res) => {
       updates.push(`status = $${paramCount++}`);
       values.push(status);
     }
-    if (image_url !== undefined) {
+    if (finalImageUrl !== undefined) {
       updates.push(`image_url = $${paramCount++}`);
-      values.push(image_url);
+      values.push(finalImageUrl);
     }
     if (additional_info !== undefined) {
       updates.push(`additional_info = $${paramCount++}`);

@@ -9,9 +9,16 @@ import { dirname } from 'path';
 import { connectDB } from './src/db/index.js';
 import { errorHandler, notFoundHandler } from './src/middleware/error.middleware.js';
 import { scanExactDuplicates } from './src/services/matching.service.js';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Import routes
 import authRoutes from './src/routes/auth.routes.js';

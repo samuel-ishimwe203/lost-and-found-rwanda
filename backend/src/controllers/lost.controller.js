@@ -20,7 +20,7 @@ export const postLostItem = async (req, res) => {
         message: 'Only users with loser role can post lost items'
       })
     }
-    const image_url = req.file ? (req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`) : null
+    const image_url = req.file ? (req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`) : (req.body.image_url || null)
 
     let parsedAdditionalInfo = additional_info
     if (typeof additional_info === 'string') {

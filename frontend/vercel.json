@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/(api|uploads|documents)/(.*)",
+      "destination": "https://lostandfound-git-main-samuels-projects-9388ecd2.vercel.app/$1/$2"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
