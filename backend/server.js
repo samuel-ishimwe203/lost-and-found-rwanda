@@ -23,6 +23,8 @@ import messageRoutes from './src/routes/message.routes.js';
 import adminRoutes from './src/routes/admin.routes.js';
 import policeRoutes from './src/routes/police.routes.js';
 import publicRoutes from './src/routes/public.routes.js';
+import ocrRoutes from './src/routes/ocr.routes.js';
+import documentRoutes from './src/routes/document.routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -31,8 +33,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware
-app.use(helmet());
+// Security middleware - allow cross-origin resource loading for uploaded files
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginEmbedderPolicy: false,
+}));
 
 // CORS configuration - Allow all origins for development
 const corsOptions = {
@@ -53,7 +58,7 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // Increased limit: allow 1000 requests per 15 minutes to prevent polling issues
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
@@ -90,6 +95,8 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/police', policeRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api', ocrRoutes);
+app.use('/api/documents', documentRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

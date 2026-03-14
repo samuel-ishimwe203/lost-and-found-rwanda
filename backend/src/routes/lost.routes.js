@@ -14,7 +14,7 @@ router.get('/:id', getLostItemById);
 router.post('/', authenticate, loserOnly, upload.single('image'), postLostItem);
 router.get('/my/items', authenticate, loserOnly, getMyLostItems);
 router.get('/my/stats', authenticate, loserOnly, getLostDashboardStats);
-router.put('/:id', authenticate, updateLostItem);
+router.put('/:id', authenticate, upload.single('image'), updateLostItem);
 router.delete('/:id', authenticate, deleteLostItem);
 
 export default router;

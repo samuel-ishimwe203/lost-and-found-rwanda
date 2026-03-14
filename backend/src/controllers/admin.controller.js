@@ -416,8 +416,11 @@ export const getAllMatches = async (req, res) => {
 
     const result = await query(
       `SELECT m.*, 
-              l.item_type as lost_item_type, l.reward_amount,
-              f.item_type as found_item_type, f.is_police_upload,
+              l.item_type as lost_item_type, l.reward_amount, l.description as lost_description, 
+              l.category as lost_category, l.district as lost_district, l.image_url as lost_image,
+              f.item_type as found_item_type, f.is_police_upload, f.description as found_description,
+              f.category as found_category, f.district as found_district, f.image_url as found_image,
+              f.text as found_ocr_text, l.text as lost_ocr_text,
               loser.full_name as loser_name, loser.email as loser_email,
               finder.full_name as finder_name, finder.email as finder_email
        FROM matches m
@@ -657,3 +660,169 @@ export const rejectPoliceRegistration = async (req, res) => {
     });
   }
 };
+
+// Verify match and set fee (Admin only)
+export const verifyMatch = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { admin_fee, admin_feedback } = req.body;
+    const adminId = req.user.id;
+
+    const matchCheck = await query(`
+      SELECT m.*, l.user_id as lost_user_id, l.item_type as lost_item_name
+      FROM matches m
+      JOIN lost_items l ON m.lost_item_id = l.id
+      WHERE m.id = $1
+    `, [matchId]);
+
+    if (matchCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Match not found' });
+    }
+
+    const match = matchCheck.rows[0];
+
+    const result = await query(
+      `UPDATE matches 
+       SET is_verified = TRUE, 
+           admin_fee = $1, 
+           admin_feedback = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3
+       RETURNING *`,
+      [admin_fee || 0, admin_feedback || '', matchId]
+    );
+
+    // Notify the lost user via system message
+    const verificationMessage = `Admin has verified a match for your lost item: ${match.lost_item_name}. To view full details and contact the finder, please review and pay the platform fee of ${admin_fee || 0} RWF. ${admin_feedback ? '\n\nAdmin Message: ' + admin_feedback : ''}`;
+    
+    await query(
+      `INSERT INTO messages (sender_id, receiver_id, message, match_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        adminId,
+        match.lost_user_id,
+        verificationMessage,
+        matchId
+      ]
+    );
+
+    // Create in-app notification for the lost user
+    await query(
+      `INSERT INTO notifications (user_id, type, title, message, related_match_id, channel, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        match.lost_user_id,
+        'match_verified',
+        '✅ Match Verified by Admin',
+        `Your match for ${match.lost_item_name} has been verified! Please pay the fee to unlock contact details.`,
+        matchId,
+        'in_app'
+      ]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Match verified and fee set successfully',
+      data: { match: result.rows[0] }
+    });
+  } catch (error) {
+    console.error('Verify match error:', error);
+    res.status(500).json({ success: false, message: 'Server error verifying match', error: error.message });
+  }
+};
+
+// Confirm match fee payment (Manual verification by Admin)
+export const confirmMatchPayment = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const adminId = req.user.id;
+
+    const matchCheck = await query(`
+      SELECT m.*, l.user_id as lost_user_id, l.item_type as lost_item_name, f.user_id as found_user_id
+      FROM matches m
+      JOIN lost_items l ON m.lost_item_id = l.id
+      JOIN found_items f ON m.found_item_id = f.id
+      WHERE m.id = $1
+    `, [matchId]);
+
+    if (matchCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Match not found' });
+    }
+
+    const match = matchCheck.rows[0];
+
+    // Update match to unlocked
+    const result = await query(
+      `UPDATE matches 
+       SET is_unlocked = TRUE, 
+           payment_status = 'paid',
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [matchId]
+    );
+
+    // Notify the lost user via system message
+    const loserUnlockMsg = `Payment confirmed! Match for your item "${match.lost_item_name}" is now fully unlocked. You can now view finder details and start a conversation.`;
+    await query(
+      `INSERT INTO messages (sender_id, receiver_id, message, match_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        adminId,
+        match.lost_user_id,
+        loserUnlockMsg,
+        matchId
+      ]
+    );
+
+    // Create notification for loser
+    await query(
+      `INSERT INTO notifications (user_id, type, title, message, related_match_id, channel, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        match.lost_user_id,
+        'match_unlocked',
+        '🔓 Match Unlocked!',
+        `Your match for ${match.lost_item_name} is now unlocked! You can now contact the finder.`,
+        matchId,
+        'in_app'
+      ]
+    );
+
+    // Notify the finder via system message
+    const finderUnlockMsg = `Great news! The owner has confirmed the match for your found item "${match.found_item_type || 'item'}". Communication is now open, and you can chat with them to arrange the return.`;
+    await query(
+      `INSERT INTO messages (sender_id, receiver_id, message, match_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        adminId,
+        match.found_user_id,
+        finderUnlockMsg,
+        matchId
+      ]
+    );
+
+    // Create notification for finder
+    await query(
+      `INSERT INTO notifications (user_id, type, title, message, related_match_id, channel, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        match.found_user_id,
+        'match_unlocked',
+        '🔓 Match Unlocked!',
+        `The owner has confirmed the match for ${match.found_item_type || 'item'}. You can now chat!`,
+        matchId,
+        'in_app'
+      ]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment confirmed and match unlocked successfully',
+      data: { match: result.rows[0] }
+    });
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({ success: false, message: 'Server error confirming payment', error: error.message });
+  }
+};

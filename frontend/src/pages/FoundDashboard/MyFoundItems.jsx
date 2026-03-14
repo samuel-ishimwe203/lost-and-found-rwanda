@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../../services/api";
+import { FiEye, FiEdit2, FiTrash2, FiInfo, FiMapPin, FiCalendar, FiTag, FiClock } from "react-icons/fi";
 
 export default function MyFoundItems() {
   const [foundItems, setFoundItems] = useState([]);
@@ -208,18 +209,25 @@ export default function MyFoundItems() {
                 </div>
 
                 {/* ACTION BUTTONS */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-2 pt-4">
                   <button 
                     onClick={() => handleViewDetails(item)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
                   >
-                    View Details
+                    <FiEye className="w-4 h-4" /> View Details
                   </button>
                   <button 
                     onClick={() => handleEdit(item)}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 py-2 rounded-lg font-semibold transition"
+                    className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
                   >
-                    Edit
+                    <FiEdit2 className="w-4 h-4" /> Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(item.id)}
+                    className="w-10 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200 py-2 rounded-lg font-semibold transition flex items-center justify-center"
+                    title="Delete Item"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>

@@ -50,7 +50,7 @@ export const getItems = async (req, res) => {
       const lostResult = await query(
         `SELECT l.id, l.item_type, l.category, l.description, l.location_lost as location, 
                 l.district, l.date_lost as date, l.reward_amount, l.image_url, l.created_at,
-                l.additional_info, l.user_id, u.full_name as contact_name, u.phone_number as contact_phone
+                l.additional_info, l.user_id, l.status, u.full_name as contact_name, u.phone_number as contact_phone
          FROM lost_items l
          JOIN users u ON l.user_id = u.id
          ${whereClause}
@@ -70,7 +70,7 @@ export const getItems = async (req, res) => {
       const foundResult = await query(
         `SELECT f.id, f.item_type, f.category, f.description, f.location_found as location, 
                 f.district, f.date_found as date, f.is_police_upload, f.image_url, f.created_at,
-                f.additional_info, f.user_id, u.full_name as contact_name, u.phone_number as contact_phone, u.role as uploader_role
+                f.additional_info, f.user_id, f.status, u.full_name as contact_name, u.phone_number as contact_phone, u.role as uploader_role
          FROM found_items f
          JOIN users u ON f.user_id = u.id
          ${whereClause}

@@ -1,308 +1,271 @@
-import { query } from '../db/index.js';
-import { createNotification } from './notification.service.js';
-import { logAudit } from './audit.service.js';
-
-const analyzeImageSimilarity = async (lostImageUrl, foundImageUrl) => {
-  try {
-    if (!lostImageUrl || !foundImageUrl) return 0;
-    if (lostImageUrl === foundImageUrl) return 100;
-    return 50; 
-  } catch (error) {
-    console.error(error);
-    return 0; 
-  }
-};
+import { query } from '../db/index.js'
+import { notifyMatch } from '../notifications/notifyMatch.js'
 
 export const checkForDuplicatesInSection = async (itemData, itemType) => {
-  try {
-    const { category, image_url } = itemData;
-    if (!image_url || image_url.trim() === '') return null;
+  return null
+}
 
-    let existingItems;
-    if (itemType === 'lost') {
-      const result = await query(
-        `SELECT l.*, u.full_name, u.phone_number
-         FROM lost_items l
-         JOIN users u ON l.user_id = u.id
-         WHERE l.category = $1 AND l.image_url = $2 AND l.status IN ('active', 'pending') LIMIT 5`,
-        [category, image_url]
-      );
-      existingItems = result.rows;
-    } else if (itemType === 'found') {
-      const result = await query(
-        `SELECT f.*, u.full_name, u.phone_number
-         FROM found_items f
-         JOIN users u ON f.user_id = u.id
-         WHERE f.category = $1 AND f.image_url = $2 AND f.status IN ('active', 'pending') LIMIT 5`,
-        [category, image_url]
-      );
-      existingItems = result.rows;
-    }
-
-    if (existingItems && existingItems.length > 0) {
-      return {
-        isDuplicate: true,
-        existingItem: existingItems[0],
-        message: `This item already exists. Posted by ${existingItems[0].full_name}. Contact: ${existingItems[0].phone_number}`
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error(error);
-    return null; 
-  }
+const getKeywords = (text) => {
+  if (!text) return [];
+  // Remove special chars, lowercase, split by whitespace, filter out short words
+  return text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 3);
 };
 
-export const checkForMatches = async (itemId, itemType) => {
-  try {
-    let matches = [];
-    if (itemType === 'lost') {
-      const lostItemResult = await query('SELECT * FROM lost_items WHERE id = $1', [itemId]);
-      if (lostItemResult.rows.length === 0) return;
-      const lostItem = lostItemResult.rows[0];
-
-      const foundItemsResult = await query(
-        `SELECT f.*, u.id as finder_id, u.full_name as finder_name
-         FROM found_items f
-         JOIN users u ON f.user_id = u.id
-         WHERE f.category = $1 AND f.status = 'active'`,
-        [lostItem.category]
-      );
-
-      for (const foundItem of foundItemsResult.rows) {
-        const matchScore = await calculateMatchScore(lostItem, foundItem);
-        if (matchScore >= 60) {
-          const existingMatch = await query(
-            'SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2',
-            [lostItem.id, foundItem.id]
-          );
-
-          if (existingMatch.rows.length === 0) {
-            const matchResult = await query(
-              `INSERT INTO matches (lost_item_id, found_item_id, match_score, status)
-               VALUES ($1, $2, $3, 'pending') RETURNING *`,
-              [lostItem.id, foundItem.id, matchScore]
-            );
-
-            const match = matchResult.rows[0];
-            await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id]);
-            await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id]);
-
-            await notifyMatch(match, lostItem, foundItem);
-            matches.push(match);
-          }
-        }
-      }
-    } else if (itemType === 'found') {
-      const foundItemResult = await query('SELECT * FROM found_items WHERE id = $1', [itemId]);
-      if (foundItemResult.rows.length === 0) return;
-      const foundItem = foundItemResult.rows[0];
-
-      const lostItemsResult = await query(
-        `SELECT l.*, u.id as loser_id, u.full_name as loser_name
-         FROM lost_items l
-         JOIN users u ON l.user_id = u.id
-         WHERE l.category = $1 AND l.status = 'active'`,
-        [foundItem.category]
-      );
-
-      for (const lostItem of lostItemsResult.rows) {
-        const matchScore = await calculateMatchScore(lostItem, foundItem);
-        if (matchScore >= 60) {
-          const existingMatch = await query(
-            'SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2',
-            [lostItem.id, foundItem.id]
-          );
-
-          if (existingMatch.rows.length === 0) {
-            const matchResult = await query(
-              `INSERT INTO matches (lost_item_id, found_item_id, match_score, status)
-               VALUES ($1, $2, $3, 'pending') RETURNING *`,
-              [lostItem.id, foundItem.id, matchScore]
-            );
-
-            const match = matchResult.rows[0];
-            await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id]);
-            await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id]);
-
-            await notifyMatch(match, lostItem, foundItem);
-            matches.push(match);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-export const scanExactDuplicates = async () => {
-  try {
-    const lostItemsResult = await query(
-      `SELECT id, user_id, item_type, category, district, image_url, date_lost, reward_amount
-       FROM lost_items 
-       WHERE status = 'active' AND image_url IS NOT NULL AND image_url <> ''`
-    );
-
-    for (const lostItem of lostItemsResult.rows) {
-      const foundItemsResult = await query(
-        `SELECT f.id, f.user_id, f.item_type, f.category, f.district, f.image_url, f.date_found, f.is_police_upload
-         FROM found_items f
-         WHERE f.category = $1 AND f.image_url = $2 AND f.status = 'active'`,
-        [lostItem.category, lostItem.image_url]
-      );
-
-      for (const foundItem of foundItemsResult.rows) {
-        const existingMatch = await query(
-          'SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2',
-          [lostItem.id, foundItem.id]
-        );
-
-        if (existingMatch.rows.length) continue;
-
-        const matchResult = await query(
-          `INSERT INTO matches (lost_item_id, found_item_id, match_score, status)
-           VALUES ($1, $2, $3, $4) RETURNING *`,
-          [lostItem.id, foundItem.id, 100, 'pending']
-        );
-
-        const match = matchResult.rows[0];
-        
-        const lostUserResult = await query('SELECT * FROM users WHERE id = $1', [lostItem.user_id]);
-        const foundUserResult = await query('SELECT * FROM users WHERE id = $1', [foundItem.user_id]);
-
-        if (lostUserResult.rows.length && foundUserResult.rows.length) {
-          const lostUser = lostUserResult.rows[0];
-          const foundUser = foundUserResult.rows[0];
-
-          await query(
-            `INSERT INTO messages (sender_id, receiver_id, subject, message, match_id) VALUES ($1, $2, $3, $4, $5)`,
-            [foundUser.id, lostUser.id, `Found: Your ${lostItem.item_type}`, `🎉 Great news! I found your item.`, match.id]
-          );
-
-          await query(
-            `INSERT INTO messages (sender_id, receiver_id, subject, message, match_id) VALUES ($1, $2, $3, $4, $5)`,
-            [lostUser.id, foundUser.id, `Re: Found my ${lostItem.item_type}`, `🙏 Thank you for finding my item!`, match.id]
-          );
-        }
-      }
-    }
-
-    const matchedItemsResult = await query(
-      `SELECT DISTINCT m.lost_item_id, m.found_item_id
-       FROM matches m
-       WHERE m.status IN ('pending', 'confirmed') AND m.match_score = 100`
-    );
-
-    for (const item of matchedItemsResult.rows) {
-      await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', item.lost_item_id]);
-      await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', item.found_item_id]);
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-const calculateMatchScore = async (lostItem, foundItem) => {
+export const calculateMatchScore = (lostItem, foundItem) => {
   let score = 0;
-  if (lostItem.category === foundItem.category) {
-    score += 40;
-  } else {
-    return 10; 
-  }
-
-  const lostHasImage = lostItem.image_url && lostItem.image_url.trim() !== '';
-  const foundHasImage = foundItem.image_url && foundItem.image_url.trim() !== '';
   
-  if (lostHasImage && foundHasImage) {
-    const imageSimilarity = await analyzeImageSimilarity(lostItem.image_url, foundItem.image_url);
-    score += (imageSimilarity / 100) * 40;
-  } else if (lostHasImage || foundHasImage) {
-    score += 10; 
+  // 1. HARD IDENTIFIER MATCHING (Highest Priority)
+  if (lostItem.id_number && foundItem.id_number) {
+    if (lostItem.id_number === foundItem.id_number) return 100;
   }
 
-  if (lostItem.district === foundItem.district) score += 10;
+  // 2. OCR RAW TEXT SIMILARITY (Keyword Overlap)
+  // This is the "Professional" part - comparing extracted text from both images
+  const lostKeywords = getKeywords(lostItem.text);
+  const foundKeywords = getKeywords(foundItem.text);
+  
+  if (lostKeywords.length > 0 && foundKeywords.length > 0) {
+    const overlap = lostKeywords.filter(word => foundKeywords.includes(word));
+    // Calculate percentage overlap relative to the lost item (the search target)
+    const similarity = (overlap.length / lostKeywords.length) * 100;
+    
+    // If we have strong keyword overlap (e.g. names, specific ID snippets)
+    if (similarity > 50) score += 70;
+    else if (similarity > 20) score += 30;
+  }
 
-  if (lostItem.item_type && foundItem.item_type) {
-    const lostType = lostItem.item_type.toLowerCase();
-    const foundType = foundItem.item_type.toLowerCase();
-    if (lostType === foundType) score += 5;
-    else if (lostType.includes(foundType) || foundType.includes(lostType)) score += 2;
+  // 3. HOLDER NAME CROSS-CHECK
+  if (lostItem.holder_name) {
+    const hn = lostItem.holder_name.toLowerCase();
+    if (foundItem.holder_name && foundItem.holder_name.toLowerCase() === hn) {
+      score += 50;
+    } else if (foundItem.text && foundItem.text.toLowerCase().includes(hn)) {
+      score += 40;
+    }
+  }
+
+  // 4. SECONDARY ATTRIBUTES (Only as tie-breakers or boosters)
+  // Category match is now a booster, not a trigger (lowered from 60 to 15)
+  if (lostItem.category && foundItem.category && 
+      lostItem.category.toLowerCase() === foundItem.category.toLowerCase() && 
+      lostItem.category.toLowerCase() !== 'other') {
+    score += 15;
+  }
+
+  if (lostItem.district && foundItem.district && 
+      lostItem.district.toLowerCase() === foundItem.district.toLowerCase()) {
+    score += 10;
   }
 
   if (lostItem.date_lost && foundItem.date_found) {
     const lostDate = new Date(lostItem.date_lost);
     const foundDate = new Date(foundItem.date_found);
-    const daysDiff = Math.abs((foundDate - lostDate) / (1000 * 60 * 60 * 24));
-    if (daysDiff <= 7) score += 5;
-    else if (daysDiff <= 30) score += 2;
+    if (Math.abs(lostDate - foundDate) <= 7 * 24 * 60 * 60 * 1000) {
+      score += 5;
+    }
   }
 
-  return Math.round(score);
+  // EXACT IMAGE URL MATCH (Fraud check/duplicate check)
+  if (lostItem.image_url && foundItem.image_url && lostItem.image_url === foundItem.image_url) {
+    return 100;
+  }
+
+  // Final validation: Professional matches MUST have some text evidence or 
+  // extremely high attribute overlap to be considered.
+  // We cap the score at 100.
+  return Math.min(score, 100);
 };
 
-const notifyMatch = async (match, lostItem, foundItem) => {
+const createStarterMatchMessage = async (match, lostUserId, foundUserId) => {
+  await query(
+    'INSERT INTO messages (sender_id, receiver_id, message, match_id, created_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+    [lostUserId, foundUserId, 'A match was found for your item. You can now use the dashboard chat to communicate!', match.id]
+  )
+  await query(
+    'INSERT INTO messages (sender_id, receiver_id, message, match_id, created_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+    [foundUserId, lostUserId, 'A match was found for your item. You can now use the dashboard chat to communicate!', match.id]
+  )
+}
+
+export const checkForMatches = async (itemId, itemType) => {
+  const matches = []
   try {
-    const loserResult = await query('SELECT * FROM users WHERE id = $1', [lostItem.user_id]);
-    const finderResult = await query('SELECT * FROM users WHERE id = $1', [foundItem.user_id]);
+    if (itemType === 'lost') {
+      const lostItemResult = await query('SELECT * FROM lost_items WHERE id = $1', [itemId])
+      if (lostItemResult.rows.length === 0) return
+      const lostItem = lostItemResult.rows[0]
 
-    const loser = loserResult.rows[0];
-    const finder = finderResult.rows[0];
+      // Pass 1: Category-based matching (existing logic)
+      const foundItemsResult = await query('SELECT * FROM found_items WHERE category = $1 AND status = \'active\'', [lostItem.category])
+      for (const foundItem of foundItemsResult.rows) {
+        const matchScore = calculateMatchScore(lostItem, foundItem)
+        if (matchScore >= 50) {
+          const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
+          if (existingMatch.rows.length === 0) {
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, matchScore])
+            const match = matchResult.rows[0]
+            const lostUpdate = await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', lostItem.id])
+            const foundUpdate = await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', foundItem.id])
+            console.log('DEBUG: Updated lost item', lostItem.id, 'status:', lostUpdate.rows[0]?.status)
+            console.log('DEBUG: Updated found item', foundItem.id, 'status:', foundUpdate.rows[0]?.status)
+            await notifyMatch(match, lostItem, foundItem)
+            // Removed automatic communication
+            matches.push(match)
+          }
+        }
+      }
 
-    await createNotification({
-      userId: loser.id,
-      type: 'MATCH_FOUND',
-      title: 'Potential Match Found!',
-      message: `Someone has found an item matching your lost ${lostItem.item_type}.`,
-      relatedMatchId: match.id,
-      relatedLostItemId: lostItem.id,
-      relatedFoundItemId: foundItem.id
-    });
+      // Pass 2: OCR text-based cross-match (ID number or holder name across ALL found items)
+      if (lostItem.id_number || lostItem.holder_name) {
+        let ocrSql = `SELECT * FROM found_items WHERE status = 'active' AND (`
+        const ocrParams = []
+        let conditions = []
+        
+        if (lostItem.id_number) {
+          ocrParams.push(lostItem.id_number)
+          conditions.push(`id_number = $${ocrParams.length} OR text ILIKE '%' || $${ocrParams.length} || '%'`)
+        }
+        
+        if (lostItem.holder_name) {
+          ocrParams.push(lostItem.holder_name.toLowerCase())
+          conditions.push(`LOWER(holder_name) = $${ocrParams.length} OR text ILIKE '%' || $${ocrParams.length} || '%'`)
+        }
+        
+        ocrSql += conditions.join(' OR ') + `)`
+        
+        const ocrFoundResult = await query(ocrSql, ocrParams)
+        for (const foundItem of ocrFoundResult.rows) {
+          const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
+          if (existingMatch.rows.length === 0) {
+            const matchScore = calculateMatchScore(lostItem, foundItem)
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, Math.max(matchScore, 80)])
+            const match = matchResult.rows[0]
+            await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id])
+            await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id])
+            await notifyMatch(match, lostItem, foundItem)
+            // Removed automatic communication
+            matches.push(match)
+          }
+        }
+      }
 
-    await createNotification({
-      userId: finder.id,
-      type: 'MATCH_FOUND',
-      title: 'Match Found!',
-      message: `Your found ${foundItem.item_type} matches a lost item report.`,
-      relatedMatchId: match.id,
-      relatedLostItemId: lostItem.id,
-      relatedFoundItemId: foundItem.id
-    });
+    } else if (itemType === 'found') {
+      const foundItemResult = await query('SELECT * FROM found_items WHERE id = $1', [itemId])
+      if (foundItemResult.rows.length === 0) return
+      const foundItem = foundItemResult.rows[0]
+
+      // Pass 1: Category-based matching (existing logic)
+      const lostItemsResult = await query('SELECT * FROM lost_items WHERE category = $1 AND status = \'active\'', [foundItem.category])
+      for (const lostItem of lostItemsResult.rows) {
+        const matchScore = calculateMatchScore(lostItem, foundItem)
+        if (matchScore >= 50) {
+          const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
+          if (existingMatch.rows.length === 0) {
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, matchScore])
+            const match = matchResult.rows[0]
+            await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id])
+            await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id])
+            await notifyMatch(match, lostItem, foundItem)
+            // Removed automatic communication
+            matches.push(match)
+          }
+        }
+      }
+
+      // Pass 2: OCR text-based cross-match (ID number or holder name across ALL lost items)
+      if (foundItem.id_number || foundItem.holder_name) {
+        let ocrSql = `SELECT * FROM lost_items WHERE status = 'active' AND (`
+        const ocrParams = []
+        let conditions = []
+        
+        if (foundItem.id_number) {
+          ocrParams.push(foundItem.id_number)
+          conditions.push(`id_number = $${ocrParams.length} OR text ILIKE '%' || $${ocrParams.length} || '%'`)
+        }
+        
+        if (foundItem.holder_name) {
+          ocrParams.push(foundItem.holder_name.toLowerCase())
+          conditions.push(`LOWER(holder_name) = $${ocrParams.length} OR text ILIKE '%' || $${ocrParams.length} || '%'`)
+        }
+        
+        ocrSql += conditions.join(' OR ') + `)`
+        
+        const ocrLostResult = await query(ocrSql, ocrParams)
+        for (const lostItem of ocrLostResult.rows) {
+          const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
+          if (existingMatch.rows.length === 0) {
+            const matchScore = calculateMatchScore(lostItem, foundItem)
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, Math.max(matchScore, 80)])
+            const match = matchResult.rows[0]
+            await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id])
+            await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id])
+            await notifyMatch(match, lostItem, foundItem)
+            // Removed automatic communication
+            matches.push(match)
+          }
+        }
+      }
+    }
   } catch (error) {
-    console.error(error);
+    console.error('Error in checkForMatches:', error);
   }
-};
+  return matches
+}
+
+export const scanExactDuplicates = async () => {
+  try {
+    const lostItemsResult = await query('SELECT * FROM lost_items WHERE status = \'active\' AND image_url IS NOT NULL AND image_url <> \'\'')
+    for (const lostItem of lostItemsResult.rows) {
+      const foundItemsResult = await query('SELECT * FROM found_items WHERE category = $1 AND status = \'active\' AND image_url = $2', [lostItem.category, lostItem.image_url])
+      for (const foundItem of foundItemsResult.rows) {
+        const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
+        if (existingMatch.rows.length === 0) {
+          const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *', [lostItem.id, foundItem.id, 100])
+          const match = matchResult.rows[0]
+          await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id])
+          await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id])
+          await notifyMatch(match, lostItem, foundItem)
+          await createStarterMatchMessage(match, lostItem.user_id, foundItem.user_id)
+        }
+      }
+    }
+  } catch (error) {}
+}
 
 export const getMatches = async (filters = {}) => {
   try {
-    const { userId, userRole, status, limit = 50, offset = 0 } = filters;
-    let whereConditions = [];
-    let params = [];
-    let paramCount = 1;
-
+    const { userId, userRole, status, limit = 50, offset = 0 } = filters
+    console.log('GET MATCHES FILTERS:', { userId, userRole, status, limit, offset });
+    let where = []
+    let params = []
+    let count = 1
     if (status) {
-      whereConditions.push(`m.status = $${paramCount++}`);
-      params.push(status);
+      where.push(`m.status = $${count++}`)
+      params.push(status)
     }
-
     if (userId && userRole) {
       if (userRole === 'loser') {
-        whereConditions.push(`l.user_id = $${paramCount++}`);
-      } else if (userRole === 'finder' || userRole === 'police') {
-        whereConditions.push(`f.user_id = $${paramCount++}`);
+        where.push(`l.user_id = $${count++}`)
+        params.push(userId)
       }
-      params.push(userId);
+      if (userRole === 'finder' || userRole === 'police') {
+        where.push(`f.user_id = $${count++}`)
+        params.push(userId)
+      }
     }
-
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-    params.push(limit, offset);
-
+    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''
+    params.push(limit, offset)
     const result = await query(
       `SELECT m.*, 
               l.item_type as lost_item_type, l.category as lost_category, l.district as lost_district, 
-              l.reward_amount, l.user_id as loser_id,
+              l.reward_amount, l.image_url as lost_image_url, l.text as lost_text, 
+              l.additional_info as lost_additional_info, l.date_lost, l.user_id as loser_id,
               f.item_type as found_item_type, f.category as found_category, f.district as found_district,
-              f.is_police_upload, f.user_id as finder_id,
+              f.image_url as found_image_url, f.text as found_text, f.additional_info as found_additional_info,
+              f.date_found, f.is_police_upload, f.user_id as finder_id,
               loser.full_name as loser_name, loser.phone_number as loser_phone, loser.email as loser_email,
               finder.full_name as finder_name, finder.phone_number as finder_phone, finder.email as finder_email
        FROM matches m
@@ -311,17 +274,15 @@ export const getMatches = async (filters = {}) => {
        JOIN users loser ON l.user_id = loser.id
        JOIN users finder ON f.user_id = finder.id
        ${whereClause}
-       ORDER BY m.matched_at DESC
-       LIMIT $${paramCount++} OFFSET $${paramCount}`,
+       ORDER BY m.match_score DESC, m.matched_at DESC
+       LIMIT $${count++} OFFSET $${count}`,
       params
-    );
-
-    return result.rows;
+    )
+    return result.rows
   } catch (error) {
-    console.error(error);
-    throw error;
+    return []
   }
-};
+}
 
 export const updateMatchStatus = async (matchId, status, userId, userRole, notes = null) => {
   try {
@@ -332,52 +293,66 @@ export const updateMatchStatus = async (matchId, status, userId, userRole, notes
        JOIN found_items f ON m.found_item_id = f.id
        WHERE m.id = $1`,
       [matchId]
-    );
-
-    if (matchResult.rows.length === 0) throw new Error('Match not found');
-
-    const match = matchResult.rows[0];
-    const isLoser = match.loser_id === userId;
-    const isFinder = match.finder_id === userId;
-    const isAdmin = userRole === 'admin';
-
-    if (!isLoser && !isFinder && !isAdmin) throw new Error('Unauthorized');
-
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
-
-    if (isLoser && status === 'confirmed') updates.push(`loser_confirmed = true`);
-    if (isFinder && status === 'confirmed') updates.push(`finder_confirmed = true`);
-
-    updates.push(`status = $${paramCount++}`);
-    values.push(status);
-
+    )
+    if (matchResult.rows.length === 0) throw new Error('Match not found')
+    const match = matchResult.rows[0]
+    const isLoser = match.loser_id === userId
+    const isFinder = match.finder_id === userId
+    const isAdmin = userRole === 'admin'
+    if (!isLoser && !isFinder && !isAdmin) throw new Error('Unauthorized')
+    const updates = []
+    const values = []
+    let count = 1
+    if (isLoser && status === 'confirmed') updates.push(`loser_confirmed = true`)
+    if (isFinder && status === 'confirmed') updates.push(`finder_confirmed = true`)
+    updates.push(`status = $${count++}`)
+    values.push(status)
     if (notes) {
-      updates.push(`notes = $${paramCount++}`);
-      values.push(notes);
+      updates.push(`notes = $${count++}`)
+      values.push(notes)
     }
-
     if (status === 'completed') {
-      updates.push(`resolved_at = CURRENT_TIMESTAMP`);
-      await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['resolved', match.lost_item_id]);
-      await query('UPDATE found_items SET status = $1 WHERE id = $2', ['returned', match.found_item_id]);
+      updates.push(`resolved_at = CURRENT_TIMESTAMP`)
+      await query('UPDATE lost_items SET status = $1 WHERE id = $2', ['resolved', match.lost_item_id])
+      await query('UPDATE found_items SET status = $1 WHERE id = $2', ['returned', match.found_item_id])
     }
-
-    values.push(matchId);
-
+    values.push(matchId)
     const result = await query(
-      `UPDATE matches SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      `UPDATE matches SET ${updates.join(', ')} WHERE id = $${count} RETURNING *`,
       values
-    );
-
-    await logAudit({
-      userId, action: 'MATCH_UPDATED', entityType: 'match', entityId: matchId, details: { status, notes }, ipAddress: null, userAgent: null
-    });
-
-    return result.rows[0];
+    )
+    return result.rows[0]
   } catch (error) {
-    console.error(error);
-    throw error;
+    return null
   }
-};
+}
+
+export const unlockPaidMatch = async (matchId) => {
+  try {
+    const matchRes = await query(`
+      SELECT m.*, l.user_id as lost_user_id, f.user_id as found_user_id
+      FROM matches m
+      JOIN lost_items l ON m.lost_item_id = l.id
+      JOIN found_items f ON m.found_item_id = f.id
+      WHERE m.id = $1
+    `, [matchId])
+    
+    if (matchRes.rows.length === 0) throw new Error('Match not found')
+    const match = matchRes.rows[0]
+    
+    // Update match to unlocked
+    await query(`
+      UPDATE matches 
+      SET is_unlocked = TRUE, payment_status = 'paid', status = 'confirmed', updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $1
+    `, [matchId])
+    
+    // Now start the communication
+    await createStarterMatchMessage(match, match.lost_user_id, match.found_user_id)
+    
+    return { success: true, message: 'Match unlocked successfully' }
+  } catch (err) {
+    console.error('Error unlocking match:', err)
+    throw err
+  }
+}

@@ -11,6 +11,7 @@ export default function CreatePost() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [matches, setMatches] = useState([]);
   
   const [formData, setFormData] = useState({
     item_type: "",
@@ -19,6 +20,7 @@ export default function CreatePost() {
     customCategory: "",
     color: "",
     owner_name: "",
+    id_number: "",
     location_lost: "",
     district: "",
     date_lost: "",
@@ -70,6 +72,7 @@ export default function CreatePost() {
       customCategory: "",
       color: "",
       owner_name: "",
+      id_number: "",
       location_lost: "",
       district: "",
       date_lost: "",
@@ -104,7 +107,8 @@ export default function CreatePost() {
       const additionalInfo = {
         color: formData.color,
         contact_phone: formData.contact_phone,
-        owner_name: formData.owner_name
+        owner_name: formData.owner_name,
+        id_number: formData.id_number
       };
       submitData.append('additional_info', JSON.stringify(additionalInfo));
       
@@ -120,13 +124,25 @@ export default function CreatePost() {
       });
       
       setSuccess("Lost item posted successfully! Redirecting...");
-      if (refreshPosts) {
-        await refreshPosts();
+      const potentialMatches = response.data?.data?.potentialMatches || [];
+      setMatches(potentialMatches);
+
+      // If there are matches, keep user on page so they can review them.
+      // Otherwise, redirect back to My Postings as before.
+      if (potentialMatches.length === 0) {
+        setSuccess("Lost item posted successfully! Redirecting...");
+        if (refreshPosts) {
+          await refreshPosts();
+        }
+        setTimeout(() => {
+          navigate('/lost-dashboard/my-postings');
+        }, 2000);
+      } else {
+        setSuccess("Lost item posted! We found possible matches below.");
+        if (refreshPosts) {
+          await refreshPosts();
+        }
       }
-      
-      setTimeout(() => {
-        navigate('/lost-dashboard/my-postings');
-      }, 2000);
     } catch (err) {
       console.error('Post error:', err);
       setError(err.response?.data?.message || 'Failed to post item. Please try again.');
@@ -259,6 +275,22 @@ export default function CreatePost() {
             required
           />
           <p className="text-green-600 text-sm mt-1">Enter the name as it appears on the lost document/ID</p>
+        </div>
+
+        {/* ID NUMBER */}
+        <div>
+          <label className="block text-sm font-semibold text-green-900 mb-2">
+            ID Number (on the document)
+          </label>
+          <input
+            type="text"
+            name="id_number"
+            value={formData.id_number}
+            onChange={handleChange}
+            placeholder="e.g., 1199XXXXXXXXXXXX"
+            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
+          />
+          <p className="text-green-600 text-sm mt-1">If you know the exact ID number, enter it to improve automatic matching.</p>
         </div>
 
         {/* LOCATION AND DISTRICT */}
@@ -409,6 +441,50 @@ export default function CreatePost() {
           </button>
         </div>
       </form>
+
+      {/* POSSIBLE MATCHES AFTER POST */}
+      {matches.length > 0 && (
+        <div className="mt-8 bg-white p-6 rounded-2xl shadow-lg border border-green-200">
+          <h2 className="text-2xl font-bold text-green-900 mb-4">
+            Possible Matches Found
+          </h2>
+          <p className="text-green-700 mb-4">
+            We found items that might match your lost document. Please review them carefully.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            {matches.map((item) => (
+              <div
+                key={item.id}
+                className="border border-green-200 rounded-xl p-4 bg-green-50 space-y-1"
+              >
+                <p className="font-semibold text-green-900">
+                  {item.item_type || 'Found Document'}
+                </p>
+                <p className="text-sm text-green-800">
+                  <span className="font-medium">Category:</span> {item.category}
+                </p>
+                <p className="text-sm text-green-800">
+                  <span className="font-medium">District:</span> {item.district}
+                </p>
+                {item.holder_name && (
+                  <p className="text-sm text-green-800">
+                    <span className="font-medium">Name on Document:</span> {item.holder_name}
+                  </p>
+                )}
+                {item.id_number && (
+                  <p className="text-sm text-green-800">
+                    <span className="font-medium">ID Number:</span> {item.id_number}
+                  </p>
+                )}
+                <p className="text-xs text-green-700 mt-1">
+                  Found in: {item.location_found || 'Unknown'} on{" "}
+                  {item.date_found || 'Unknown date'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

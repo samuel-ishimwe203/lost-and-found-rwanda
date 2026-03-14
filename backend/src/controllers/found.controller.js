@@ -1,23 +1,16 @@
 import { query } from '../db/index.js';
 import { logAudit } from '../services/audit.service.js';
 import { checkForMatches, checkForDuplicatesInSection } from '../services/matching.service.js';
+import { runOcr } from '../services/ocr.service.js';
 
-// Post a new found item
 export const postFoundItem = async (req, res) => {
   try {
-    console.log('Post found item - Body:', req.body);
-    console.log('Post found item - File:', req.file);
-
     const { 
       item_type, category, description, location_found, district, 
       date_found, additional_info 
     } = req.body;
     const userId = req.user.id;
-
-    // Handle uploaded file
     const image_url = req.file ? `/uploads/${req.file.filename}` : null;
-
-    // Parse additional_info if it's a JSON string
     let parsedAdditionalInfo = null;
     if (additional_info) {
       try {
@@ -27,31 +20,37 @@ export const postFoundItem = async (req, res) => {
       }
     }
 
-    // Validate required fields
+    // Run OCR on the uploaded image if available to auto-extract holder name / ID number
+    let ocrName = null;
+    let ocrIdNumber = null;
+    let rawText = null;
+    if (req.file) {
+      try {
+        const ocrResult = await runOcr(req.file.path);
+        ocrName = ocrResult.name;
+        ocrIdNumber = ocrResult.idNumber;
+        rawText = ocrResult.rawText;
+      } catch (e) {
+        console.error('OCR error while processing found item:', e);
+      }
+    }
     if (!item_type || !category || !location_found || !district) {
       return res.status(400).json({ 
         success: false,
         message: 'Please provide all required fields: item_type, category, location_found, district' 
       });
     }
-
-    // Only finders and police can post found items
     if (!['finder', 'police'].includes(req.user.role)) {
       return res.status(403).json({ 
         success: false,
         message: 'Only users with finder or police role can post found items' 
       });
     }
-
     const isPoliceUpload = req.user.role === 'police';
-
-    // Check for duplicates in the found items section
-    // Prevent multiple people from posting the same found item
     const duplicateCheck = await checkForDuplicatesInSection(
       { category, image_url, item_type, district },
       'found'
     );
-
     if (duplicateCheck && duplicateCheck.isDuplicate) {
       return res.status(409).json({
         success: false,
@@ -66,19 +65,31 @@ export const postFoundItem = async (req, res) => {
         }
       });
     }
+    const holderName = ocrName || parsedAdditionalInfo?.owner_name || null;
+    const idNumber = ocrIdNumber || parsedAdditionalInfo?.id_number || null;
 
-    // Create found item
     const result = await query(
       `INSERT INTO found_items 
-       (user_id, item_type, category, description, location_found, district, date_found, is_police_upload, image_url, additional_info) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+       (user_id, item_type, category, description, location_found, district, date_found, is_police_upload, image_url, additional_info, id_number, holder_name, text, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
        RETURNING *`,
-      [userId, item_type, category, description, location_found, district, date_found, isPoliceUpload, image_url, parsedAdditionalInfo ? JSON.stringify(parsedAdditionalInfo) : null]
+      [
+        userId,
+        item_type,
+        category,
+        description,
+        location_found,
+        district,
+        date_found,
+        isPoliceUpload,
+        image_url,
+        parsedAdditionalInfo ? JSON.stringify(parsedAdditionalInfo) : null,
+        idNumber,
+        holderName,
+        rawText
+      ]
     );
-
     const foundItem = result.rows[0];
-
-    // Log audit
     await logAudit({
       userId,
       action: 'FOUND_ITEM_CREATED',
@@ -89,63 +100,74 @@ export const postFoundItem = async (req, res) => {
       userAgent: req.get('user-agent')
     });
 
-    // Check for potential matches
-    await checkForMatches(foundItem.id, 'found');
+    const matches = await checkForMatches(foundItem.id, 'found');
+    
+    // Enrich matches with loser details for immediate display
+    let enrichedMatches = [];
+    if (matches && matches.length > 0) {
+      const matchIds = matches.map(m => m.id);
+      const enrichedResult = await query(
+        `SELECT m.*, l.item_type as lost_item_type, l.category as lost_category, l.district as lost_district, 
+                l.reward_amount, l.image_url as lost_image_url, l.text as lost_text, 
+                l.additional_info as lost_additional_info, l.date_lost,
+                u.full_name as loser_name, u.phone_number as loser_phone, u.email as loser_email, u.id as loser_id
+         FROM matches m
+         JOIN lost_items l ON m.lost_item_id = l.id
+         JOIN users u ON l.user_id = u.id
+         WHERE m.id = ANY($1::int[])`,
+        [matchIds]
+      );
+      enrichedMatches = enrichedResult.rows;
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Found item posted successfully',
-      data: { foundItem }
+      message: enrichedMatches.length > 0 
+        ? `Found item posted! We found ${enrichedMatches.length} potential matches.` 
+        : 'Found item posted successfully',
+      data: { 
+        foundItem,
+        matches: enrichedMatches
+      }
     });
   } catch (error) {
-    console.error('Post found item error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error posting found item',
       error: error.message 
     });
   }
-};
+}
 
-// Get all found items (with optional filters)
 export const getFoundItems = async (req, res) => {
   try {
     const { status, district, category, search, is_police_upload, limit = 50, offset = 0 } = req.query;
-
     let whereConditions = [];
     let params = [];
     let paramCount = 1;
-
     if (status) {
       whereConditions.push(`f.status = $${paramCount++}`);
       params.push(status);
     }
-
     if (district) {
       whereConditions.push(`f.district = $${paramCount++}`);
       params.push(district);
     }
-
     if (category) {
       whereConditions.push(`f.category = $${paramCount++}`);
       params.push(category);
     }
-
     if (is_police_upload !== undefined) {
       whereConditions.push(`f.is_police_upload = $${paramCount++}`);
       params.push(is_police_upload === 'true');
     }
-
     if (search) {
       whereConditions.push(`(f.item_type ILIKE $${paramCount} OR f.description ILIKE $${paramCount})`);
       params.push(`%${search}%`);
       paramCount++;
     }
-
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
     params.push(limit, offset);
-
     const result = await query(
       `SELECT f.*, u.full_name, u.phone_number, u.email, u.role as uploader_role
        FROM found_items f
@@ -155,13 +177,10 @@ export const getFoundItems = async (req, res) => {
        LIMIT $${paramCount++} OFFSET $${paramCount}`,
       params
     );
-
-    // Get total count
     const countResult = await query(
       `SELECT COUNT(*) FROM found_items f ${whereClause}`,
       params.slice(0, -2)
     );
-
     res.status(200).json({
       success: true,
       data: {
@@ -172,20 +191,17 @@ export const getFoundItems = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get found items error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error retrieving found items',
       error: error.message 
     });
   }
-};
+}
 
-// Get single found item by ID
 export const getFoundItemById = async (req, res) => {
   try {
     const { id } = req.params;
-
     const result = await query(
       `SELECT f.*, u.full_name, u.phone_number, u.email, u.role as uploader_role, u.id as uploader_id
        FROM found_items f
@@ -193,15 +209,12 @@ export const getFoundItemById = async (req, res) => {
        WHERE f.id = $1`,
       [id]
     );
-
     if (result.rows.length === 0) {
       return res.status(404).json({ 
         success: false,
         message: 'Found item not found' 
       });
     }
-
-    // Get matches for this item
     const matchesResult = await query(
       `SELECT m.*, l.item_type as lost_item_type, l.location_lost, l.date_lost, l.reward_amount,
               u.full_name as loser_name, u.phone_number as loser_phone
@@ -212,7 +225,6 @@ export const getFoundItemById = async (req, res) => {
        ORDER BY m.matched_at DESC`,
       [id]
     );
-
     res.status(200).json({
       success: true,
       data: {
@@ -221,29 +233,24 @@ export const getFoundItemById = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get found item error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error retrieving found item',
       error: error.message 
     });
   }
-};
+}
 
-// Get user's own found items
 export const getMyFoundItems = async (req, res) => {
   try {
     const userId = req.user.id;
     const { status } = req.query;
-
     let whereClause = 'WHERE f.user_id = $1';
     const params = [userId];
-
     if (status) {
       whereClause += ' AND f.status = $2';
       params.push(status);
     }
-
     const result = await query(
       `SELECT f.*,
               (SELECT COUNT(*) FROM matches WHERE found_item_id = f.id) as match_count
@@ -252,22 +259,19 @@ export const getMyFoundItems = async (req, res) => {
        ORDER BY f.created_at DESC`,
       params
     );
-
     res.status(200).json({
       success: true,
       data: { foundItems: result.rows }
     });
   } catch (error) {
-    console.error('Get my found items error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error retrieving your found items',
       error: error.message 
     });
   }
-};
+}
 
-// Update found item
 export const updateFoundItem = async (req, res) => {
   try {
     const { id } = req.params;
@@ -276,34 +280,26 @@ export const updateFoundItem = async (req, res) => {
       item_type, category, description, location_found, district, 
       date_found, status, image_url, additional_info 
     } = req.body;
-
-    // Check if item exists and belongs to user
     const checkResult = await query(
       'SELECT * FROM found_items WHERE id = $1',
       [id]
     );
-
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ 
         success: false,
         message: 'Found item not found' 
       });
     }
-
     const item = checkResult.rows[0];
-
-    // Only owner, police, or admin can update
     if (item.user_id !== userId && !['police', 'admin'].includes(req.user.role)) {
       return res.status(403).json({ 
         success: false,
         message: 'You do not have permission to update this item' 
       });
     }
-
     const updates = [];
     const values = [];
     let paramCount = 1;
-
     if (item_type !== undefined) {
       updates.push(`item_type = $${paramCount++}`);
       values.push(item_type);
@@ -340,25 +336,20 @@ export const updateFoundItem = async (req, res) => {
       updates.push(`additional_info = $${paramCount++}`);
       values.push(JSON.stringify(additional_info));
     }
-
     if (updates.length === 0) {
       return res.status(400).json({ 
         success: false,
         message: 'No fields to update' 
       });
     }
-
     updates.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(id);
-
     const result = await query(
       `UPDATE found_items SET ${updates.join(', ')} 
        WHERE id = $${paramCount} 
        RETURNING *`,
       values
     );
-
-    // Log audit
     await logAudit({
       userId,
       action: 'FOUND_ITEM_UPDATED',
@@ -368,54 +359,54 @@ export const updateFoundItem = async (req, res) => {
       ipAddress: req.ip,
       userAgent: req.get('user-agent')
     });
-
     res.status(200).json({
       success: true,
       message: 'Found item updated successfully',
       data: { foundItem: result.rows[0] }
     });
   } catch (error) {
-    console.error('Update found item error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error updating found item',
       error: error.message 
     });
   }
-};
+}
 
-// Delete found item
 export const deleteFoundItem = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-
-    // Check if item exists and belongs to user
     const checkResult = await query(
       'SELECT * FROM found_items WHERE id = $1',
       [id]
     );
-
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ 
         success: false,
         message: 'Found item not found' 
       });
     }
-
     const item = checkResult.rows[0];
+    // If it's an admin or uploader, perform a cascading delete of all related records
+    // 1. Get all match IDs for this found item
+    const matchesResult = await query('SELECT id FROM matches WHERE found_item_id = $1', [id]);
+    const matchIds = matchesResult.rows.map(m => m.id);
 
-    // Only owner, police, or admin can delete
-    if (item.user_id !== userId && !['police', 'admin'].includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You do not have permission to delete this item' 
-      });
+    if (matchIds.length > 0) {
+      // 2. Delete messages related to these matches
+      await query('DELETE FROM messages WHERE match_id = ANY($1::int[])', [matchIds]);
+      // 3. Delete notifications related to these matches
+      await query('DELETE FROM notifications WHERE related_match_id = ANY($1::int[])', [matchIds]);
+      // 4. Delete the matches themselves
+      await query('DELETE FROM matches WHERE id = ANY($1::int[])', [matchIds]);
     }
 
-    await query('DELETE FROM found_items WHERE id = $1', [id]);
+    // 5. Delete notifications directly related to this found item
+    await query('DELETE FROM notifications WHERE related_found_item_id = $1', [id]);
 
-    // Log audit
+    // 6. Finally delete the found item
+    await query('DELETE FROM found_items WHERE id = $1', [id]);
     await logAudit({
       userId,
       action: 'FOUND_ITEM_DELETED',
@@ -425,51 +416,38 @@ export const deleteFoundItem = async (req, res) => {
       ipAddress: req.ip,
       userAgent: req.get('user-agent')
     });
-
     res.status(200).json({
       success: true,
       message: 'Found item deleted successfully'
     });
   } catch (error) {
-    console.error('Delete found item error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error deleting found item',
       error: error.message 
     });
   }
-};
+}
 
-// Get dashboard statistics for finder
 export const getFoundDashboardStats = async (req, res) => {
   try {
     const userId = req.user.id;
-
-    // Total found items posted
     const totalResult = await query(
       'SELECT COUNT(*) FROM found_items WHERE user_id = $1',
       [userId]
     );
-
-    // Active found items (not matched, not returned)
     const activeResult = await query(
       'SELECT COUNT(*) FROM found_items WHERE user_id = $1 AND status = $2',
       [userId, 'active']
     );
-
-    // Matched items (waiting for confirmation/return)
     const matchedResult = await query(
       'SELECT COUNT(*) FROM found_items WHERE user_id = $1 AND status = $2',
       [userId, 'matched']
     );
-
-    // Items returned
     const returnedResult = await query(
       'SELECT COUNT(*) FROM found_items WHERE user_id = $1 AND status = $2',
       [userId, 'returned']
     );
-
-    // Total rewards earned (from completed matches with rewards paid)
     const rewardsResult = await query(
       `SELECT SUM(l.reward_amount) as total_rewards
        FROM matches m
@@ -478,7 +456,6 @@ export const getFoundDashboardStats = async (req, res) => {
        WHERE f.user_id = $1 AND m.status = 'completed' AND m.reward_paid = true`,
       [userId]
     );
-
     res.status(200).json({
       success: true,
       data: {
@@ -490,11 +467,10 @@ export const getFoundDashboardStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get found dashboard stats error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error retrieving dashboard statistics',
       error: error.message 
     });
   }
-};
+}

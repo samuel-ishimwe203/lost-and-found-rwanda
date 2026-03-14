@@ -74,6 +74,13 @@ const createTables = async () => {
     `);
     console.log('✅ Found items table created');
 
+    // Ensure ID-specific columns exist for OCR-based matching
+    await query(`ALTER TABLE lost_items ADD COLUMN IF NOT EXISTS id_number VARCHAR(100);`);
+    await query(`ALTER TABLE lost_items ADD COLUMN IF NOT EXISTS holder_name VARCHAR(255);`);
+    await query(`ALTER TABLE found_items ADD COLUMN IF NOT EXISTS id_number VARCHAR(100);`);
+    await query(`ALTER TABLE found_items ADD COLUMN IF NOT EXISTS holder_name VARCHAR(255);`);
+    console.log('✅ ID-specific columns ensured on lost_items and found_items');
+
     // Matches table
     await query(`
       CREATE TABLE IF NOT EXISTS matches (
@@ -81,6 +88,7 @@ const createTables = async () => {
         lost_item_id INTEGER NOT NULL REFERENCES lost_items(id) ON DELETE CASCADE,
         found_item_id INTEGER NOT NULL REFERENCES found_items(id) ON DELETE CASCADE,
         match_score DECIMAL(5, 2) DEFAULT 0,
+        similarity_score DECIMAL(5, 2),
         status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'rejected', 'completed')),
         loser_confirmed BOOLEAN DEFAULT false,
         finder_confirmed BOOLEAN DEFAULT false,
@@ -171,6 +179,32 @@ const createTables = async () => {
     // Ensure document_url column exists
     await query(`ALTER TABLE police_profiles ADD COLUMN IF NOT EXISTS document_url VARCHAR(500);`);
 
+    // Documents table (generic document upload & OCR text extraction)
+    await query(`
+      CREATE TABLE IF NOT EXISTS documents (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        file_name VARCHAR(500) NOT NULL,
+        text TEXT NOT NULL,
+        file_url VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Documents table created');
+
+    // Document matches table
+    await query(`
+      CREATE TABLE IF NOT EXISTS document_matches (
+        id SERIAL PRIMARY KEY,
+        document_id_1 INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        document_id_2 INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        similarity_score DECIMAL(5, 2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(document_id_1, document_id_2)
+      )
+    `);
+    console.log('✅ Document matches table created');
+
     // Create indexes for better performance
     await query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
     await query('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)');
@@ -191,6 +225,11 @@ const createTables = async () => {
     await query('CREATE INDEX IF NOT EXISTS idx_police_profiles_badge ON police_profiles(badge_number)');
     await query('CREATE INDEX IF NOT EXISTS idx_police_profiles_station ON police_profiles(police_station)');
     await query('CREATE INDEX IF NOT EXISTS idx_police_profiles_district ON police_profiles(district)');
+    // Document indexes
+    await query('CREATE INDEX IF NOT EXISTS idx_documents_user ON documents(user_id)');
+    await query('CREATE INDEX IF NOT EXISTS idx_documents_text_fts ON documents USING GIN (to_tsvector(\'english\', text))');
+    await query('CREATE INDEX IF NOT EXISTS idx_document_matches_doc1 ON document_matches(document_id_1)');
+    await query('CREATE INDEX IF NOT EXISTS idx_document_matches_doc2 ON document_matches(document_id_2)');
     console.log('✅ Indexes created');
 
     // Create default admin user

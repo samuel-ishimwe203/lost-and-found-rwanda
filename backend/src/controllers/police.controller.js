@@ -1,6 +1,7 @@
 import { query } from '../db/index.js';
 import { logAudit } from '../services/audit.service.js';
 import { checkForMatches, checkForDuplicatesInSection } from '../services/matching.service.js';
+import { runOcr } from '../services/ocr.service.js';
 
 // Post official document/item found at police station
 export const postOfficialDocument = async (req, res) => {
@@ -40,6 +41,24 @@ export const postOfficialDocument = async (req, res) => {
       }
     }
 
+    // Run OCR for official document
+    let ocrName = null;
+    let ocrIdNumber = null;
+    let rawText = null;
+    if (req.file) {
+      try {
+        const ocrResult = await runOcr(req.file.path);
+        ocrName = ocrResult.name;
+        ocrIdNumber = ocrResult.idNumber;
+        rawText = ocrResult.rawText;
+      } catch (e) {
+        console.error('OCR error for police document:', e);
+      }
+    }
+
+    const holderName = ocrName || parsedAdditionalInfo?.owner_name || null;
+    const idNumber = ocrIdNumber || parsedAdditionalInfo?.id_number || null;
+
     // AI Check: Check for duplicates to avoid spam/re-uploads
     const duplicateCheck = await checkForDuplicatesInSection(
       { category, image_url, item_type, district },
@@ -60,13 +79,17 @@ export const postOfficialDocument = async (req, res) => {
       });
     }
 
-    // Create found item with police flag
+    // Create found item with police flag and OCR data
     const result = await query(
       `INSERT INTO found_items 
-       (user_id, item_type, category, description, location_found, district, date_found, is_police_upload, image_url, additional_info) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+       (user_id, item_type, category, description, location_found, district, date_found, is_police_upload, image_url, additional_info, id_number, holder_name, text) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
        RETURNING *`,
-      [userId, item_type, category, description, location_found, district, date_found, true, image_url, parsedAdditionalInfo ? JSON.stringify(parsedAdditionalInfo) : null]
+      [
+        userId, item_type, category, description, location_found, district, date_found, true, image_url, 
+        parsedAdditionalInfo ? JSON.stringify(parsedAdditionalInfo) : null,
+        idNumber, holderName, rawText
+      ]
     );
 
     const foundItem = result.rows[0];
@@ -83,12 +106,35 @@ export const postOfficialDocument = async (req, res) => {
     });
 
     // AI Check: Trigger AI/Database Matching Service immediately
-    await checkForMatches(foundItem.id, 'found');
+    const matches = await checkForMatches(foundItem.id, 'found');
+
+    // Enrich matches with loser details for immediate feedback
+    let enrichedMatches = [];
+    if (matches && matches.length > 0) {
+      const matchIds = matches.map(m => m.id);
+      const enrichedResult = await query(
+        `SELECT m.*, l.item_type as lost_item_type, l.category as lost_category, l.district as lost_district, 
+                l.reward_amount, l.image_url as lost_image_url, l.text as lost_text, 
+                l.additional_info as lost_additional_info, l.date_lost,
+                u.full_name as loser_name, u.phone_number as loser_phone, u.email as loser_email, u.id as loser_id
+         FROM matches m
+         JOIN lost_items l ON m.lost_item_id = l.id
+         JOIN users u ON l.user_id = u.id
+         WHERE m.id = ANY($1::int[])`,
+        [matchIds]
+      );
+      enrichedMatches = enrichedResult.rows;
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Official document posted successfully',
-      data: { foundItem }
+      message: enrichedMatches.length > 0 
+        ? `Official document posted! We found ${enrichedMatches.length} potential matches.` 
+        : 'Official document posted successfully',
+      data: { 
+        foundItem,
+        matches: enrichedMatches
+      }
     });
   } catch (error) {
     console.error('Post official document error:', error);

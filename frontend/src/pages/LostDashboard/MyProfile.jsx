@@ -198,221 +198,176 @@ export default function MyProfile() {
       )}
 
       {/* PROFILE CARD */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 border border-green-200">
-        {isEditing ? (
-          <form onSubmit={handleSave} className="space-y-6">
-            {/* PROFILE PHOTO UPLOAD */}
-            <div className="flex flex-col items-center mb-6">
-              <div className="relative mb-4">
+      <div className="bg-white rounded-[48px] shadow-2xl overflow-hidden border border-green-100 transition-all duration-500 hover:shadow-green-900/10">
+        <div className="bg-gradient-to-r from-green-900 to-emerald-800 h-32 w-full relative">
+           <div className="absolute -bottom-16 left-12">
+              <div className="relative group">
                 {previewUrl ? (
                   <img
                     src={previewUrl}
-                    alt="Profile Preview"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-green-400 shadow-lg"
+                    alt="Profile"
+                    className="w-32 h-32 rounded-3xl object-cover border-8 border-white shadow-2xl transition-transform group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center text-5xl font-bold shadow-lg border-4 border-green-400">
+                  <div className="w-32 h-32 rounded-3xl bg-emerald-500 text-white flex items-center justify-center text-4xl font-black shadow-2xl border-8 border-white">
                     {profile.firstName?.charAt(0) || "U"}
-                    {profile.lastName?.charAt(0) || "S"}
                   </div>
                 )}
-                <label htmlFor="photoUpload" className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full cursor-pointer hover:bg-green-700 transition shadow-lg">
-                  📷
-                </label>
+                {isEditing && (
+                  <label htmlFor="photoUpload" className="absolute -right-2 -bottom-2 bg-green-600 text-white p-3 rounded-2xl cursor-pointer hover:bg-green-700 transition shadow-xl border-4 border-white">
+                    <span className="text-lg">📷</span>
+                  </label>
+                )}
               </div>
-              <input
-                id="photoUpload"
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-              <p className="text-sm text-gray-600 mt-2">Click camera icon to upload profile photo</p>
-            </div>
+           </div>
+        </div>
 
-            {/* FIRST NAME */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-green-900 mb-2">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={profile.firstName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-
-              {/* LAST NAME */}
-              <div>
-                <label className="block text-sm font-semibold text-green-900 mb-2">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={profile.lastName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            </div>
-
-            {/* EMAIL */}
-            <div>
-              <label className="block text-sm font-semibold text-green-900 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={profile.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-
-            {/* PHONE */}
-            <div>
-              <label className="block text-sm font-semibold text-green-900 mb-2">
-                Phone
-              </label>
-              <input
-                type="tel"
-                name="phone_number"
-                value={profile.phone_number}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-
-            {/* LOCATION (District) */}
-            <div>
-              <label className="block text-sm font-semibold text-green-900 mb-2">
-                District
-              </label>
-              <input
-                type="text"
-                name="district"
-                value={profile.district || ""}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-
-            {/* BIO */}
-            <div>
-              <label className="block text-sm font-semibold text-green-900 mb-2">
-                Bio
-              </label>
-              <textarea
-                name="bio"
-                value={profile.bio}
-                onChange={handleChange}
-                rows="4"
-                className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              ></textarea>
-            </div>
-
-            {/* SAVE BUTTON */}
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-          </form>
-        ) : (
-          <div className="space-y-8">
-            {/* AVATAR & BASIC INFO */}
-            <div className="flex flex-col items-center text-center mb-8">
-              {previewUrl ? (
-                <img
-                  src={previewUrl}
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover border-4 border-green-400 shadow-lg mb-4"
-                />
-              ) : (
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center text-5xl font-bold shadow-lg border-4 border-green-400 mb-4">
-                  {profile.firstName?.charAt(0) || "U"}
-                  {profile.lastName?.charAt(0) || "S"}
+        <div className="pt-20 px-12 pb-12">
+          {isEditing ? (
+            <form onSubmit={handleSave} className="space-y-10">
+              <input id="photoUpload" type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-green-700 uppercase tracking-widest px-1">First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={profile.firstName}
+                    onChange={handleChange}
+                    className="w-full bg-green-50/50 border-2 border-transparent focus:bg-white focus:border-green-600 rounded-2xl px-6 py-4 font-bold text-green-900 transition-all outline-none"
+                  />
                 </div>
-              )}
-              <h2 className="text-3xl font-bold text-green-900">{profile.full_name || "User"}</h2>
-              <p className="text-green-600 font-semibold mt-2">
-                ✓ Verified User
-              </p>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-green-700 uppercase tracking-widest px-1">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={profile.lastName}
+                    onChange={handleChange}
+                    className="w-full bg-green-50/50 border-2 border-transparent focus:bg-white focus:border-green-600 rounded-2xl px-6 py-4 font-bold text-green-900 transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-green-700 uppercase tracking-widest px-1">Email Address</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={profile.email}
+                    disabled
+                    className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-6 py-4 font-bold text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-green-700 uppercase tracking-widest px-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    name="phone_number"
+                    value={profile.phone_number}
+                    onChange={handleChange}
+                    className="w-full bg-green-50/50 border-2 border-transparent focus:bg-white focus:border-green-600 rounded-2xl px-6 py-4 font-bold text-green-900 transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-green-700 uppercase tracking-widest px-1">Short Bio</label>
+                <textarea
+                  name="bio"
+                  value={profile.bio}
+                  onChange={handleChange}
+                  rows="4"
+                  className="w-full bg-green-50/50 border-2 border-transparent focus:bg-white focus:border-green-600 rounded-[32px] px-8 py-6 font-bold text-green-900 transition-all outline-none resize-none"
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full bg-green-900 text-white px-8 py-5 rounded-[24px] font-black text-lg hover:bg-black transition shadow-2xl disabled:opacity-50"
+              >
+                {saving ? "Updating..." : "Confirm & Save Changes"}
+              </button>
+            </form>
+          ) : (
+            <div className="space-y-12">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-green-50 pb-8">
+                <div>
+                  <h2 className="text-4xl font-black text-green-900 tracking-tight">{profile.full_name || "User Profile"}</h2>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-full">Primary Account</span>
+                    <span className="text-green-500 font-bold text-xs flex items-center gap-1">✓ Identity Verified</span>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="bg-green-50 px-6 py-4 rounded-3xl border border-green-100 text-center min-w-[120px]">
+                    <p className="text-2xl font-black text-green-900">{profile.totalPostings}</p>
+                    <p className="text-[10px] font-black text-green-500 uppercase tracking-tighter">Total Posts</p>
+                  </div>
+                  <div className="bg-emerald-500 px-6 py-4 rounded-3xl border border-emerald-400 text-center text-white min-w-[120px] shadow-lg shadow-emerald-500/20">
+                    <p className="text-2xl font-black">{profile.recoveredItems}</p>
+                    <p className="text-[10px] font-black text-white/50 uppercase tracking-tighter">Recovered</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="group bg-green-50/30 p-8 rounded-[32px] border border-green-50 hover:bg-white hover:border-green-200 transition-all duration-300">
+                  <p className="text-[10px] font-black text-green-500 uppercase tracking-[3px] mb-4 font-mono">ACCOUNT_DETAILS</p>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-green-600 shadow-sm border border-green-100">📧</div>
+                      <div>
+                        <p className="text-[10px] font-black text-green-300 uppercase">Email</p>
+                        <p className="text-sm font-black text-green-900">{profile.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-green-600 shadow-sm border border-green-100">📱</div>
+                      <div>
+                        <p className="text-[10px] font-black text-green-300 uppercase">Phone</p>
+                        <p className="text-sm font-black text-green-900">{profile.phone_number || "Not set"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group bg-blue-50/30 p-8 rounded-[32px] border border-blue-50 hover:bg-white hover:border-blue-200 transition-all duration-300">
+                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-[3px] mb-4 font-mono">LOCATION_ID</p>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">📍</div>
+                      <div>
+                        <p className="text-[10px] font-black text-blue-300 uppercase">Primary District</p>
+                        <p className="text-sm font-black text-blue-900">{profile.district || "Kigali, Rwanda"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">📅</div>
+                      <div>
+                        <p className="text-[10px] font-black text-blue-300 uppercase">Operating Since</p>
+                        <p className="text-sm font-black text-blue-900">
+                          {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 text-white p-10 rounded-[40px] shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-green-500 rounded-full blur-[100px] opacity-20 -mr-32 -mt-32"></div>
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-[5px] mb-4">Professional Bio</p>
+                <p className="text-lg font-bold leading-relaxed text-slate-300 italic">
+                  "{profile.bio || "This user prefers to keep their profile brief as they help the community recover lost items."}"
+                </p>
+              </div>
             </div>
-
-            {/* STATS */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-green-50 p-4 rounded-lg text-center border border-green-200">
-                <p className="text-3xl font-bold text-green-600">{profile.totalPostings}</p>
-                <p className="text-green-700 text-sm mt-1">Total Postings</p>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg text-center border border-green-200">
-                <p className="text-3xl font-bold text-green-600">{profile.recoveredItems}</p>
-                <p className="text-green-700 text-sm mt-1">Items Recovered</p>
-              </div>
-            </div>
-
-            {/* INFO GRID */}
-            <div className="grid md:grid-cols-2 gap-8 pt-4">
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-600 uppercase tracking-wide font-semibold">First Name</p>
-                <p className="text-lg font-semibold text-green-900 mt-1">
-                  {profile.firstName || "Not provided"}
-                </p>
-              </div>
-
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-600 uppercase tracking-wide font-semibold">Last Name</p>
-                <p className="text-lg font-semibold text-green-900 mt-1">
-                  {profile.lastName || "Not provided"}
-                </p>
-              </div>
-
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-600 uppercase tracking-wide font-semibold">Email</p>
-                <p className="text-lg font-semibold text-green-900 mt-1">
-                  {profile.email || "Not provided"}
-                </p>
-              </div>
-
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-600 uppercase tracking-wide font-semibold">Phone</p>
-                <p className="text-lg font-semibold text-green-900 mt-1">
-                  {profile.phone_number || "Not provided"}
-                </p>
-              </div>
-
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-600 uppercase tracking-wide font-semibold">Location</p>
-                <p className="text-lg font-semibold text-green-900 mt-1">
-                  Kigali, Rwanda
-                </p>
-              </div>
-
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-600 uppercase tracking-wide font-semibold">Member Since</p>
-                <p className="text-lg font-semibold text-green-900 mt-1">
-                  {new Date(profile.created_at).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-
-            {/* BIO */}
-            <div className="pt-4 border-t border-green-200">
-              <p className="text-sm text-green-600 uppercase tracking-wide font-semibold">Bio</p>
-              <p className="text-base text-green-900 mt-3 bg-green-50 p-4 rounded-lg border border-green-200">
-                {profile.bio || "No bio provided yet"}
-              </p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

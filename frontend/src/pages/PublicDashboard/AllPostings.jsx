@@ -1,4 +1,5 @@
 import { Folder, MapPin, Phone, User, Image } from "lucide-react";
+import { FiCalendar } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { PostsContext } from "../../context/PostsContext";
@@ -141,6 +142,31 @@ export default function AllPostings() {
                         </div>
                       </div>
                     )}
+
+                    {/* Color */}
+                    {additionalInfo.color && (
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gray-100 text-gray-600 mr-2 flex-shrink-0">
+                          <span className="w-3 h-3 rounded-full border border-gray-300" style={{ backgroundColor: additionalInfo.color.toLowerCase() }}></span>
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 truncate">Color: {additionalInfo.color}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Date */}
+                    <div className="flex items-center">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
+                        <FiCalendar className="w-3 h-3" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 truncate">
+                          {isLostItem ? 'Lost on: ' : 'Found on: '}
+                          {new Date(item.date_lost || item.date_found).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
 
                     {/* Phone Number */}
                     {(item.contact_phone || additionalInfo.contact_phone) && (

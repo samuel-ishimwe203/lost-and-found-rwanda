@@ -6,6 +6,7 @@ export default function PoliceDashboardLayout() {
     { path: "/police-dashboard/upload-document", label: "Upload Official Item" },
     { path: "/police-dashboard/manage-claims", label: "Manage Claims" },
     { path: "/police-dashboard/returned-documents", label: "Returned Items" },
+    { path: "/police-dashboard/document-scanner", label: "Document Scanner" },
   ];
 
   return (

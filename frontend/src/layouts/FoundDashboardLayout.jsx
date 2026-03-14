@@ -19,8 +19,8 @@ export default function FoundDashboardLayout() {
     
     // If on messages page, check more frequently
     const interval = location.pathname.includes('/messages') 
-      ? setInterval(fetchUnreadCount, 3000) // Every 3 seconds on messages page
-      : setInterval(fetchUnreadCount, 15000); // Every 15 seconds elsewhere
+      ? setInterval(fetchUnreadCount, 10000) // Every 10 seconds on messages page
+      : setInterval(fetchUnreadCount, 60000); // Every 60 seconds elsewhere
     
     return () => {
       clearInterval(interval);
@@ -57,6 +57,7 @@ export default function FoundDashboardLayout() {
     { path: "/found-dashboard/my-found-items", label: "My Found Items" },
     { path: "/found-dashboard/post-found-item", label: "Post Found Item" },
     { path: "/found-dashboard/matches", label: "Potential Matches" },
+    { path: "/found-dashboard/document-scanner", label: "Document Scanner" },
     { path: "/found-dashboard/messages", label: "Messages", badge: unreadCount },
   ];
 
