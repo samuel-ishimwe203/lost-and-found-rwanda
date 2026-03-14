@@ -68,6 +68,19 @@ export const getMatchById = async (req, res) => {
       })
     }
 
+    // NEW: Restricted view for Lost User if match is NOT unlocked
+    if (req.user.role === 'loser' && !match.is_unlocked) {
+      // Hide sensitive founder info
+      match.finder_name = 'Hidden (Admin Verified)';
+      match.finder_phone = 'Hidden';
+      match.finder_email = 'Hidden';
+      match.location_found = 'Hidden (Available after payment)';
+      match.additional_info = null; // Hide OCR/parsed data too
+      match.contact_name = 'Hidden';
+      match.contact_phone = 'Hidden';
+      match.contact_email = 'Hidden';
+    }
+
     res.status(200).json({
       success: true,
       data: { match }
@@ -209,3 +222,58 @@ export const deleteMatch = async (req, res) => {
     });
   }
 }
+
+// Submit platform fee payment details to unlock match
+export const payMatchFee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { payment_method, payment_phone, transaction_id, payment_name } = req.body;
+    const userId = req.user.id;
+
+    // Verify ownership and verification status
+    const matchRes = await query(`
+      SELECT m.*, l.user_id as loser_id, l.item_type as lost_item_name
+      FROM matches m
+      JOIN lost_items l ON m.lost_item_id = l.id
+      WHERE m.id = $1
+    `, [id]);
+
+    if (matchRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Match not found' });
+    }
+
+    const match = matchRes.rows[0];
+
+    if (match.loser_id !== userId) {
+      return res.status(403).json({ success: false, message: 'Only the lost item owner can pay to unlock' });
+    }
+
+    if (!match.is_verified) {
+      return res.status(400).json({ success: false, message: 'Match must be verified by admin before payment' });
+    }
+
+    // Update match with payment details and set status to pending_admin_approval
+    await query(
+      `UPDATE matches 
+       SET payment_status = 'pending_admin_approval',
+           payment_method = $1,
+           payment_phone = $2,
+           transaction_id = $3,
+           payment_name = $4,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5`,
+      [payment_method, payment_phone, transaction_id, payment_name, id]
+    );
+
+    // Notify Admins about new payment (Optional, but good for UX)
+    console.log(`User ${userId} submitted manual payment for match ${id}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment details submitted! An administrator will verify your payment within 24 hours to unlock the match.'
+    });
+  } catch (error) {
+    console.error('Submit payment details error:', error);
+    res.status(500).json({ success: false, message: 'Error submitting payment details', error: error.message });
+  }
+}

@@ -30,14 +30,60 @@ export const extractNameAndId = (text) => {
   return { name, idNumber };
 };
 
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+
 export const runOcr = async (imagePath) => {
-  const result = await Tesseract.recognize(imagePath, 'eng', {
-    logger: () => {},
-  });
-  const rawText = result.data.text || '';
-  const { name, idNumber } = extractNameAndId(rawText);
-  return { rawText, name, idNumber };
+  let preprocessedImagePath = null;
+
+  try {
+    // Generate a temporary file path for the preprocessed image
+    const ext = path.extname(imagePath);
+    const dir = path.dirname(imagePath);
+    const base = path.basename(imagePath, ext);
+    preprocessedImagePath = path.join(dir, `${base}_preprocessed${ext}`);
+
+    // Preprocess image with sharp for better OCR results
+    await sharp(imagePath)
+      .greyscale() // Convert to grayscale
+      .normalize() // Normalize contrast
+      .sharpen()   // Sharpen edges for text clarity
+      .toFile(preprocessedImagePath);
+
+    // Run Tesseract on the preprocessed image
+    const result = await Tesseract.recognize(preprocessedImagePath, 'eng', {
+      logger: () => {},
+    });
+
+    const rawText = result.data.text || '';
+    const { name, idNumber } = extractNameAndId(rawText);
+    
+    // Clean up temporary image
+    if (fs.existsSync(preprocessedImagePath)) {
+      fs.unlinkSync(preprocessedImagePath);
+    }
+
+    return { rawText, name, idNumber };
+  } catch (error) {
+    console.error('OCR Error:', error);
+    
+    // Clean up on error
+    if (preprocessedImagePath && fs.existsSync(preprocessedImagePath)) {
+      fs.unlinkSync(preprocessedImagePath);
+    }
+
+    // Fallback: Try with original image if processing failed
+    try {
+      const fallbackResult = await Tesseract.recognize(imagePath, 'eng', {
+        logger: () => {},
+      });
+      const rawText = fallbackResult.data.text || '';
+      const { name, idNumber } = extractNameAndId(rawText);
+      return { rawText, name, idNumber };
+    } catch (fallbackError) {
+      console.error('Fallback OCR Error:', fallbackError);
+      return { rawText: '', name: null, idNumber: null };
+    }
+  }
 };
-
-
-

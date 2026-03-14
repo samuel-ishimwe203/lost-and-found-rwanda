@@ -1,5 +1,10 @@
 import express from 'express';
-import { getUsers, createOfficialAccount, updateUser, deleteUser, getSystemStats, getLogs, getAllItems, getAllMatches, getPendingPoliceRegistrations, approvePoliceRegistration, rejectPoliceRegistration } from '../controllers/admin.controller.js';
+import { 
+  getUsers, createOfficialAccount, updateUser, deleteUser, 
+  getSystemStats, getLogs, getAllItems, getAllMatches, 
+  getPendingPoliceRegistrations, approvePoliceRegistration, 
+  rejectPoliceRegistration, verifyMatch, confirmMatchPayment 
+} from '../controllers/admin.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { adminOnly } from '../middleware/role.middleware.js';
 
@@ -21,5 +26,10 @@ router.get('/matches', getAllMatches);
 router.get('/police/pending', getPendingPoliceRegistrations);
 router.post('/police/approve/:police_profile_id', approvePoliceRegistration);
 router.post('/police/reject/:police_profile_id', rejectPoliceRegistration);
+
+// Match verification
+router.post('/matches/verify/:matchId', verifyMatch);
+router.post('/matches/confirm-payment/:matchId', confirmMatchPayment);
+
 
 export default router;

@@ -1,5 +1,7 @@
 import Tesseract from 'tesseract.js';
 import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
 
 /**
  * Extract text from an uploaded document.
@@ -15,9 +17,41 @@ export const extractTextFromDocument = async (filePath, mimeType) => {
     return pdfData.text || '';
   }
 
-  // Default: treat as image and run Tesseract OCR
-  const result = await Tesseract.recognize(filePath, 'eng', {
-    logger: () => {},
-  });
-  return result.data.text || '';
+  let preprocessedImagePath = null;
+  try {
+    const ext = path.extname(filePath);
+    const dir = path.dirname(filePath);
+    const base = path.basename(filePath, ext);
+    preprocessedImagePath = path.join(dir, `${base}_preprocessed${ext}`);
+
+    // Preprocess image to enhance text visibility
+    await sharp(filePath)
+      .greyscale()
+      .normalize()
+      .sharpen()
+      .toFile(preprocessedImagePath);
+
+    const result = await Tesseract.recognize(preprocessedImagePath, 'eng', {
+      logger: () => {},
+    });
+
+    if (fs.existsSync(preprocessedImagePath)) fs.unlinkSync(preprocessedImagePath);
+
+    return result.data.text || '';
+  } catch (error) {
+    if (preprocessedImagePath && fs.existsSync(preprocessedImagePath)) {
+      fs.unlinkSync(preprocessedImagePath);
+    }
+    
+    // Fallback un-preprocessed
+    console.warn("Preprocessed OCR failed, falling back to original image", error);
+    try {
+      const fallbackResult = await Tesseract.recognize(filePath, 'eng', {
+        logger: () => {},
+      });
+      return fallbackResult.data.text || '';
+    } catch(err) {
+      return '';
+    }
+  }
 };

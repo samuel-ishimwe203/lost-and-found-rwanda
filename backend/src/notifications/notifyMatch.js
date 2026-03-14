@@ -16,9 +16,9 @@ export async function notifyMatch(match, lostItem, foundItem) {
       [
         lostItem.user_id,
         'match_found',
-        '🎉 Match Found for Your Lost Item!',
-        `Great news! Someone has found an item matching your lost ${lostItem.item_type || 'item'} (${lostItem.category || 'Unknown category'}). ` +
-        `Go to your Dashboard > My Matches to view details and contact the finder.`,
+        '🎉 Potential Match Found!',
+        `Great news! Someone has found an item matching your lost ${lostItem.item_type || 'item'}. ` +
+        `An administrator is currently verifying the match. You will be notified once it is approved for unlocking.`,
         'in_app',
         'sent',
         match.id,
@@ -34,9 +34,9 @@ export async function notifyMatch(match, lostItem, foundItem) {
       [
         foundItem.user_id,
         'match_found',
-        '🎉 Match Found for Your Found Item!',
-        `Great news! Your found ${foundItem.item_type || 'item'} (${foundItem.category || 'Unknown category'}) matches a lost item report. ` +
-        `Go to your Dashboard > Matches to view details and contact the owner.`,
+        '🎉 Potential Owner Found!',
+        `Great news! Your found ${foundItem.item_type || 'item'} matches a lost item report. ` +
+        `Our admins are verifying the connection. We will notify you when communication is open.`,
         'in_app',
         'sent',
         match.id,
