@@ -143,19 +143,19 @@ export default function LostMatches() {
 
   if (matches.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto py-12 px-6">
-        <div className="bg-white rounded-[40px] shadow-2xl p-16 text-center border border-slate-100 relative overflow-hidden">
+      <div className="max-w-4xl mx-auto py-8 md:py-12 px-4 md:px-6">
+        <div className="bg-white rounded-3xl md:rounded-[40px] shadow-2xl p-8 md:p-16 text-center border border-slate-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
           <div className="relative z-10">
-            <div className="w-24 h-24 bg-green-100 text-green-600 rounded-3xl flex items-center justify-center mx-auto mb-8 rotate-12 transition-transform hover:rotate-0">
-              <FiEye className="w-12 h-12" />
+            <div className="w-16 h-16 md:w-24 md:h-24 bg-green-100 text-green-600 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 rotate-12 transition-transform hover:rotate-0">
+              <FiEye className="w-8 h-8 md:w-12 md:h-12" />
             </div>
-            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">No matches yet.</h2>
-            <p className="text-slate-500 font-medium max-w-md mx-auto mb-10 text-lg">
+            <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">No matches yet.</h2>
+            <p className="text-slate-500 font-medium max-w-md mx-auto mb-8 md:mb-10 text-sm md:text-lg">
               We haven't found any items that match your posting. You'll receive a notification as soon as someone reports a discovery.
             </p>
             <div className="flex items-center justify-center gap-4">
-               <button className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm shadow-xl hover:bg-slate-800 transition">Go to Dashboard</button>
+               <button className="px-8 md:px-10 py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black text-xs md:text-sm shadow-xl hover:bg-slate-800 transition">Go to Dashboard</button>
             </div>
           </div>
         </div>
@@ -164,10 +164,10 @@ export default function LostMatches() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 pb-32">
-      <div className="mb-8">
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-1">Your Matches</h1>
-        <p className="text-slate-500 font-medium text-xs max-w-lg">
+    <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-12 pb-32">
+      <div className="mb-8 md:mb-12">
+        <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-2">Your Matches</h1>
+        <p className="text-slate-500 font-bold text-[10px] md:text-xs max-w-lg uppercase tracking-widest opacity-70">
           Review potential discoveries for your lost items. Securely unlock details after admin verification.
         </p>
       </div>
@@ -181,18 +181,18 @@ export default function LostMatches() {
         }, {})).map(([groupKey, group]) => (
           <div key={groupKey} className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             {/* Group Header */}
-            <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-100">
-               <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-white text-lg shadow-md">
+            <div className="flex items-start md:items-center gap-3 pb-3 border-b-2 border-slate-100">
+               <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 rounded-xl flex items-center justify-center text-white text-lg md:text-xl shadow-md shrink-0">
                   <FiTag />
                </div>
                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Matches For Your Posting</p>
-                    <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-[7px] font-bold">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Matches For Your Posting</p>
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[8px] md:text-[10px] font-black">
                       {group.items.length} HITS
                     </span>
                   </div>
-                  <h2 className="text-lg font-bold text-slate-900">{group.item_type} <span className="text-slate-300 font-medium font-serif italic ml-1">in {group.district}</span></h2>
+                  <h2 className="text-lg md:text-2xl font-black text-slate-900 leading-tight">{group.item_type} <span className="text-slate-300 font-medium font-serif italic ml-1">in {group.district}</span></h2>
                </div>
             </div>
 
@@ -201,11 +201,11 @@ export default function LostMatches() {
               {group.items.map((match) => (
                 <div 
                   key={match.id} 
-                  className="group relative bg-white rounded-[32px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden"
+                  className="group relative bg-white rounded-2xl md:rounded-[32px] border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden"
                 >
-                  <div className="flex flex-col md:flex-row h-full">
+                  <div className="flex flex-col lg:flex-row h-full">
                     {/* Image Section */}
-                    <div className="md:w-56 h-48 md:h-auto relative overflow-hidden bg-slate-100">
+                    <div className="lg:w-64 h-48 lg:h-auto relative overflow-hidden bg-slate-100">
                         {match.found_image_url && match.is_unlocked ? (
                           <img 
                             src={`${BACKEND_URL}${match.found_image_url}`} 
@@ -247,11 +247,11 @@ export default function LostMatches() {
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 p-5 flex flex-col">
+                    <div className="flex-1 p-5 md:p-8 flex flex-col">
                       <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-green-600 transition-colors uppercase tracking-tight">{match.found_item_type}</h3>
-                          <div className="flex items-center gap-3 mt-0.5 text-slate-400 text-[10px] font-semibold">
+                        <div className="mb-4">
+                          <h3 className="text-lg md:text-xl font-black text-slate-900 group-hover:text-green-600 transition-colors uppercase tracking-tight leading-tight">{match.found_item_type}</h3>
+                          <div className="flex flex-wrap items-center gap-3 mt-1 text-slate-400 text-[10px] md:text-xs font-bold">
                              <span className="flex items-center gap-1"><FiMapPin /> {match.found_district}</span>
                              <span className="flex items-center gap-1"><FiClock /> {new Date(match.matched_at).toLocaleDateString()}</span>
                           </div>
@@ -272,24 +272,24 @@ export default function LostMatches() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 mb-8">
-                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Found Item</p>
-                          <p className="text-sm font-bold text-slate-700 truncate">{match.found_item_type}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
+                        <div className="bg-slate-50 p-4 rounded-xl md:rounded-2xl border border-slate-100">
+                          <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Found Item</p>
+                          <p className="text-xs md:text-sm font-bold text-slate-700 truncate">{match.found_item_type}</p>
                         </div>
-                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Matches Your Post</p>
-                          <p className="text-sm font-bold text-slate-700 truncate">{match.lost_item_type}</p>
+                        <div className="bg-slate-50 p-4 rounded-xl md:rounded-2xl border border-slate-100">
+                          <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Matches Your Post</p>
+                          <p className="text-xs md:text-sm font-bold text-slate-700 truncate">{match.lost_item_type}</p>
                         </div>
                       </div>
 
-                      <div className="mt-auto flex flex-wrap gap-4">
+                      <div className="mt-auto flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
                          {!match.is_unlocked ? (
                            match.is_verified ? (
                             match.payment_status === 'pending_admin_approval' ? (
                                <button
                                 disabled
-                                className="flex-1 min-w-[200px] py-4 bg-amber-50 text-amber-600 rounded-2xl font-black text-sm border border-amber-100 flex items-center justify-center gap-2 cursor-wait"
+                                className="flex-1 min-w-[200px] py-4 bg-amber-50 text-amber-600 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs border border-amber-100 flex items-center justify-center gap-2 cursor-wait"
                               >
                                 <FiClock className="animate-spin" />
                                 Payment Verification in Progress
@@ -298,7 +298,7 @@ export default function LostMatches() {
                                <button
                                 onClick={() => handlePayToUnlock(match)}
                                 disabled={updatingMatch === match.id}
-                                className="flex-1 min-w-[180px] py-3 bg-green-600 text-white rounded-xl font-bold text-xs hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2 group/btn"
+                                className="flex-1 min-w-[180px] py-3 md:py-4 bg-green-600 text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2 group/btn"
                               >
                                 <FiDollarSign className="w-3.5 h-3.5" />
                                 Unlock Full Details ({match.admin_fee} RWF)
@@ -307,7 +307,7 @@ export default function LostMatches() {
                            ) : (
                             <button
                               disabled
-                              className="flex-1 min-w-[200px] py-4 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed flex items-center justify-center gap-2"
+                              className="flex-1 min-w-[200px] py-4 bg-slate-200 text-slate-400 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs cursor-not-allowed flex items-center justify-center gap-2"
                             >
                               <FiClock className="w-4 h-4" />
                               Awaiting Admin Verification
@@ -316,7 +316,7 @@ export default function LostMatches() {
                          ) : (
                            <button
                             onClick={() => handleContactFinder(match)}
-                            className="flex-1 min-w-[160px] py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 group/btn"
+                            className="flex-1 min-w-[160px] py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 group/btn"
                           >
                             <FiMessageSquare className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5" />
                             Contact Finder
@@ -326,7 +326,7 @@ export default function LostMatches() {
                           <button
                             onClick={() => handleMarkReceived(match.id)}
                             disabled={updatingMatch === match.id}
-                            className="px-8 py-4 bg-green-500 text-white rounded-2xl font-black text-sm hover:bg-green-600 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-1 sm:flex-none px-6 md:px-8 py-3 md:py-4 bg-green-500 text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs hover:bg-green-600 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                           >
                             {updatingMatch === match.id ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
@@ -336,21 +336,23 @@ export default function LostMatches() {
                             I Got It Back
                           </button>
                         )}
-                        <button 
-                          onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }}
-                          className="w-12 h-14 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"
-                          title="View Full Details"
-                        >
-                          <FiEye className="w-5 h-5" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteMatch(match.id)}
-                          disabled={updatingMatch === match.id}
-                          className="w-12 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition disabled:opacity-50"
-                          title="Dismiss Match"
-                        >
-                          <FiTrash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }}
+                            className="flex-1 sm:w-12 h-12 md:h-14 bg-slate-100 text-slate-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"
+                            title="View Full Details"
+                          >
+                            <FiEye className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteMatch(match.id)}
+                            disabled={updatingMatch === match.id}
+                            className="flex-1 sm:w-12 h-12 md:h-14 bg-red-50 text-red-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                            title="Dismiss Match"
+                          >
+                            <FiTrash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -365,14 +367,14 @@ export default function LostMatches() {
       {isDetailModalOpen && viewingMatch && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl" onClick={() => setIsDetailModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300">
+          <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-2xl md:rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300">
             <button 
               onClick={() => setIsDetailModalOpen(false)}
-              className="absolute top-6 right-6 z-10 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 transition"
+              className="absolute top-6 right-6 z-10 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 transition"
             >
-              <FiX className="w-6 h-6" />
+              <FiX className="w-5 h-5 md:w-6 md:h-6" />
             </button>
-            <div className="md:w-1/2 bg-slate-900 flex items-center justify-center p-12">
+            <div className="md:w-1/2 bg-slate-900 flex items-center justify-center p-6 md:p-12">
                {viewingMatch.found_image_url && viewingMatch.is_unlocked ? (
                  <img 
                   src={`${BACKEND_URL}${viewingMatch.found_image_url}`} 
@@ -386,16 +388,16 @@ export default function LostMatches() {
                   </div>
                )}
             </div>
-            <div className="md:w-1/2 p-12 overflow-y-auto space-y-8 bg-white">
+            <div className="md:w-1/2 p-6 md:p-12 overflow-y-auto space-y-6 md:space-y-8 bg-white">
                <div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[9px] font-black uppercase tracking-widest border border-green-200 mb-3 inline-block">Matched Item Detail</span>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">{viewingMatch.found_item_type}</h2>
-                  <p className="text-slate-400 font-bold mt-1 uppercase tracking-widest text-[9px]">Reference Match #{viewingMatch.id}</p>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest border border-green-200 mb-2 md:mb-3 inline-block">Matched Item Detail</span>
+                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{viewingMatch.found_item_type}</h2>
+                  <p className="text-slate-400 font-bold mt-1 uppercase tracking-widest text-[8px] md:text-[9px]">Reference Match #{viewingMatch.id}</p>
                </div>
                
-               <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><FiMapPin /> Location</p>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                  <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
+                    <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2 tracking-widest leading-none"><FiMapPin /> Location</p>
                     <p className="text-sm font-bold text-slate-700">{viewingMatch.is_unlocked ? viewingMatch.found_district : 'Information Locked'}</p>
                   </div>
                   <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">

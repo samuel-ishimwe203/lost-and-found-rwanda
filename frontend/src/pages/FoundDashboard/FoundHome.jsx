@@ -85,24 +85,24 @@ export default function FoundHome() {
   return (
     <div className="space-y-8">
       {/* WELCOME MESSAGE */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-8 rounded-2xl border border-green-300 shadow-lg">
-        <div className="flex items-center gap-4">
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 md:p-8 rounded-2xl border border-green-300 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
           {avatarUrl ? (
             <img
               src={avatarUrl}
               alt="Profile"
-              className="w-16 h-16 rounded-full border-2 border-white object-cover"
+              className="w-16 h-16 rounded-full border-2 border-white object-cover shadow-md"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full border-2 border-white bg-white/20 text-white flex items-center justify-center text-2xl font-semibold">
+            <div className="w-16 h-16 rounded-full border-2 border-white bg-white/20 text-white flex items-center justify-center text-2xl font-semibold shadow-md shrink-0">
               {userInitials || '?'}
             </div>
           )}
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
-              Welcome back, {user?.full_name || 'Found User'}!
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+              Welcome back, {user?.full_name || user?.email || 'User'}!
             </h1>
-            <p className="text-green-100 text-lg">
+            <p className="text-green-50 text-sm md:text-lg opacity-90">
               Report found items and help reunite them with their owners
             </p>
           </div>
@@ -127,30 +127,30 @@ export default function FoundHome() {
       {/* STATS CARDS */}
       {!loading && !error && (
         <>
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {statsCards.map((stat, idx) => (
-              <div key={idx} className="bg-white text-green-900 p-6 rounded-xl shadow-lg border border-green-200 hover:shadow-xl hover:border-green-300 transition">
-                <p className="text-3xl font-bold text-green-600">{stat.value}</p>
-                <p className="text-sm text-green-600 mt-2">{stat.label}</p>
+              <div key={idx} className="bg-white text-green-900 p-4 md:p-6 rounded-xl shadow-md border border-green-100 hover:shadow-lg hover:border-green-200 transition">
+                <p className="text-2xl md:text-3xl font-bold text-green-600">{stat.value}</p>
+                <p className="text-xs md:text-sm text-green-600 mt-1 md:mt-2">{stat.label}</p>
               </div>
             ))}
           </div>
 
           {/* RECENT ACTIVITY */}
-          <div className="bg-white p-8 rounded-2xl shadow-lg border border-green-200">
-            <h2 className="text-2xl font-bold text-green-900 mb-6">Recent Activity</h2>
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-green-200">
+            <h2 className="text-xl md:text-2xl font-bold text-green-900 mb-6">Recent Activity</h2>
 
             {recentActivity.length === 0 ? (
-              <div className="text-center py-8 text-green-600">
-                📭 No recent activity. Start posting found items!
+              <div className="text-center py-6 md:py-8 text-green-600">
+                <p className="text-sm md:text-base">📭 No recent activity. Start posting found items!</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {recentActivity.map((activity) => (
-                  <div key={activity.id} className="border-l-4 border-green-500 pl-6 py-4 bg-green-50 rounded-r-lg hover:bg-green-100 transition">
-                    <p className="font-semibold text-green-900">{activity.title}</p>
-                    <p className="text-green-700 text-sm mt-1">{activity.description}</p>
-                    <p className="text-green-600 text-xs mt-2">{activity.timestamp}</p>
+                  <div key={activity.id} className="border-l-4 border-green-500 pl-4 md:pl-6 py-3 md:py-4 bg-green-50 rounded-r-lg hover:bg-green-100 transition">
+                    <p className="font-semibold text-green-900 text-sm md:text-base">{activity.title}</p>
+                    <p className="text-green-700 text-xs md:text-sm mt-1">{activity.description}</p>
+                    <p className="text-green-600 text-[10px] md:text-xs mt-2">{activity.timestamp}</p>
                   </div>
                 ))}
               </div>
@@ -160,25 +160,25 @@ export default function FoundHome() {
       )}
 
       {/* USER INFO CARD */}
-      <div className="bg-gradient-to-br from-green-700 to-emerald-800 p-8 rounded-2xl shadow-lg border border-green-400/30">
-        <h2 className="text-2xl font-bold text-white mb-6">Your Profile Summary</h2>
+      <div className="bg-gradient-to-br from-green-700 to-emerald-800 p-6 md:p-8 rounded-2xl shadow-lg border border-green-400/30">
+        <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Your Profile Summary</h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm text-green-600 font-semibold">Full Name</p>
-            <p className="text-lg font-semibold text-green-900 mt-1">{user?.full_name || 'N/A'}</p>
+            <p className="text-[10px] md:text-xs text-green-600 font-black uppercase tracking-widest">Full Name</p>
+            <p className="text-base md:text-lg font-bold text-green-900 mt-1">{user?.full_name || 'N/A'}</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm text-green-600 font-semibold">Email</p>
-            <p className="text-lg font-semibold text-green-900 mt-1">{user?.email || 'N/A'}</p>
+            <p className="text-[10px] md:text-xs text-green-600 font-black uppercase tracking-widest">Email</p>
+            <p className="text-base md:text-lg font-bold text-green-900 mt-1 break-all">{user?.email || 'N/A'}</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm text-green-600 font-semibold">Phone</p>
-            <p className="text-lg font-semibold text-green-900 mt-1">{user?.phone_number || 'N/A'}</p>
+            <p className="text-[10px] md:text-xs text-green-600 font-black uppercase tracking-widest">Phone</p>
+            <p className="text-base md:text-lg font-bold text-green-900 mt-1">{user?.phone_number || 'N/A'}</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm text-green-600 font-semibold">Location</p>
-            <p className="text-lg font-semibold text-green-900 mt-1">{user?.district || 'N/A'}</p>
+            <p className="text-[10px] md:text-xs text-green-600 font-black uppercase tracking-widest">Location</p>
+            <p className="text-base md:text-lg font-bold text-green-900 mt-1">{user?.district || 'N/A'}</p>
           </div>
         </div>
       </div>

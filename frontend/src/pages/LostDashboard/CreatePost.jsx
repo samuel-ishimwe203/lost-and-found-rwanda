@@ -155,8 +155,8 @@ export default function CreatePost() {
     <div className="space-y-6">
       {/* HEADER */}
       <div>
-        <h1 className="text-4xl font-bold text-green-900">Create Lost Item Post</h1>
-        <p className="text-green-700 mt-2">
+        <h1 className="text-2xl md:text-3xl font-bold text-green-900">Create Lost Item Post</h1>
+        <p className="text-green-700 mt-1 text-sm md:text-base">
           Post details about your lost item to help finders locate it
         </p>
       </div>
@@ -174,7 +174,7 @@ export default function CreatePost() {
       )}
 
       {/* FORM */}
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg space-y-6 border border-green-200">
+      <form onSubmit={handleSubmit} className="bg-white p-4 md:p-6 lg:p-8 rounded-2xl shadow-lg space-y-5 border border-green-200">
         {/* ITEM TITLE */}
         <div>
           <label className="block text-sm font-semibold text-green-900 mb-2">
@@ -423,11 +423,11 @@ export default function CreatePost() {
         </div>
 
         {/* SUBMIT BUTTONS */}
-        <div className="flex gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <button
             type="submit"
             disabled={loading}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 sm:flex-none bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg font-semibold text-sm hover:from-green-700 hover:to-emerald-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Posting..." : "Post Item"}
           </button>
@@ -435,7 +435,7 @@ export default function CreatePost() {
             type="button"
             onClick={handleReset}
             disabled={loading}
-            className="bg-gray-400 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-500 transition disabled:opacity-50"
+            className="flex-1 sm:flex-none bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold text-sm hover:bg-gray-500 transition disabled:opacity-50"
           >
             Reset
           </button>

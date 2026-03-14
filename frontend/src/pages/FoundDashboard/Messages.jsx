@@ -179,8 +179,8 @@ export default function FoundMessages() {
     )
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
-      <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+    <div className="flex h-[calc(100vh-120px)] lg:h-screen bg-gray-100 overflow-hidden">
+      <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 bg-white border-r border-gray-200 flex-col overflow-hidden flex-shrink-0`}>
         <div className="p-4 bg-green-600 text-white flex-shrink-0">
           <h2 className="text-xl font-semibold">Messages</h2>
           <p className="text-sm text-green-100">
@@ -234,10 +234,18 @@ export default function FoundMessages() {
           )}
         </div>
       </div>
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`${!selectedConversation ? 'hidden md:flex' : 'flex'} flex-1 flex-col overflow-hidden`}>
         {selectedConversation ? (
           <>
             <div className="bg-green-600 text-white p-4 shadow-sm flex items-center space-x-3 flex-shrink-0">
+              <button 
+                onClick={() => setSelectedConversation(null)}
+                className="md:hidden p-1 rounded-lg hover:bg-green-500 transition mr-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
               <div className={`w-10 h-10 rounded-full ${getAvatarColor(selectedConversation.other_user)} flex items-center justify-center font-semibold`}>
                 {getInitials(selectedConversation.other_user)}
               </div>
