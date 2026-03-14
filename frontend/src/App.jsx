@@ -111,6 +111,7 @@ function AppRoutes() {
             <Route index element={<LostDashboardHome />} />
             <Route path="profile" element={<LostMyProfile />} />
             <Route path="my-postings" element={<LostMyPostings />} />
+            <Route path="postings/:id" element={<LostMatches />} />
             <Route path="matches" element={<LostMatches />} />
             <Route path="create-post" element={<LostCreatePost />} />
             <Route path="edit-post/:id" element={<LostEditPost />} />

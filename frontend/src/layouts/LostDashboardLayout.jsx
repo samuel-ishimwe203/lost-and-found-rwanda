@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import apiClient from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -13,6 +13,13 @@ export default function LostDashboardLayout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  // Handle sidebar toggle from Navbar
+  useEffect(() => {
+    const handleToggle = () => setSidebarOpen(prev => !prev);
+    window.addEventListener('toggle-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-sidebar', handleToggle);
+  }, []);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -65,29 +72,6 @@ export default function LostDashboardLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 overflow-x-hidden">
 
-      {/* MOBILE TOP BAR - Standardized across dashboards */}
-      <div className="lg:hidden flex items-center justify-between bg-white border-b border-green-200 px-4 py-3 sticky top-[74px] z-[60] shadow-sm">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-xl bg-green-50 text-green-700 hover:bg-green-100 transition shadow-sm border border-green-200"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {sidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-        
-        <div className="flex items-center gap-2">
-          <p className="font-black text-xs text-green-900 uppercase tracking-tighter">{user?.full_name?.split(' ')[0] || 'User'}</p>
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-[10px] font-black shadow-md">
-            {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-          </div>
-        </div>
-      </div>
-
       {/* MOBILE OVERLAY */}
       {sidebarOpen && (
         <div
@@ -97,16 +81,16 @@ export default function LostDashboardLayout() {
       )}
 
       {/* MAIN CONTAINER */}
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative mt-[74px]">
 
         {/* SIDEBAR */}
         <aside className={`
-          fixed lg:sticky top-0 lg:top-[74px] left-0 h-screen lg:h-[calc(100vh-74px)] z-[120] lg:z-30
+          fixed top-[74px] left-0 h-[calc(100vh-74px)] z-[120] lg:z-30
           w-72 bg-[#1a2f23] border-r border-white/5 p-6 shadow-2xl overflow-y-auto
           transform transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
-          {/* Close button for mobile - moved down to be visible */}
+          {/* Close button for mobile */}
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden absolute top-6 right-6 text-white/40 hover:text-white p-2 rounded-full hover:bg-white/5 transition"
@@ -168,54 +152,66 @@ export default function LostDashboardLayout() {
           </nav>
         </aside>
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 space-y-6 min-w-0">
-          <Outlet />
-        </main>
+        {/* MAIN CONTENT Area */}
+        <div className="flex-1 lg:ml-72 min-w-0 flex flex-col">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
+            <Outlet />
+          </main>
+
+          {/* FOOTER */}
+          <footer className="bg-gray-900 border-t border-gray-700 text-gray-300 py-12 px-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12">
+              <div className="col-span-2 md:col-span-1">
+                <div className="flex items-center gap-2 mb-6">
+                  <span className="text-xl font-black tracking-tighter text-white">LOST</span>
+                  <span className="text-xl font-black tracking-tighter text-green-500">FOUND</span>
+                </div>
+                <p className="text-xs leading-relaxed opacity-70">
+                  Lost & Found Rwanda is a national platform helping citizens recover
+                  lost items efficiently and safely.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-black text-white mb-6 text-[10px] uppercase tracking-[0.2em]">Quick Links</h4>
+                <ul className="text-xs space-y-3">
+                  <li><Link to="/lost-dashboard" className="hover:text-green-400 transition">Dashboard</Link></li>
+                  <li><Link to="/lost-dashboard/profile" className="hover:text-green-400 transition">My Profile</Link></li>
+                  <li><Link to="/lost-dashboard/my-postings" className="hover:text-green-400 transition">My Postings</Link></li>
+                  <li><Link to="/lost-dashboard/messages" className="hover:text-green-400 transition">Messages</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-black text-white mb-6 text-[10px] uppercase tracking-[0.2em]">Platform</h4>
+                <ul className="text-xs space-y-3">
+                  <li><Link to="/postings" className="hover:text-green-400 transition">Browse Items</Link></li>
+                  <li><a href="/#how-it-works" className="hover:text-green-400 transition">How it Works</a></li>
+                  <li><a href="mailto:support@lostfound.rw" className="hover:text-green-400 transition">Help Center</a></li>
+                  <li><a href="mailto:contact@lostfound.rw" className="hover:text-green-400 transition">Contact Us</a></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-black text-white mb-6 text-[10px] uppercase tracking-[0.2em]">Contact</h4>
+                <div className="space-y-3 text-xs opacity-70">
+                  <p className="flex items-center gap-2">📍 Kigali, Rwanda</p>
+                  <p className="flex items-center gap-2">✉️ support@lostfound.rw</p>
+                  <p className="flex items-center gap-2">📱 +250 788 000 000</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <p>© {new Date().getFullYear()} Lost & Found Rwanda. All rights reserved.</p>
+              <div className="flex gap-6">
+                <a href="#" className="hover:text-white transition">Privacy Policy</a>
+                <a href="#" className="hover:text-white transition">Terms of Service</a>
+              </div>
+            </div>
+          </footer>
+        </div>
       </div>
-
-      {/* FOOTER */}
-      <footer className="bg-gray-900 border-t border-gray-700 text-gray-300 py-8 px-4 md:px-6 mt-auto">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="col-span-2 md:col-span-1">
-            <h4 className="font-bold text-white mb-3 text-sm">About Us</h4>
-            <p className="text-xs leading-relaxed">
-              Lost & Found Rwanda is a national platform helping citizens recover
-              lost items efficiently and safely.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white mb-3 text-sm">Quick Links</h4>
-            <ul className="text-xs space-y-1.5">
-              <li className="hover:text-green-300 transition cursor-pointer">Dashboard</li>
-              <li className="hover:text-green-300 transition cursor-pointer">My Profile</li>
-              <li className="hover:text-green-300 transition cursor-pointer">My Postings</li>
-              <li className="hover:text-green-300 transition cursor-pointer">Messages</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white mb-3 text-sm">Support</h4>
-            <ul className="text-xs space-y-1.5">
-              <li className="hover:text-green-300 transition cursor-pointer">Help Center</li>
-              <li className="hover:text-green-300 transition cursor-pointer">Contact Us</li>
-              <li className="hover:text-green-300 transition cursor-pointer">FAQ</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white mb-3 text-sm">Contact</h4>
-            <p className="text-xs mb-1">📍 Kigali, Rwanda</p>
-            <p className="text-xs mb-1">✉️ support@lostfound.rw</p>
-            <p className="text-xs">📱 +250 XXX XXX XXX</p>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-700 mt-6 pt-4 text-center text-xs text-gray-400">
-          <p>© {new Date().getFullYear()} Lost & Found Rwanda. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

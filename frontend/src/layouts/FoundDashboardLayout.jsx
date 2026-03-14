@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import apiClient from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -13,6 +13,13 @@ export default function FoundDashboardLayout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  // Handle sidebar toggle from Navbar
+  useEffect(() => {
+    const handleToggle = () => setSidebarOpen(prev => !prev);
+    window.addEventListener('toggle-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-sidebar', handleToggle);
+  }, []);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -65,29 +72,6 @@ export default function FoundDashboardLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-100 overflow-x-hidden">
       
-      {/* MOBILE TOP BAR */}
-      <div className="lg:hidden flex items-center justify-between bg-white border-b border-blue-200 px-4 py-3 sticky top-[74px] z-[60] shadow-sm">
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition shadow-sm border border-blue-200"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {sidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-        
-        <div className="flex items-center gap-2">
-          <p className="font-black text-xs text-blue-900 uppercase tracking-tighter">{user?.full_name?.split(' ')[0] || 'Finder'}</p>
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-[10px] font-black shadow-md">
-            {user?.full_name?.charAt(0)?.toUpperCase() || 'F'}
-          </div>
-        </div>
-      </div>
-
       {/* MOBILE OVERLAY */}
       {sidebarOpen && (
         <div 
@@ -97,11 +81,11 @@ export default function FoundDashboardLayout() {
       )}
 
       {/* MAIN CONTAINER */}
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative mt-[74px]">
 
         {/* SIDEBAR */}
         <aside className={`
-          fixed lg:sticky top-0 lg:top-[74px] left-0 h-screen lg:h-[calc(100vh-74px)] z-[120] lg:z-30
+          fixed top-[74px] left-0 h-[calc(100vh-74px)] z-[120] lg:z-30
           w-72 bg-[#0f172a] border-r border-white/5 p-6 shadow-2xl overflow-y-auto
           transform transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -168,57 +152,60 @@ export default function FoundDashboardLayout() {
           </nav>
         </aside>
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 space-y-6 min-w-0">
-          <Outlet />
-        </main>
-      </div>
+        {/* MAIN CONTENT Area */}
+        <div className="flex-1 lg:ml-72 min-w-0 flex flex-col">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6 overflow-x-hidden">
+            <Outlet />
+          </main>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-950 border-t border-white/5 text-slate-400 py-12 px-6 mt-auto">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-1">
-             <div className="flex items-center gap-2 mb-6">
-                <span className="text-xl font-black tracking-tighter text-white">LOST</span>
-                <span className="text-xl font-black tracking-tighter text-blue-500">FOUND</span>
-             </div>
-            <p className="text-sm leading-relaxed">
-              Rwanda's premium platform for connecting lost items with their rightful owners through verified discoveries.
-            </p>
-          </div>
+          {/* FOOTER */}
+          <footer className="bg-slate-950 border-t border-white/5 text-slate-400 py-12 px-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+              <div className="col-span-1 md:col-span-1">
+                <div className="flex items-center gap-2 mb-6">
+                    <span className="text-xl font-black tracking-tighter text-white">LOST</span>
+                    <span className="text-xl font-black tracking-tighter text-blue-500">FOUND</span>
+                </div>
+                <p className="text-sm leading-relaxed opacity-60">
+                  Rwanda's premium platform for connecting lost items with their rightful owners through verified discoveries.
+                </p>
+              </div>
 
-          <div>
-            <h4 className="font-black text-white mb-6 text-xs uppercase tracking-widest">Navigation</h4>
-            <ul className="text-sm space-y-4">
-              <li className="hover:text-blue-400 transition cursor-pointer">Main Dashboard</li>
-              <li className="hover:text-blue-400 transition cursor-pointer">Account Settings</li>
-              <li className="hover:text-blue-400 transition cursor-pointer">Discovery History</li>
-              <li className="hover:text-blue-400 transition cursor-pointer">Secure Messages</li>
-            </ul>
-          </div>
+              <div>
+                <h4 className="font-black text-white mb-6 text-[10px] uppercase tracking-widest">Navigation</h4>
+                <ul className="text-sm space-y-4">
+                  <li><Link to="/found-dashboard" className="hover:text-blue-400 transition">Main Dashboard</Link></li>
+                  <li><Link to="/found-dashboard/profile" className="hover:text-blue-400 transition">Account Settings</Link></li>
+                  <li><Link to="/found-dashboard/my-found-items" className="hover:text-blue-400 transition">Discovery History</Link></li>
+                  <li><Link to="/found-dashboard/messages" className="hover:text-blue-400 transition">Secure Messages</Link></li>
+                </ul>
+              </div>
 
-          <div>
-            <h4 className="font-black text-white mb-6 text-xs uppercase tracking-widest">Help & Support</h4>
-            <ul className="text-sm space-y-4">
-              <li className="hover:text-blue-400 transition cursor-pointer">User Guidelines</li>
-              <li className="hover:text-blue-400 transition cursor-pointer">Privacy Policy</li>
-              <li className="hover:text-blue-400 transition cursor-pointer">Terms of Service</li>
-            </ul>
-          </div>
+              <div>
+                <h4 className="font-black text-white mb-6 text-[10px] uppercase tracking-widest">Help & Support</h4>
+                <ul className="text-sm space-y-4">
+                  <li><a href="/#how-it-works" className="hover:text-blue-400 transition">User Guidelines</a></li>
+                  <li><a href="#" className="hover:text-blue-400 transition">Privacy Policy</a></li>
+                  <li><a href="#" className="hover:text-blue-400 transition">Terms of Service</a></li>
+                  <li><a href="mailto:contact@lostfound.rw" className="hover:text-blue-400 transition">Contact Admin</a></li>
+                </ul>
+              </div>
 
-          <div>
-            <h4 className="font-black text-white mb-6 text-xs uppercase tracking-widest">Official Contact</h4>
-            <div className="space-y-4 text-sm">
-               <p className="flex items-center gap-2">📍 Kigali, Rwanda</p>
-               <p className="flex items-center gap-2">✉️ contact@lostfound.rw</p>
+              <div>
+                <h4 className="font-black text-white mb-6 text-[10px] uppercase tracking-widest">Official Contact</h4>
+                <div className="space-y-4 text-sm opacity-60">
+                  <p className="flex items-center gap-2">📍 Kigali, Rwanda</p>
+                  <p className="flex items-center gap-2">✉️ contact@lostfound.rw</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="border-t border-white/5 mt-12 pt-8 text-center text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Lost & Found Rwanda. Premium Recovery System.</p>
+            <div className="border-t border-white/5 mt-12 pt-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              <p>© {new Date().getFullYear()} Lost & Found Rwanda. Premium Recovery System.</p>
+            </div>
+          </footer>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

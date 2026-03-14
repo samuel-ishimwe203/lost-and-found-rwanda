@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 export default function PoliceDashboardLayout() {
@@ -9,6 +9,13 @@ export default function PoliceDashboardLayout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  // Handle sidebar toggle from Navbar
+  useEffect(() => {
+    const handleToggle = () => setSidebarOpen(prev => !prev);
+    window.addEventListener('toggle-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-sidebar', handleToggle);
+  }, []);
 
   const navLinks = [
     { path: "/police-dashboard", label: "Overview", end: true },
@@ -21,29 +28,6 @@ export default function PoliceDashboardLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 overflow-x-hidden">
       
-      {/* MOBILE TOP BAR */}
-      <div className="lg:hidden flex items-center justify-between bg-white border-b border-slate-200 px-4 py-3 sticky top-[74px] z-[60] shadow-sm">
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shadow-sm border border-slate-200"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {sidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-        
-        <div className="flex items-center gap-2">
-          <p className="font-black text-[10px] text-slate-900 uppercase tracking-widest px-2 py-1 bg-slate-100 rounded-md">Official Unit</p>
-          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white text-xs font-black shadow-md">
-            🚓
-          </div>
-        </div>
-      </div>
-
       {/* MOBILE OVERLAY */}
       {sidebarOpen && (
         <div 
@@ -53,11 +37,11 @@ export default function PoliceDashboardLayout() {
       )}
 
       {/* MAIN CONTAINER */}
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative mt-[74px]">
 
         {/* SIDEBAR */}
         <aside className={`
-          fixed lg:sticky top-0 lg:top-[74px] left-0 h-screen lg:h-[calc(100vh-74px)] z-[120] lg:z-30
+          fixed top-[74px] left-0 h-[calc(100vh-74px)] z-[120] lg:z-30
           w-72 bg-[#020617] p-8 shadow-2xl overflow-y-auto
           transform transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -110,27 +94,28 @@ export default function PoliceDashboardLayout() {
         </aside>
 
         {/* MAIN CONTENT Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 lg:ml-72 flex flex-col min-w-0">
            <main className="flex-1 p-4 md:p-8 lg:p-12 space-y-8 bg-white/50 min-h-screen">
              <div className="max-w-7xl mx-auto">
                 <Outlet />
              </div>
            </main>
+
+           {/* FOOTER */}
+           <footer className="bg-slate-950 border-t border-white/5 text-slate-500 py-12 px-8">
+             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
+               <div className="flex items-center gap-6">
+                 <Link to="/police-dashboard" className="text-white hover:text-blue-400 transition">Police Portal Home</Link>
+                 <span className="text-slate-700">|</span>
+                 <Link to="/police-dashboard/returned-documents" className="hover:text-white transition cursor-pointer">Archive Access</Link>
+                 <span className="text-slate-700">|</span>
+                 <a href="#" className="hover:text-white transition cursor-pointer">Security Protocols</a>
+               </div>
+               <p>© {new Date().getFullYear()} Rwanda National Police. Digital Exhibits Dept.</p>
+             </div>
+           </footer>
         </div>
       </div>
-
-      {/* FOOTER */}
-      <footer className="bg-slate-950 border-t border-white/5 text-slate-500 py-12 px-8 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
-          <div className="flex items-center gap-6">
-            <span className="text-white">Police Portal</span>
-            <span className="text-slate-700">|</span>
-            <span className="hover:text-white transition cursor-pointer">Security Protocols</span>
-            <span className="hover:text-white transition cursor-pointer">Audit Logs</span>
-          </div>
-          <p>© {new Date().getFullYear()} Rwanda National Police. Digital Exhibits Dept.</p>
-        </div>
-      </footer>
     </div>
   );
 }

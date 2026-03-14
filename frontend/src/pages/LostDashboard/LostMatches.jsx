@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { 
   FiFileText, FiMapPin, FiCalendar, FiTag, FiDollarSign, FiInfo, 
   FiExternalLink, FiClock, FiShield, FiUser, FiPhone, FiMail, FiAlertCircle,
@@ -10,6 +10,7 @@ import SendMessageModal from "../../components/SendMessageModal"
 import { getImageUrl } from "../../utils/imageHelper"
 
 export default function LostMatches() {
+  const { id } = useParams()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -27,7 +28,13 @@ export default function LostMatches() {
     try {
       setLoading(true)
       const response = await apiClient.get('/matches')
-      setMatches(response.data.data.matches || [])
+      let allMatches = response.data.data.matches || []
+      
+      if (id) {
+        allMatches = allMatches.filter(m => m.lost_item_id.toString() === id.toString())
+      }
+      
+      setMatches(allMatches)
       setError(null)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load matches')

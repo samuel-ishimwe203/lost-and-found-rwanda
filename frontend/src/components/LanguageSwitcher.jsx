@@ -71,7 +71,7 @@ export default function LanguageSwitcher() {
         aria-expanded={isOpen}
       >
         <Globe size={20} strokeWidth={1.5} />
-        <span className="text-[15px]">{currentLang.name}</span>
+        <span className="text-[15px] hidden md:inline-block">{currentLang.name}</span>
         <ChevronDown size={16} className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
