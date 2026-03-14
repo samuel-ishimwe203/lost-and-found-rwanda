@@ -42,7 +42,7 @@ export const uploadDocument = async (req, res) => {
         userId,
         fileName,
         extractedText.trim(),
-        req.file.path.startsWith('http') ? req.file.path : `/uploads/${path.basename(filePath)}`,
+        req.file.path.startsWith('http') ? req.file.path : `/uploads/${path.basename(req.file.path)}`,
       ]
     );
 
