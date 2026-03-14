@@ -7,6 +7,7 @@ import {
   FiUploadCloud, FiX, FiShield, FiFileText
 } from "react-icons/fi";
 import SendMessageModal from "../../components/SendMessageModal";
+import { getImageUrl } from "../../utils/imageHelper";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
@@ -182,7 +183,7 @@ export default function PostOfficialDocument() {
                     <div className="lg:w-72 h-48 sm:h-64 lg:h-auto relative overflow-hidden bg-slate-100 flex items-center justify-center">
                       {match.lost_image_url ? (
                         <img 
-                          src={`${BACKEND_URL}${match.lost_image_url}`} 
+                          src={getImageUrl(match.lost_image_url)} 
                           className="w-full h-full object-cover transition-transform group-hover:scale-110"
                           alt="Lost report preview"
                         />
@@ -276,7 +277,7 @@ export default function PostOfficialDocument() {
                         
                         <div className="aspect-square bg-white/5 rounded-3xl md:rounded-[40px] overflow-hidden border border-white/10 p-4 relative shadow-2xl">
                            {viewingMatch.lost_image_url ? (
-                             <img src={`${BACKEND_URL}${viewingMatch.lost_image_url}`} className="w-full h-full object-contain rounded-2xl md:rounded-3xl" alt="Citizen Report" />
+                             <img src={getImageUrl(viewingMatch.lost_image_url)} className="w-full h-full object-contain rounded-2xl md:rounded-3xl" alt="Citizen Report" />
                            ) : (
                              <div className="w-full h-full flex flex-col items-center justify-center text-white/10">
                                 <FiEye className="w-16 h-16 md:w-24 md:h-24" />

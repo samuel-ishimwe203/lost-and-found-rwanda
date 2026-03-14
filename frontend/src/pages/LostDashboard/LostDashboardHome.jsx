@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import apiClient from "../../services/api";
+import { getImageUrl } from "../../utils/imageHelper";
 
 export default function LostDashboardHome() {
   const { user } = useAuth();
-  const avatarUrl = user?.profile_image || user?.avatar || user?.photo || user?.photo_url;
+  const avatarUrl = getImageUrl(user?.profile_image || user?.avatar || user?.photo || user?.photo_url);
   const userInitials = (user?.full_name || user?.email || '?')
     .split(' ')
     .filter(Boolean)

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../services/api";
 import { FiEye, FiEdit2, FiTrash2, FiMapPin, FiCalendar, FiTag, FiClock, FiDollarSign } from "react-icons/fi";
+import { getImageUrl } from "../../utils/imageHelper";
 
 export default function MyPostings() {
   const navigate = useNavigate();
@@ -268,7 +269,7 @@ export default function MyPostings() {
                     <div className="md:w-1/3 lg:w-1/4 shrink-0">
                       <div className="aspect-square rounded-2xl overflow-hidden border-2 border-green-100 shadow-lg group-hover:border-green-300 transition-colors">
                         <img 
-                          src={`http://localhost:3001${posting.image_url}`} 
+                          src={getImageUrl(posting.image_url)} 
                           alt={posting.item_type}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                           onError={(e) => { e.target.parentElement.style.display = 'none'; }}

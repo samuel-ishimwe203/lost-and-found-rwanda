@@ -5,6 +5,7 @@ import { useContext, useState } from "react";
 import { PostsContext } from "../../context/PostsContext";
 import { AuthContext } from "../../context/AuthContext";
 import SendMessageModal from "../../components/SendMessageModal";
+import { getImageUrl } from "../../utils/imageHelper";
 
 export default function AllPostings() {
   const { search } = useLocation();
@@ -62,7 +63,7 @@ export default function AllPostings() {
             const isLostItem = !item.item_source || item.item_source === 'lost' || item.location_lost || item.date_lost;
             
             // Construct full image URL
-            const imageUrl = item.image_url ? `http://localhost:3001${item.image_url}` : null;
+            const imageUrl = getImageUrl(item.image_url);
             
             return (
               <div

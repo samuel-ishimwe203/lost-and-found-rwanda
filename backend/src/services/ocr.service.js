@@ -35,6 +35,19 @@ import path from 'path';
 import sharp from 'sharp';
 
 export const runOcr = async (imagePath) => {
+  // If it's a Cloudinary URL, Tesseract can handle it directly but sharp preprocessing would need a buffer
+  if (imagePath.startsWith('http')) {
+    try {
+      const result = await Tesseract.recognize(imagePath, 'eng');
+      const rawText = result.data.text || '';
+      const { name, idNumber } = extractNameAndId(rawText);
+      return { rawText, name, idNumber };
+    } catch (error) {
+      console.error('URL OCR Error:', error);
+      return { rawText: '', name: null, idNumber: null };
+    }
+  }
+
   let preprocessedImagePath = null;
 
   try {

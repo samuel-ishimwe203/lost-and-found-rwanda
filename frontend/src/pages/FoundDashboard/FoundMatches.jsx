@@ -7,9 +7,7 @@ import {
 } from "react-icons/fi"
 import apiClient from "../../services/api"
 import SendMessageModal from "../../components/SendMessageModal"
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
+import { getImageUrl } from "../../utils/imageHelper"
 
 export default function FoundMatches() {
   const [matches, setMatches] = useState([])
@@ -181,7 +179,7 @@ export default function FoundMatches() {
                     <div className="flex flex-col lg:flex-row">
                       <div className="lg:w-72 h-48 sm:h-64 lg:h-auto relative overflow-hidden bg-slate-100">
                           {match.lost_image_url ? (
-                            <img src={`${BACKEND_URL}${match.lost_image_url}`} alt={match.lost_item_type} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                            <img src={getImageUrl(match.lost_image_url)} alt={match.lost_item_type} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
                               <FiSearch className="w-16 h-16 opacity-30" />
@@ -280,7 +278,7 @@ export default function FoundMatches() {
             <button onClick={() => setIsDetailModalOpen(false)} className="absolute top-6 right-6 md:top-8 md:right-8 z-10 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-white/20 transition border border-white/20"><FiX className="text-xl md:text-2xl" /></button>
             <div className="md:w-1/2 bg-slate-950 p-6 md:p-12 flex items-center justify-center">
                <div className="w-full text-center">
-                  {viewingMatch.lost_image_url ? <img src={`${BACKEND_URL}${viewingMatch.lost_image_url}`} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl border-4 border-white/10" alt="Lost" /> : <FiSearch className="w-32 h-32 text-white/10 mx-auto" />}
+                  {viewingMatch.lost_image_url ? <img src={getImageUrl(viewingMatch.lost_image_url)} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl border-4 border-white/10" alt="Lost" /> : <FiSearch className="w-32 h-32 text-white/10 mx-auto" />}
                </div>
             </div>
             <div className="md:w-1/2 p-6 md:p-12 overflow-y-auto space-y-8 md:space-y-10 bg-white">

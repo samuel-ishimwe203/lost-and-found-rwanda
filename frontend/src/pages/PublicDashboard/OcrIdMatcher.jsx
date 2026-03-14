@@ -32,9 +32,7 @@ const OcrIdMatcher = () => {
           : "/api/report-found";
 
       const response = await fetch(
-        import.meta.env.VITE_API_URL
-          ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + endpoint
-          : "http://localhost:3001" + endpoint,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}${endpoint}`,
         {
           method: "POST",
           headers: {

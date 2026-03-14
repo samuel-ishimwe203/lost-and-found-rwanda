@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import apiClient from "../../services/api";
 import { useContext } from "react";
 import { PostsContext } from "../../context/PostsContext";
+import { getImageUrl } from "../../utils/imageHelper";
 
 export default function EditPost() {
   const { id } = useParams();
@@ -68,11 +69,7 @@ export default function EditPost() {
         });
 
         if (item.image_url) {
-          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-          const imageUrl = item.image_url.startsWith('http') 
-            ? item.image_url 
-            : `${baseUrl.replace('/api', '')}${item.image_url}`;
-          setImagePreview(imageUrl);
+          setImagePreview(getImageUrl(item.image_url));
         }
       } catch (err) {
         console.error('Fetch error:', err);

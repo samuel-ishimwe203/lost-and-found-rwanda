@@ -7,9 +7,7 @@ import {
 } from "react-icons/fi"
 import apiClient from "../../services/api"
 import SendMessageModal from "../../components/SendMessageModal"
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
+import { getImageUrl } from "../../utils/imageHelper"
 
 export default function LostMatches() {
   const [matches, setMatches] = useState([])
@@ -208,14 +206,14 @@ export default function LostMatches() {
                     <div className="lg:w-64 h-48 lg:h-auto relative overflow-hidden bg-slate-100">
                         {match.found_image_url && match.is_unlocked ? (
                           <img 
-                            src={`${BACKEND_URL}${match.found_image_url}`} 
+                            src={getImageUrl(match.found_image_url)} 
                             alt={match.found_item_type}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                           />
                         ) : match.found_image_url && !match.is_unlocked ? (
                           <div className="w-full h-full relative">
                             <img 
-                              src={`${BACKEND_URL}${match.found_image_url}`} 
+                              src={getImageUrl(match.found_image_url)} 
                               alt="Blurred"
                               className="w-full h-full object-cover blur-2xl opacity-50"
                             />
@@ -377,7 +375,7 @@ export default function LostMatches() {
             <div className="md:w-1/2 bg-slate-900 flex items-center justify-center p-6 md:p-12">
                {viewingMatch.found_image_url && viewingMatch.is_unlocked ? (
                  <img 
-                  src={`${BACKEND_URL}${viewingMatch.found_image_url}`} 
+                  src={getImageUrl(viewingMatch.found_image_url)} 
                   className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
                   alt="Found" 
                  />

@@ -8,6 +8,7 @@ import {
   FiUploadCloud, FiX
 } from "react-icons/fi";
 import SendMessageModal from "../../components/SendMessageModal";
+import { getImageUrl } from "../../utils/imageHelper";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
@@ -194,7 +195,7 @@ export default function PostFoundItem() {
                     <div className="lg:w-80 h-64 lg:h-auto relative overflow-hidden bg-slate-100">
                       {match.lost_image_url ? (
                         <img 
-                          src={`${BACKEND_URL}${match.lost_image_url}`} 
+                          src={getImageUrl(match.lost_image_url)} 
                           className="w-full h-full object-cover transition-transform group-hover:scale-110"
                           alt="Lost"
                         />
@@ -297,7 +298,7 @@ export default function PostFoundItem() {
                         <div className="space-y-4">
                            <div className="aspect-video bg-white/5 rounded-[32px] overflow-hidden border border-white/10 flex items-center justify-center p-4 relative shadow-2xl">
                               {viewingMatch.lost_image_url ? (
-                                <img src={`${BACKEND_URL}${viewingMatch.lost_image_url}`} className="w-full h-full object-contain rounded-2xl" alt="Match" />
+                                <img src={getImageUrl(viewingMatch.lost_image_url)} className="w-full h-full object-contain rounded-2xl" alt="Match" />
                               ) : (
                                 <FiEye className="w-16 h-16 text-white/5" />
                               )}

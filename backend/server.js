@@ -127,6 +127,13 @@ const startServer = async () => {
       console.log('═══════════════════════════════════════════════════════');
       console.log('🚀 Lost & Found Rwanda API Server');
       console.log('═══════════════════════════════════════════════════════');
+      
+      // Production warning for Cloudinary
+      if (process.env.NODE_ENV === 'production' && !process.env.CLOUDINARY_CLOUD_NAME) {
+        console.warn('⚠️ WARNING: CLOUDINARY_CLOUD_NAME is not set in production!');
+        console.warn('⚠️ Images will be saved locally and will be LOST on restart.');
+      }
+
       console.log(`📡 Server running on port: ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);

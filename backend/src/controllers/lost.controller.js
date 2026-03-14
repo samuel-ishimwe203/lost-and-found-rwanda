@@ -20,7 +20,7 @@ export const postLostItem = async (req, res) => {
         message: 'Only users with loser role can post lost items'
       })
     }
-    const image_url = req.file ? `/uploads/${req.file.filename}` : null
+    const image_url = req.file ? (req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`) : null
 
     let parsedAdditionalInfo = additional_info
     if (typeof additional_info === 'string') {
@@ -275,7 +275,7 @@ export const updateLostItem = async (req, res) => {
     // Handle image upload if present
     let finalImageUrl = image_url
     if (req.file) {
-      finalImageUrl = `/uploads/${req.file.filename}`
+      finalImageUrl = req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`
     }
     const checkResult = await query('SELECT * FROM lost_items WHERE id = $1', [id])
     if (checkResult.rows.length === 0) {

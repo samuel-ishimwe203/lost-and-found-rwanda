@@ -245,55 +245,73 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
         </div>
 
         {/* Mobile Menu Drawer */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-gray-100 ${mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="px-6 py-4 space-y-3 bg-gray-50">
-            <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-gray-700 font-medium hover:text-[#1e3a8a]">Home</Link>
-            <Link to="/postings" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-gray-700 font-medium hover:text-[#1e3a8a]">Browse Items</Link>
-            <div 
-              onClick={() => {
-                setMobileMenuOpen(false);
-                if (location.pathname === '/') {
-                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                  navigate('/#how-it-works');
-                }
-              }}
-              className="block py-2 text-gray-700 font-medium hover:text-[#1e3a8a] cursor-pointer"
-            >
-              How it Works
+        <div className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out border-t border-gray-100 ${mobileMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="px-6 py-6 space-y-4 bg-white shadow-inner">
+            <div className="grid grid-cols-1 gap-1">
+              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition">Home</Link>
+              <Link to="/postings" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition">Browse Items</Link>
+              <div 
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (location.pathname === '/') {
+                    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate('/#how-it-works');
+                  }
+                }}
+                className="px-4 py-3 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition cursor-pointer"
+              >
+                How it Works
+              </div>
             </div>
-            {isAuthenticated && menuLinks.length > 0 && !isDashboard && (
-              <div className="pt-2 border-t border-gray-200">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">My Dashboard</p>
-                {menuLinks.map((link) => (
-                  <Link 
-                    key={link.to} 
-                    to={link.to} 
-                    onClick={() => setMobileMenuOpen(false)} 
-                    className="block py-2 px-2 text-sm text-gray-600 hover:text-[#1e3a8a] transition"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+
+            {isAuthenticated && menuLinks.length > 0 && (
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 px-4">Dashboard Access</p>
+                <div className="grid grid-cols-1 gap-1">
+                  {menuLinks.map((link) => (
+                    <Link 
+                      key={link.to} 
+                      to={link.to} 
+                      onClick={() => setMobileMenuOpen(false)} 
+                      className="px-4 py-3 text-sm text-blue-600 font-bold hover:bg-blue-50 rounded-xl transition flex justify-between items-center"
+                    >
+                      {link.label}
+                      <span className="text-blue-300">→</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
+
             {!isAuthenticated ? (
-              <div className="pt-2 border-t border-gray-200 grid grid-cols-2 gap-3">
-                <button onClick={() => { setMobileMenuOpen(false); openLogin(); }} className="py-2.5 text-center text-[#1e3a8a] font-semibold border border-gray-200 rounded-lg">Log in</button>
-                <button onClick={() => { setMobileMenuOpen(false); openRegister(); }} className="py-2.5 text-center bg-[#2d4990] text-white font-semibold rounded-lg">Sign up</button>
+              <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); openLogin(); }} 
+                  className="py-4 text-center text-slate-900 font-black text-[10px] uppercase tracking-widest border border-slate-200 rounded-2xl bg-slate-50 shadow-sm"
+                >
+                  Log In
+                </button>
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); openRegister(); }} 
+                  className="py-4 text-center bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20"
+                >
+                  Join Us
+                </button>
               </div>
             ) : (
-              <div className="pt-2 border-t border-gray-200">
+              <div className="pt-4 border-t border-slate-100">
                 <button 
                   onClick={() => { setMobileMenuOpen(false); onLogout(); }} 
-                  className="w-full text-left py-2 text-red-600 font-semibold"
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-red-50 text-red-600 font-black text-[10px] uppercase tracking-widest border border-red-100 shadow-sm"
                 >
-                  Log out Account
+                  Sign Out Account
                 </button>
               </div>
             )}
-            <div className="pt-2 border-t border-gray-200 sm:hidden flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-500">Language</span>
+            
+            <div className="pt-4 border-t border-slate-100 sm:hidden flex justify-between items-center px-4">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Region Settings</span>
               <LanguageSwitcher />
             </div>
           </div>
