@@ -7,9 +7,7 @@ import {
 } from "react-icons/fi"
 import apiClient from "../../services/api"
 import SendMessageModal from "../../components/SendMessageModal"
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
+import { getImageUrl } from "../../utils/imageHelper"
 
 export default function FoundMatches() {
   const [matches, setMatches] = useState([])
@@ -133,17 +131,17 @@ export default function FoundMatches() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 pb-20">
-      <div className="flex items-end justify-between mb-12 py-8">
+      <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-8 md:mb-12 py-6 md:py-8 gap-6">
         <div>
-          <span className="inline-block px-4 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-black uppercase tracking-widest mb-4">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-[10px] md:text-xs font-black uppercase tracking-widest mb-4">
             Neural Match Results
           </span>
-          <h1 className="text-5xl font-black text-slate-900 leading-tight">Potential Owners</h1>
-          <p className="text-slate-500 text-lg mt-2">People looking for the items you reported finding.</p>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">Potential Owners</h1>
+          <p className="text-slate-500 text-sm md:text-lg mt-2 font-medium opacity-80">People looking for the items you reported finding.</p>
         </div>
-        <div className="bg-white p-4 rounded-3xl shadow-xl border border-slate-100 text-center min-w-[120px]">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Total Hits</p>
-           <p className="text-3xl font-black text-blue-600">{matches.length}</p>
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-xl border border-slate-100 text-center min-w-[120px] w-full md:w-auto">
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-70">Total Hits</p>
+           <p className="text-3xl md:text-4xl font-black text-blue-600">{matches.length}</p>
         </div>
       </div>
 
@@ -160,28 +158,28 @@ export default function FoundMatches() {
         <div className="space-y-16">
           {Object.entries(groupedMatches).map(([itemId, group]) => (
             <div key={itemId} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-center gap-6 pb-4 border-b-2 border-slate-100">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-xl">
+              <div className="flex items-start md:items-center gap-4 md:gap-6 pb-4 border-b-2 border-slate-100">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-600 rounded-xl md:rounded-2xl flex items-center justify-center text-white text-xl md:text-2xl shadow-xl shrink-0">
                     <FiTag />
                 </div>
                 <div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Matches For Your Found Item</p>
-                      <span className="px-3 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                      <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Matches For Your Found Item</p>
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[8px] md:text-[9px] font-black">
                         {group.items.length} POTENTIAL OWNERS
                       </span>
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{group.item_type} <span className="text-slate-300 font-medium font-serif italic ml-2">in {group.district}</span></h2>
+                    <h2 className="text-xl md:text-3xl font-black text-slate-900 uppercase tracking-tight leading-tight">{group.item_type} <span className="text-slate-300 font-medium font-serif italic ml-1 md:ml-2">in {group.district}</span></h2>
                 </div>
               </div>
 
               <div className="grid gap-8">
                 {group.items.map((match) => (
-                  <div key={match.id} className="group bg-white rounded-[32px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden">
+                  <div key={match.id} className="group bg-white rounded-2xl md:rounded-[32px] border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden">
                     <div className="flex flex-col lg:flex-row">
-                      <div className="lg:w-80 h-64 lg:h-auto relative overflow-hidden bg-slate-100">
+                      <div className="lg:w-72 h-48 sm:h-64 lg:h-auto relative overflow-hidden bg-slate-100">
                           {match.lost_image_url ? (
-                            <img src={`${BACKEND_URL}${match.lost_image_url}`} alt={match.lost_item_type} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                            <img src={getImageUrl(match.lost_image_url)} alt={match.lost_item_type} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
                               <FiSearch className="w-16 h-16 opacity-30" />
@@ -195,70 +193,72 @@ export default function FoundMatches() {
                           </div>
                       </div>
 
-                      <div className="flex-1 p-8 lg:p-10 flex flex-col justify-between">
+                      <div className="flex-1 p-6 md:p-8 lg:p-10 flex flex-col justify-between">
                           <div>
-                            <div className="flex justify-between items-start mb-6">
+                            <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
                                 <div>
                                   <div className="flex items-center gap-3">
-                                      <span className={`flex items-center justify-center w-12 h-12 rounded-2xl text-xl font-black shadow-lg ${match.match_score >= 80 ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}`}>
+                                      <span className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl text-lg md:text-xl font-black shadow-lg ${match.match_score >= 80 ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}`}>
                                         {Math.round(match.match_score)}%
                                       </span>
                                       <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-0.5">Confidence Level</p>
-                                        <p className="text-lg font-black text-slate-800">High Match Potential</p>
+                                        <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-0.5">Confidence</p>
+                                        <p className="text-base md:text-lg font-black text-slate-800">High Match Potential</p>
                                       </div>
                                   </div>
                                 </div>
-                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${match.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : match.status === 'confirmed' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                <span className={`px-4 py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest border ${match.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : match.status === 'confirmed' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                                   {getStatusLabel(match.status, match)}
                                 </span>
                             </div>
 
-                            <div className="grid md:grid-cols-2 gap-6 mb-8">
-                                <div className="space-y-4">
-                                  <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 relative">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+                                <div className="space-y-3 md:space-y-4">
+                                  <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl md:rounded-2xl border border-slate-100 relative">
                                       <div className="p-2.5 bg-white rounded-xl text-blue-600 shadow-sm"><FiUser /></div>
                                       <div className="min-w-0">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase">Possible Owner</p>
-                                        <p className="text-sm font-bold text-slate-800 truncate">{match.is_unlocked ? match.loser_name : 'Hidden (Awaiting Verification)'}</p>
+                                        <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">Possible Owner</p>
+                                        <p className="text-xs md:text-sm font-bold text-slate-800 truncate">{match.is_unlocked ? match.loser_name : 'Hidden (Awaiting Verification)'}</p>
                                       </div>
                                   </div>
-                                  <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                  <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl md:rounded-2xl border border-slate-100">
                                       <div className="p-2.5 bg-white rounded-xl text-blue-600 shadow-sm"><FiMapPin /></div>
                                       <div className="min-w-0">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase">Lost District</p>
-                                        <p className="text-sm font-bold text-slate-800 truncate">{match.lost_district}</p>
+                                        <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">Lost District</p>
+                                        <p className="text-xs md:text-sm font-bold text-slate-800 truncate">{match.lost_district}</p>
                                       </div>
                                   </div>
                                 </div>
-                                <div className="bg-slate-900 rounded-[24px] p-6 text-white flex flex-col justify-center">
-                                  <p className="text-[10px] font-black text-white/40 uppercase mb-2">Claim Potential Reward</p>
+                                <div className="bg-slate-900 rounded-2xl md:rounded-[24px] p-4 md:p-6 text-white flex flex-col justify-center">
+                                  <p className="text-[9px] md:text-[10px] font-black text-white/40 uppercase mb-2">Claim Potential Reward</p>
                                   <div className="flex items-baseline gap-2">
-                                      <span className="text-3xl font-black">{match.reward_amount ? match.reward_amount.toLocaleString() : '0'}</span>
-                                      <span className="text-sm font-bold text-emerald-400">RWF</span>
+                                      <span className="text-2xl md:text-3xl font-black">{match.reward_amount ? match.reward_amount.toLocaleString() : '0'}</span>
+                                      <span className="text-xs font-bold text-emerald-400">RWF</span>
                                   </div>
                                 </div>
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap gap-4 pt-4 border-t border-slate-100">
+                          <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 pt-4 border-t border-slate-100">
                              {match.is_unlocked ? (
-                               <button onClick={() => handleContactOwner(match)} className="flex-1 min-w-[180px] bg-slate-900 text-white rounded-2xl py-4 font-black text-sm hover:translate-y-[-2px] hover:bg-black transition flex items-center justify-center gap-2 group/btn">
+                               <button onClick={() => handleContactOwner(match)} className="flex-1 min-w-[150px] bg-slate-900 text-white rounded-xl md:rounded-2xl py-3 md:py-4 font-black text-xs md:text-sm hover:translate-y-[-2px] hover:bg-black transition flex items-center justify-center gap-2 group/btn">
                                   <FiMessageSquare className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5" />
                                   Connect & Verify
                                </button>
                              ) : (
-                               <button disabled className="flex-1 min-w-[180px] bg-slate-100 text-slate-400 rounded-2xl py-4 font-black text-sm cursor-not-allowed flex items-center justify-center gap-2">
+                               <button disabled className="flex-1 min-w-[150px] bg-slate-100 text-slate-400 rounded-xl md:rounded-2xl py-3 md:py-4 font-black text-xs md:text-sm cursor-not-allowed flex items-center justify-center gap-2">
                                   <FiShield className="w-4 h-4" />
                                   Locked by Admin
                                </button>
                              )}
-                            <button onClick={() => handleMarkReturned(match.id)} disabled={match.status === 'completed' || updatingMatch === match.id} className="flex-1 min-w-[180px] bg-emerald-500 text-white rounded-2xl py-4 font-black text-sm hover:translate-y-[-2px] hover:bg-emerald-600 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                            <button onClick={() => handleMarkReturned(match.id)} disabled={match.status === 'completed' || updatingMatch === match.id} className="flex-1 min-w-[150px] bg-emerald-500 text-white rounded-xl md:rounded-2xl py-3 md:py-4 font-black text-xs md:text-sm hover:translate-y-[-2px] hover:bg-emerald-600 transition flex items-center justify-center gap-2 disabled:opacity-50">
                                 {updatingMatch === match.id ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div> : <FiCheckCircle className="w-4 h-4" />}
                                 Hand Over Item
                             </button>
-                            <button onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }} className="w-14 h-14 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"><FiEye className="w-5 h-5" /></button>
-                            <button onClick={() => handleDeleteMatch(match.id)} disabled={updatingMatch === match.id} className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition disabled:opacity-50" title="Dismiss Owner"><FiTrash2 className="w-5 h-5" /></button>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                              <button onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }} className="flex-1 sm:w-14 h-12 md:h-14 bg-slate-100 text-slate-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"><FiEye className="w-5 h-5" /></button>
+                              <button onClick={() => handleDeleteMatch(match.id)} disabled={updatingMatch === match.id} className="flex-1 sm:w-14 h-12 md:h-14 bg-red-50 text-red-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition disabled:opacity-50" title="Dismiss Owner"><FiTrash2 className="w-5 h-5" /></button>
+                            </div>
                           </div>
                       </div>
                     </div>
@@ -274,50 +274,50 @@ export default function FoundMatches() {
       {isDetailModalOpen && viewingMatch && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl" onClick={() => setIsDetailModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-[48px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-500 border border-white/20">
-            <button onClick={() => setIsDetailModalOpen(false)} className="absolute top-8 right-8 z-10 w-12 h-12 bg-white/10 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-white/20 transition border border-white/20"><FiX className="text-2xl" /></button>
-            <div className="md:w-1/2 bg-slate-950 p-12 flex items-center justify-center">
+          <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl md:rounded-[48px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-500 border border-white/20">
+            <button onClick={() => setIsDetailModalOpen(false)} className="absolute top-6 right-6 md:top-8 md:right-8 z-10 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-white/20 transition border border-white/20"><FiX className="text-xl md:text-2xl" /></button>
+            <div className="md:w-1/2 bg-slate-950 p-6 md:p-12 flex items-center justify-center">
                <div className="w-full text-center">
-                  {viewingMatch.lost_image_url ? <img src={`${BACKEND_URL}${viewingMatch.lost_image_url}`} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl border-4 border-white/10" alt="Lost" /> : <FiSearch className="w-32 h-32 text-white/10 mx-auto" />}
+                  {viewingMatch.lost_image_url ? <img src={getImageUrl(viewingMatch.lost_image_url)} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl border-4 border-white/10" alt="Lost" /> : <FiSearch className="w-32 h-32 text-white/10 mx-auto" />}
                </div>
             </div>
-            <div className="md:w-1/2 p-12 overflow-y-auto space-y-10 bg-white">
+            <div className="md:w-1/2 p-6 md:p-12 overflow-y-auto space-y-8 md:space-y-10 bg-white">
                <div>
-                  <span className="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-200 mb-4 inline-block">Owner Profile</span>
-                  <h2 className="text-4xl font-black text-slate-900 leading-tight tracking-tight">{viewingMatch.lost_item_type}</h2>
+                  <span className="px-3 py-1 md:px-4 md:py-1.5 bg-blue-100 text-blue-700 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest border border-blue-200 mb-3 md:mb-4 inline-block">Owner Profile</span>
+                  <h2 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight tracking-tight">{viewingMatch.lost_item_type}</h2>
                </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><FiMapPin /> District</p>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
+                    <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2 tracking-widest leading-none"><FiMapPin /> District</p>
                     <p className="text-sm font-bold text-slate-700">{viewingMatch.lost_district}</p>
                   </div>
-                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><FiTag /> Category</p>
+                  <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
+                    <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2 tracking-widest leading-none"><FiTag /> Category</p>
                     <p className="text-sm font-bold text-slate-700 capitalize">{viewingMatch.lost_category}</p>
                   </div>
                </div>
-               <div className="space-y-6">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact Information</h4>
+               <div className="space-y-4 md:space-y-6">
+                  <h4 className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-70">Contact Information</h4>
                   {viewingMatch.is_unlocked ? (
                     <div className="grid gap-4">
-                       <div className="flex items-center gap-5 bg-blue-50/50 p-6 rounded-[32px] border border-blue-100/50">
-                          <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-xl shadow-xl"><FiUser /></div>
-                          <div><p className="text-sm font-black text-slate-900 mb-0.5">{viewingMatch.loser_name}</p><p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Verified User</p></div>
+                       <div className="flex items-center gap-4 md:gap-5 bg-blue-50/50 p-4 md:p-6 rounded-2xl md:rounded-[32px] border border-blue-100/50">
+                          <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-600 text-white rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-xl shadow-xl shrink-0"><FiUser /></div>
+                          <div className="min-w-0"><p className="text-sm font-black text-slate-900 mb-0.5 truncate">{viewingMatch.loser_name}</p><p className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-wider">Verified User</p></div>
                        </div>
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="flex items-center gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100"><FiPhone className="text-blue-500" /><span className="text-xs font-bold text-slate-700">{viewingMatch.loser_phone}</span></div>
-                          <div className="flex items-center gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100 overflow-hidden"><FiMail className="text-blue-500" /><span className="text-xs font-bold text-slate-700 truncate">{viewingMatch.loser_email}</span></div>
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                          <div className="flex items-center gap-4 bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100"><FiPhone className="text-blue-500 shrink-0" /><span className="text-xs font-bold text-slate-700">{viewingMatch.loser_phone}</span></div>
+                          <div className="flex items-center gap-4 bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 overflow-hidden"><FiMail className="text-blue-500 shrink-0" /><span className="text-xs font-bold text-slate-700 truncate">{viewingMatch.loser_email}</span></div>
                        </div>
                     </div>
                   ) : (
-                    <div className="bg-slate-50 p-10 rounded-[40px] border border-dashed border-slate-200 text-center">
-                       <FiShield className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                       <p className="text-xs font-bold text-slate-500 leading-relaxed">Identity protected until verification.</p>
+                    <div className="bg-slate-50 p-8 md:p-10 rounded-2xl md:rounded-[40px] border border-dashed border-slate-200 text-center">
+                       <FiShield className="w-12 h-12 md:w-16 md:h-16 text-slate-200 mx-auto mb-4" />
+                       <p className="text-[10px] md:text-xs font-black text-slate-500 leading-relaxed uppercase tracking-widest opacity-60">Identity protected until verification.</p>
                     </div>
                   )}
                </div>
                {viewingMatch.is_unlocked && (
-                 <button onClick={() => handleContactOwner(viewingMatch)} className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-black text-lg shadow-2xl hover:bg-black transition">Start Chat</button>
+                 <button onClick={() => handleContactOwner(viewingMatch)} className="w-full py-4 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-[24px] font-black text-base md:text-lg shadow-2xl hover:bg-black transition transform hover:translate-y-[-2px]">Start Chat</button>
                )}
             </div>
           </div>

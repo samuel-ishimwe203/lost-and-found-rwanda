@@ -6,9 +6,7 @@ import {
   FiUser, FiMapPin, FiCalendar, FiFileText, FiX
 } from "react-icons/fi";
 import apiClient from "../../services/api";
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
+import { getImageUrl } from "../../utils/imageHelper";
 
 export default function AdminMatches() {
   const [matches, setMatches] = useState([]);
@@ -310,7 +308,7 @@ export default function AdminMatches() {
 
                      <div className="bg-slate-50 rounded-3xl overflow-hidden border border-slate-100 aspect-video flex items-center justify-center">
                         {selectedMatch.lost_image ? (
-                           <img src={`${BACKEND_URL}${selectedMatch.lost_image}`} className="w-full h-full object-contain" alt="Lost" />
+                           <img src={getImageUrl(selectedMatch.lost_image)} className="w-full h-full object-contain" alt="Lost" />
                         ) : (
                            <div className="text-slate-300 text-center">
                              <FiExternalLink className="w-12 h-12 mx-auto mb-2 opacity-20" />
@@ -357,7 +355,7 @@ export default function AdminMatches() {
 
                      <div className="bg-slate-50 rounded-3xl overflow-hidden border border-slate-100 aspect-video flex items-center justify-center">
                         {selectedMatch.found_image ? (
-                           <img src={`${BACKEND_URL}${selectedMatch.found_image}`} className="w-full h-full object-contain" alt="Found" />
+                           <img src={getImageUrl(selectedMatch.found_image)} className="w-full h-full object-contain" alt="Found" />
                         ) : (
                            <div className="text-slate-300 text-center">
                              <FiExternalLink className="w-12 h-12 mx-auto mb-2 opacity-20" />

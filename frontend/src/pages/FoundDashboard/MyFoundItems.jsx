@@ -130,11 +130,12 @@ export default function MyFoundItems() {
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-blue-900">My Found Items</h1>
-        <div className="text-sm text-blue-600">
-          Total Items: <span className="font-bold">{foundItems.length}</span>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-black text-blue-900 leading-tight">My Found Items</h1>
+          <p className="text-blue-600 text-[10px] md:text-xs font-black uppercase tracking-widest mt-1 opacity-70">
+            Managing <span className="text-blue-800">{foundItems.length}</span> recorded discoveries
+          </p>
         </div>
       </div>
 
@@ -153,11 +154,11 @@ export default function MyFoundItems() {
         </div>
       )}
 
-      {/* EMPTY STATE */}
       {!loading && !error && foundItems.length === 0 && (
-        <div className="text-center py-12 bg-blue-50 rounded-xl border border-blue-200">
-          <p className="text-blue-700 text-lg">📭 No found items yet</p>
-          <p className="text-blue-600 mt-2">Start posting items you've found to help reunite them with their owners!</p>
+        <div className="text-center py-12 md:py-20 bg-blue-50/50 rounded-2xl md:rounded-3xl border border-dashed border-blue-200">
+          <p className="text-3xl md:text-4xl mb-4">📭</p>
+          <h3 className="text-xl md:text-2xl font-black text-blue-900">No found items yet</h3>
+          <p className="text-blue-600 mt-2 max-w-sm mx-auto text-sm md:text-base opacity-70">Start posting items you've found to help reunite them with their owners!</p>
         </div>
       )}
 
@@ -167,67 +168,61 @@ export default function MyFoundItems() {
           {foundItems.map((item) => (
             <div
               key={item.id}
-              className={`rounded-xl shadow-lg border-2 p-5 transition hover:shadow-xl ${statusStyles[item.status] || statusStyles.active}`}
+              className={`group rounded-2xl md:rounded-[32px] shadow-lg hover:shadow-2xl border border-blue-100 transition-all duration-300 overflow-hidden bg-white`}
             >
               {/* IMAGE */}
-              {item.image_url ? (
-                <img
-                  src={`http://localhost:3001${item.image_url}`}
-                  alt={item.item_type}
-                  className="w-full h-40 object-cover rounded-lg mb-4"
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/200x150?text=No+Image';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 flex items-center justify-center text-gray-500">
-                  No Image
-                </div>
-              )}
-
-              {/* CONTENT */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-lg font-bold text-gray-900">{item.item_type}</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${statusBadge[item.status] || statusBadge.active}`}>
+              <div className="relative h-48 md:h-56 overflow-hidden bg-slate-100">
+                {item.image_url ? (
+                  <img
+                    src={`http://localhost:3001${item.image_url}`}
+                    alt={item.item_type}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                    <FiTag className="w-12 h-12 opacity-30" />
+                    <span className="text-[9px] font-black uppercase mt-3 tracking-widest">No Image Available</span>
+                  </div>
+                )}
+                <div className="absolute top-4 right-4">
+                  <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md border ${statusBadge[item.status] || statusBadge.active} border-white/20`}>
                     {item.status}
                   </span>
                 </div>
+              </div>
 
-                <p className="text-gray-700 text-sm line-clamp-2">{item.description || 'No description'}</p>
-
-                <div className="space-y-2 text-sm">
-                  <p className="text-gray-600">
-                    <span className="font-semibold">Category:</span> {item.category}
-                  </p>
-                  <p className="text-gray-600">
-                    <span className="font-semibold">Location:</span> {item.location_found}, {item.district}
-                  </p>
-                  <p className="text-gray-600">
-                    <span className="font-semibold">Date Found:</span> {formatDate(item.date_found)}
-                  </p>
+              <div className="p-5 md:p-6 space-y-4">
+                <div>
+                   <h3 className="text-xl font-black text-slate-900 leading-tight uppercase tracking-tight">{item.item_type}</h3>
+                   <div className="flex items-center gap-3 mt-1 text-slate-400 text-[10px] font-bold">
+                      <span className="flex items-center gap-1"><FiMapPin /> {item.district}</span>
+                      <span className="flex items-center gap-1"><FiClock /> {formatDate(item.date_found)}</span>
+                   </div>
                 </div>
 
+                <p className="text-slate-600 text-sm line-clamp-2 leading-relaxed h-10">{item.description || 'No description provided'}</p>
+
                 {/* ACTION BUTTONS */}
-                <div className="flex gap-2 pt-4">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <button 
                     onClick={() => handleViewDetails(item)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-slate-900 text-white py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-800 transition shadow-md flex items-center justify-center gap-2"
                   >
-                    <FiEye className="w-4 h-4" /> View Details
+                    <FiEye /> View
                   </button>
                   <button 
                     onClick={() => handleEdit(item)}
-                    className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-blue-50 text-blue-600 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-blue-100 transition border border-blue-100 flex items-center justify-center gap-2"
                   >
-                    <FiEdit2 className="w-4 h-4" /> Edit
+                    <FiEdit2 /> Edit
                   </button>
                   <button 
                     onClick={() => handleDelete(item.id)}
-                    className="w-10 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200 py-2 rounded-lg font-semibold transition flex items-center justify-center"
+                    className="w-11 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 py-2.5 rounded-xl font-bold transition flex items-center justify-center shadow-sm"
                     title="Delete Item"
                   >
-                    <FiTrash2 className="w-4 h-4" />
+                    <FiTrash2 />
                   </button>
                 </div>
               </div>
@@ -238,16 +233,16 @@ export default function MyFoundItems() {
 
       {/* VIEW DETAILS MODAL */}
       {isViewModalOpen && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-4">
+          <div className="bg-white rounded-2xl md:rounded-[40px] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
+            <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 md:p-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Item Details</h2>
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Item Details</h2>
                 <button
                   onClick={() => setIsViewModalOpen(false)}
-                  className="text-white hover:bg-white/20 rounded-full p-2 transition"
+                  className="w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200 transition"
                 >
-                  ✕
+                  <FiClock className="rotate-45" />
                 </button>
               </div>
             </div>
@@ -335,16 +330,16 @@ export default function MyFoundItems() {
 
       {/* EDIT MODAL */}
       {isEditModalOpen && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-t-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-4">
+          <div className="bg-white rounded-2xl md:rounded-[40px] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
+            <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 md:p-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Edit Item</h2>
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Edit Posting</h2>
                 <button
                   onClick={() => setIsEditModalOpen(false)}
-                  className="text-white hover:bg-white/20 rounded-full p-2 transition"
+                  className="w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200 transition"
                 >
-                  ✕
+                  <FiClock className="rotate-45" />
                 </button>
               </div>
             </div>

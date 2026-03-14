@@ -29,7 +29,7 @@ export const postOfficialDocument = async (req, res) => {
     }
 
     // Capture the uploaded image URL from multer
-    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+    const image_url = req.file ? (req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`) : null;
 
     // Parse additional_info safely
     let parsedAdditionalInfo = additional_info;

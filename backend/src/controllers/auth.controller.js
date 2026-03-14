@@ -188,7 +188,7 @@ export const updateProfile = async (req, res) => {
       values.push(safeTrim(district))
     }
     if (req.file) {
-      const photoPath = `/uploads/${req.file.filename}`
+      const photoPath = req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`
       updates.push(`profile_image = $${paramCount++}`)
       values.push(photoPath)
     }

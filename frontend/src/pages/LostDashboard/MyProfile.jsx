@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import apiClient from "../../services/api";
+import { getImageUrl } from "../../utils/imageHelper";
 
 export default function MyProfile() {
   const { user, updateUser } = useAuth();
@@ -58,7 +59,7 @@ export default function MyProfile() {
 
       // Set profile photo if available
       if (user?.profile_image) {
-        setPreviewUrl(user.profile_image);
+        setPreviewUrl(getImageUrl(user.profile_image));
       }
     } catch (error) {
       console.error('Error loading profile:', error);

@@ -10,10 +10,12 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
   const [authMode, setAuthMode] = useState("login");
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const menuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const isDashboard = location.pathname.includes('dashboard');
 
   const openLogin = () => {
     setAuthMode("login");
@@ -80,49 +82,75 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
 
   return (
     <>
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 py-3">
-        <div className="max-w-[1400px] mx-auto px-6 flex justify-between items-center">
+      <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-[100] py-3">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 flex justify-between items-center">
           
-          <Link to="/" className="flex flex-col items-center justify-center leading-none group notranslate relative pt-4">
-            <div className="absolute top-0 right-0 left-12 flex flex-col items-center w-16">
-              <svg viewBox="0 0 100 30" className="w-full h-auto drop-shadow-sm transform translate-x-2 -translate-y-1">
-                <path d="M10,25 Q40,5 90,15 L95,5 Q40,-10 5,15 Z" fill="#2d4990" />
-                <path d="M15,28 Q45,15 95,20 L90,28 Q40,25 10,35 Z" fill="#c1272d" />
-              </svg>
-            </div>
-            
-            <div className="flex items-center z-10 relative">
-              <span className="text-[28px] font-bold text-[#c1272d] tracking-normal font-sans" style={{fontFamily: "Arial, sans-serif"}}>LOST</span>
-              <span className="text-[28px] font-normal text-[#2d4990] tracking-normal font-sans" style={{fontFamily: "Arial, sans-serif"}}>FOUND</span>
-            </div>
-            
-            <span className="text-[9px] tracking-[0.35em] text-[#333333] font-serif mt-[2px] ml-1">
-              FIND ANYTHING
-            </span>
-          </Link>
+          <div className="flex items-center gap-2 md:gap-4 flex-1">
+            {/* Hamburger Button */}
+            {!isDashboard && (
+              <button 
+                className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            )}
+
+            <Link 
+              to={isDashboard ? "#" : "/"} 
+              onClick={(e) => {
+                if (isDashboard) {
+                  e.preventDefault();
+                  setMobileMenuOpen(!mobileMenuOpen);
+                }
+              }}
+              className="flex flex-col items-center justify-center leading-none group notranslate relative pt-0 sm:pt-4"
+            >
+              <div className="absolute top-0 left-0 right-0 flex flex-col items-center">
+                <div className="w-12 sm:w-16">
+                  <svg viewBox="0 0 100 30" className="w-full h-auto drop-shadow-sm transform translate-x-1 sm:translate-x-2 -translate-y-1">
+                    <path d="M10,25 Q40,5 90,15 L95,5 Q40,-10 5,15 Z" fill="#2d4990" />
+                    <path d="M15,28 Q45,15 95,20 L90,28 Q40,25 10,35 Z" fill="#c1272d" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="flex items-center z-10 relative mt-3 sm:mt-0">
+                <span className="text-xl sm:text-2xl font-black tracking-tighter text-[#1e3a8a] group-hover:text-blue-800 transition">LOST</span>
+                <span className="text-xl sm:text-2xl font-black tracking-tighter text-[#c1272d] group-hover:text-red-700 transition">FOUND</span>
+              </div>
+              <div className={`hidden sm:block text-[8px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-0.5 group-hover:text-gray-600 transition ${isDashboard ? 'md:hidden lg:block' : ''}`}>find Anything</div>
+            </Link>
+          </div>
 
           <div className="hidden md:flex items-center gap-1">
-            <Link 
-              to="/" 
-              className={`px-5 py-2.5 rounded-full font-semibold transition text-[15px] ${
-                location.pathname === '/' 
-                  ? 'bg-[#f0f4f8] text-[#1e3a8a]' 
+            <Link
+              to="/"
+              className={`px-5 py-2.5 rounded-full font-semibold transition text-[15px] ${location.pathname === '/'
+                  ? 'bg-[#f0f4f8] text-[#1e3a8a]'
                   : 'text-gray-600 hover:text-[#1e3a8a] hover:bg-gray-50'
-              }`}
+                }`}
             >
               Home
             </Link>
-            <Link 
-              to="/postings" 
-              className={`px-5 py-2.5 rounded-full font-semibold transition text-[15px] ${
-                location.pathname === '/postings' 
-                  ? 'bg-[#f0f4f8] text-[#1e3a8a]' 
+            <Link
+              to="/postings"
+              className={`px-5 py-2.5 rounded-full font-semibold transition text-[15px] ${location.pathname === '/postings'
+                  ? 'bg-[#f0f4f8] text-[#1e3a8a]'
                   : 'text-gray-600 hover:text-[#1e3a8a] hover:bg-gray-50'
-              }`}
+                }`}
             >
               Browse Items
             </Link>
-            <span 
+            <span
               onClick={() => {
                 if (location.pathname === '/') {
                   document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
@@ -137,37 +165,39 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
           </div>
 
 
-          <div className="flex items-center gap-6" ref={menuRef}>
-            
-            <LanguageSwitcher />
+          <div className="flex items-center gap-3 md:gap-6" ref={menuRef}>
 
-            <button 
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
+
+            <button
               onClick={() => setSearchOpen(true)}
-              className="text-gray-500 hover:text-[#1e3a8a] transition"
+              className="text-gray-500 hover:text-[#1e3a8a] transition p-1"
               aria-label="Search"
             >
-              <Search size={24} strokeWidth={2} />
+              <Search size={22} strokeWidth={2} />
             </button>
 
-            <div className="flex items-center gap-5 border-l border-gray-200 pl-6 ml-2">
+            <div className="flex items-center gap-3 sm:gap-5 border-l border-gray-200 pl-3 sm:pl-6 ml-1 sm:ml-2">
               {!isAuthenticated ? (
                 <>
                   <button
                     onClick={openLogin}
-                    className="font-semibold text-[15px] text-[#1e3a8a] hover:text-[#1e3a8a]/80 transition"
+                    className="hidden sm:block font-semibold text-sm md:text-[15px] text-[#1e3a8a] hover:text-[#1e3a8a]/80 transition"
                   >
                     Log in
                   </button>
 
                   <button
                     onClick={openRegister}
-                    className="bg-[#2d4990] text-white font-semibold text-[15px] px-7 py-3 rounded-full hover:bg-[#1e3a8a] transition shadow-sm"
+                    className="bg-[#2d4990] text-white font-semibold text-xs md:text-[15px] px-4 md:px-7 py-2 md:py-3 rounded-full hover:bg-[#1e3a8a] transition shadow-sm"
                   >
                     Sign up
                   </button>
                 </>
               ) : menuLinks.length > 0 ? (
-                <div className="relative">
+                <div className="relative hidden md:block">
                   <button
                     onClick={() => setMenuOpen((prev) => !prev)}
                     className="font-semibold text-[#1e3a8a] hover:text-[#1e3a8a]/80 transition flex items-center gap-2"
@@ -205,14 +235,86 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
               ) : (
                 <button
                   onClick={onLogout}
-                  className="font-semibold text-red-600 hover:text-red-700 transition"
+                  className="hidden md:block font-semibold text-red-600 hover:text-red-700 transition text-sm sm:text-base"
                 >
                   Log out
                 </button>
               )}
             </div>
           </div>
+        </div>
 
+        {/* Mobile Menu Drawer */}
+        <div className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out border-t border-gray-100 ${mobileMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="px-6 py-6 space-y-4 bg-white shadow-inner">
+            <div className="grid grid-cols-1 gap-1">
+              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition">Home</Link>
+              <Link to="/postings" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition">Browse Items</Link>
+              <div 
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (location.pathname === '/') {
+                    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate('/#how-it-works');
+                  }
+                }}
+                className="px-4 py-3 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition cursor-pointer"
+              >
+                How it Works
+              </div>
+            </div>
+
+            {isAuthenticated && menuLinks.length > 0 && (
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 px-4">Dashboard Access</p>
+                <div className="grid grid-cols-1 gap-1">
+                  {menuLinks.map((link) => (
+                    <Link 
+                      key={link.to} 
+                      to={link.to} 
+                      onClick={() => setMobileMenuOpen(false)} 
+                      className="px-4 py-3 text-sm text-blue-600 font-bold hover:bg-blue-50 rounded-xl transition flex justify-between items-center"
+                    >
+                      {link.label}
+                      <span className="text-blue-300">→</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!isAuthenticated ? (
+              <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); openLogin(); }} 
+                  className="py-4 text-center text-slate-900 font-black text-[10px] uppercase tracking-widest border border-slate-200 rounded-2xl bg-slate-50 shadow-sm"
+                >
+                  Log In
+                </button>
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); openRegister(); }} 
+                  className="py-4 text-center bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20"
+                >
+                  Join Us
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-slate-100">
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); onLogout(); }} 
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-red-50 text-red-600 font-black text-[10px] uppercase tracking-widest border border-red-100 shadow-sm"
+                >
+                  Sign Out Account
+                </button>
+              </div>
+            )}
+            
+            <div className="pt-4 border-t border-slate-100 sm:hidden flex justify-between items-center px-4">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Region Settings</span>
+              <LanguageSwitcher />
+            </div>
+          </div>
         </div>
       </nav>
 

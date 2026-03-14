@@ -86,7 +86,7 @@ function AppRoutes() {
         onLogout={logout}
       />
 
-      <main className="flex-grow">
+      <main className="flex-grow pt-[74px]">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<PublicHome />} />

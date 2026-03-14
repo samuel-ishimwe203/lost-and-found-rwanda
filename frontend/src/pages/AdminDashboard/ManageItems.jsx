@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../../services/api";
 import { FiX, FiInfo, FiTag, FiHash, FiMapPin, FiCalendar, FiUser, FiImage, FiFileText, FiTrash2 } from "react-icons/fi";
+import { getImageUrl } from "../../utils/imageHelper";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
 
 export default function ManageItems() {
   const [items, setItems] = useState([]);
@@ -205,7 +204,7 @@ export default function ManageItems() {
              <div className="md:w-5/12 bg-slate-100 flex items-center justify-center p-8 border-r border-slate-200 relative overflow-hidden">
                 {selectedItem.image_url ? (
                   <img 
-                    src={`${BACKEND_URL}${selectedItem.image_url}`} 
+                    src={getImageUrl(selectedItem.image_url)} 
                     alt={selectedItem.item_type || selectedItem.category}
                     className="w-full h-auto object-contain rounded-xl shadow-lg border border-slate-200 relative z-10"
                   />

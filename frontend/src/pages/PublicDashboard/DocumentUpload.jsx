@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { FiUploadCloud, FiFile, FiSearch, FiCheckCircle, FiAlertCircle, FiLoader, FiX, FiFileText, FiImage, FiUser, FiPhone, FiMail, FiCalendar, FiExternalLink, FiMapPin, FiTag, FiDollarSign, FiCreditCard, FiInfo, FiBox, FiShield } from 'react-icons/fi';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
+import { getImageUrl } from '../../utils/imageHelper';
 
 export default function DocumentUpload() {
   const [file, setFile] = useState(null);
@@ -58,7 +57,7 @@ export default function DocumentUpload() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`${API_URL}/documents/upload-document`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/documents/upload-document`, {
         method: 'POST',
         headers,
         body: formData,
@@ -275,7 +274,7 @@ export default function DocumentUpload() {
                             </div>
                           ) : (
                             <img
-                              src={`${BACKEND_URL}${match.file_url}`}
+                              src={getImageUrl(match.file_url)}
                               alt={match.file_name}
                               className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                             />
@@ -348,7 +347,7 @@ export default function DocumentUpload() {
                                <h4 className="text-xl font-bold text-slate-800 text-center">{selectedMatch.file_name}</h4>
                                <p className="text-slate-500 mt-2">Portable Document Format</p>
                                <a
-                                 href={`${BACKEND_URL}${selectedMatch.file_url}`}
+                                 href={getImageUrl(selectedMatch.file_url)}
                                  target="_blank"
                                  rel="noopener noreferrer"
                                  className="mt-8 px-6 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition flex items-center gap-2"
@@ -358,7 +357,7 @@ export default function DocumentUpload() {
                              </div>
                            ) : (
                              <img
-                               src={`${BACKEND_URL}${selectedMatch.file_url}`}
+                               src={getImageUrl(selectedMatch.file_url)}
                                alt={selectedMatch.file_name}
                                className="w-full rounded-2xl shadow-2xl border-4 border-white object-contain bg-white"
                              />

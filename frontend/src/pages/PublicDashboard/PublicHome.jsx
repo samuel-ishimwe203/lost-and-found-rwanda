@@ -4,6 +4,7 @@ import { PostsContext } from "../../context/PostsContext";
 import { AuthContext } from "../../context/AuthContext";
 import SendMessageModal from "../../components/SendMessageModal";
 import { Bot, Camera, Folder, Image, MapPin, PartyPopper, Phone, Search, User, Mail, DollarSign, CheckCircle, ShieldAlert } from "lucide-react";
+import { getImageUrl } from "../../utils/imageHelper";
 
 export default function PublicHome() {
   const { allPosts, loading } = useContext(PostsContext);
@@ -54,7 +55,7 @@ export default function PublicHome() {
   const totalUsers = new Set(allPosts.map(post => post.user_id)).size || 1;
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       <section className="bg-gradient-to-br from-green-800 via-green-700 to-emerald-600 text-white py-28 px-6 text-center">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
           Helping Rwandans Recover Lost Items Faster
@@ -202,7 +203,7 @@ export default function PublicHome() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
                   {lostItems.map((item) => {
                     const additionalInfo = item.additional_info ? (typeof item.additional_info === 'string' ? JSON.parse(item.additional_info) : item.additional_info) : {};
-                    const imageUrl = item.image_url ? `http://localhost:3001${item.image_url}` : null;
+                    const imageUrl = getImageUrl(item.image_url);
                     
                     return (
                       <div
@@ -345,7 +346,7 @@ export default function PublicHome() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
                   {foundItems.map((item) => {
                     const additionalInfo = item.additional_info ? (typeof item.additional_info === 'string' ? JSON.parse(item.additional_info) : item.additional_info) : {};
-                    const imageUrl = item.image_url ? `http://localhost:3001${item.image_url}` : null;
+                    const imageUrl = getImageUrl(item.image_url);
                     
                     return (
                       <div

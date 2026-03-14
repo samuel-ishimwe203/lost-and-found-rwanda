@@ -147,7 +147,7 @@ export default function QAChat() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 max-h-96 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-96 max-h-[80vh] sm:max-h-96 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">

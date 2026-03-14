@@ -10,7 +10,7 @@ export const postFoundItem = async (req, res) => {
       date_found, additional_info 
     } = req.body;
     const userId = req.user.id;
-    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+    const image_url = req.file ? (req.file.path.startsWith('http') ? req.file.path : `/uploads/${req.file.filename}`) : null;
     let parsedAdditionalInfo = null;
     if (additional_info) {
       try {
