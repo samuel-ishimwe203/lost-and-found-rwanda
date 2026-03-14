@@ -49,6 +49,7 @@ import ManageItems from "./pages/AdminDashboard/ManageItems";
 import ManageUsers from "./pages/AdminDashboard/ManageUsers";
 import ManagePoliceRegistrations from "./pages/AdminDashboard/ManagePoliceRegistrations";
 import Logs from "./pages/AdminDashboard/Logs";
+import AdminMatches from "./pages/AdminDashboard/AdminMatches";
 
 // Police Dashboard
 import PoliceDashboardLayout from "./layouts/PoliceDashboardLayout";
@@ -149,6 +150,7 @@ function AppRoutes() {
             <Route path="manage-items" element={<ManageItems />} />
             <Route path="manage-users" element={<ManageUsers />} />
             <Route path="manage-police-registrations" element={<ManagePoliceRegistrations />} />
+            <Route path="manage-matches" element={<AdminMatches />} />
             <Route path="logs" element={<Logs />} />
           </Route>
 

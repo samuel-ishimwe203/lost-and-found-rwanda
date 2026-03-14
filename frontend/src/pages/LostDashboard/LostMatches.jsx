@@ -3,13 +3,8 @@ import React, { useState, useEffect } from 'react'
 import { 
   FiFileText, FiMapPin, FiCalendar, FiTag, FiDollarSign, FiInfo, 
   FiExternalLink, FiClock, FiShield, FiUser, FiPhone, FiMail, FiAlertCircle,
-  FiCheckCircle, FiMessageSquare, FiEye, FiTrash2, FiSearch
+  FiCheckCircle, FiMessageSquare, FiEye, FiTrash2, FiSearch, FiX
 } from "react-icons/fi"
-// Removing Lu icons and using Fi for better stability
-const LuMessageSquare = FiMessageSquare;
-const LuCheckCircle2 = FiCheckCircle;
-const LuEye = FiEye;
-const LuSearch = FiSearch;
 import apiClient from "../../services/api"
 import SendMessageModal from "../../components/SendMessageModal"
 
@@ -25,6 +20,8 @@ export default function LostMatches() {
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [viewingMatch, setViewingMatch] = useState(null)
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false)
+  const [payingMatch, setPayingMatch] = useState(null)
 
   useEffect(() => { fetchMatches() }, [])
 
@@ -32,7 +29,6 @@ export default function LostMatches() {
     try {
       setLoading(true)
       const response = await apiClient.get('/matches')
-      console.log('API RESPONSE [matches]:', response.data);
       setMatches(response.data.data.matches || [])
       setError(null)
     } catch (err) {
@@ -71,6 +67,25 @@ export default function LostMatches() {
     }
   }
 
+  const handlePayToUnlock = (match) => {
+    setPayingMatch(match)
+    setIsPayModalOpen(true)
+  }
+
+  const handlePaymentSubmit = async (paymentData) => {
+    try {
+      setUpdatingMatch(payingMatch.id)
+      const response = await apiClient.post(`/matches/${payingMatch.id}/pay`, paymentData)
+      alert('✅ ' + response.data.message)
+      setIsPayModalOpen(false)
+      await fetchMatches()
+    } catch (err) {
+      alert('❌ Failed to submit payment: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setUpdatingMatch(null)
+    }
+  }
+
   const handleDeleteMatch = async (matchId) => {
     if (!window.confirm('Are you sure you want to dismiss this match? It will be removed from your list.')) { return }
     try {
@@ -84,7 +99,12 @@ export default function LostMatches() {
     }
   }
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (status, match) => {
+    if (match && !match.is_verified) return 'Pending Admin Verification'
+    if (match && !match.is_unlocked) {
+      if (match.payment_status === 'pending_admin_approval') return 'Payment Verification Pending'
+      return 'Awaiting Your Payment'
+    }
     const map = { pending: 'Pending Contact', confirmed: 'In Contact', completed: 'Successful Recovery', rejected: 'Not a Match' }
     return map[status] || status
   }
@@ -128,16 +148,14 @@ export default function LostMatches() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
           <div className="relative z-10">
             <div className="w-24 h-24 bg-green-100 text-green-600 rounded-3xl flex items-center justify-center mx-auto mb-8 rotate-12 transition-transform hover:rotate-0">
-              <LuEye className="w-12 h-12" />
+              <FiEye className="w-12 h-12" />
             </div>
-            <h3 className="text-3xl font-black text-slate-900 mb-4">No Matches Yet</h3>
-            <p className="text-slate-500 max-w-md mx-auto leading-relaxed">
-              Our matching engine is constantly scanning new reports. We'll alert you the moment we find a potential connection to your lost items.
+            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">No matches yet.</h2>
+            <p className="text-slate-500 font-medium max-w-md mx-auto mb-10 text-lg">
+              We haven't found any items that match your posting. You'll receive a notification as soon as someone reports a discovery.
             </p>
-            <div className="mt-10 flex justify-center gap-4">
-               <div className="px-6 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                 System: Active
-               </div>
+            <div className="flex items-center justify-center gap-4">
+               <button className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm shadow-xl hover:bg-slate-800 transition">Go to Dashboard</button>
             </div>
           </div>
         </div>
@@ -145,40 +163,23 @@ export default function LostMatches() {
     )
   }
 
-  // Group matches by lost_item_id
-  const groupedMatches = matches.reduce((acc, match) => {
-    const itemId = match.lost_item_id
-    if (!acc[itemId]) {
-      acc[itemId] = {
-        item_type: match.lost_item_type,
-        category: match.lost_category,
-        district: match.lost_district,
-        items: []
-      }
-    }
-    acc[itemId].items.push(match)
-    return acc
-  }, {})
-
   return (
-    <div className="max-w-6xl mx-auto px-6 pb-20">
-      <div className="flex items-end justify-between mb-12">
-        <div>
-          <span className="inline-block px-4 py-1 rounded-full bg-green-100 text-green-700 text-xs font-black uppercase tracking-widest mb-4">
-            Matching Intelligence
-          </span>
-          <h1 className="text-5xl font-black text-slate-900 leading-tight">Potential Matches</h1>
-          <p className="text-slate-500 text-lg mt-2">Highly relevant items discovered by our neural scanner.</p>
-        </div>
-        <div className="bg-white p-4 rounded-3xl shadow-xl border border-slate-100 text-center min-w-[120px]">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Total Hits</p>
-           <p className="text-3xl font-black text-green-600">{matches.length}</p>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 pb-32">
+      <div className="mb-16">
+        <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Your Matches</h1>
+        <p className="text-slate-500 font-medium text-lg max-w-2xl">
+          Review potential discoveries for your lost items. Securely unlock details after admin verification.
+        </p>
       </div>
 
-      <div className="space-y-16">
-        {Object.entries(groupedMatches).map(([itemId, group]) => (
-          <div key={itemId} className="space-y-8">
+      <div className="grid gap-16">
+        {Object.entries(matches.reduce((acc, match) => {
+          const key = `${match.lost_item_type}-${match.lost_district}`;
+          if (!acc[key]) acc[key] = { item_type: match.lost_item_type, district: match.lost_district, items: [] };
+          acc[key].items.push(match);
+          return acc;
+        }, {})).map(([groupKey, group]) => (
+          <div key={groupKey} className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             {/* Group Header */}
             <div className="flex items-center gap-6 pb-4 border-b-2 border-slate-100">
                <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-2xl shadow-xl">
@@ -196,7 +197,7 @@ export default function LostMatches() {
             </div>
 
             {/* Matches in this group */}
-            <div className="grid gap-8">
+            <div className="grid gap-8 mt-8">
               {group.items.map((match) => (
                 <div 
                   key={match.id} 
@@ -205,13 +206,24 @@ export default function LostMatches() {
                   <div className="flex flex-col md:flex-row h-full">
                     {/* Image Section */}
                     <div className="md:w-72 h-64 md:h-auto relative overflow-hidden bg-slate-100">
-                      {match.found_image_url ? (
-                        <img 
-                          src={`${BACKEND_URL}${match.found_image_url}`} 
-                          alt={match.found_item_type}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                      ) : (
+                        {match.found_image_url && match.is_unlocked ? (
+                          <img 
+                            src={`${BACKEND_URL}${match.found_image_url}`} 
+                            alt={match.found_item_type}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        ) : match.found_image_url && !match.is_unlocked ? (
+                          <div className="w-full h-full relative">
+                            <img 
+                              src={`${BACKEND_URL}${match.found_image_url}`} 
+                              alt="Blurred"
+                              className="w-full h-full object-cover blur-2xl opacity-50"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <FiShield className="w-12 h-12 text-slate-400 opacity-50" />
+                            </div>
+                          </div>
+                        ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
                           <FiFileText className="w-16 h-16" />
                           <span className="text-[10px] font-bold uppercase tracking-widest mt-2">No Image available</span>
@@ -244,13 +256,20 @@ export default function LostMatches() {
                              <span className="flex items-center gap-1"><FiClock /> {new Date(match.matched_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                          match.status === 'completed' ? 'bg-green-50 text-green-600 border-green-100' : 
-                          match.status === 'confirmed' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-blue-50 text-blue-600 border-blue-100'
-                        }`}>
-                          {getStatusLabel(match.status)}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border mb-2 ${
+                            match.status === 'completed' ? 'bg-green-50 text-green-600 border-green-100' : 
+                            match.status === 'confirmed' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                            'bg-blue-50 text-blue-600 border-blue-100'
+                          }`}>
+                            {getStatusLabel(match.status, match)}
+                          </span>
+                          {!match.is_unlocked && match.is_verified && (
+                             <span className="flex items-center gap-1 text-[10px] font-black text-rose-600 uppercase tracking-tight">
+                               <FiDollarSign /> Fee: {match.admin_fee} RWF
+                             </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-8">
@@ -265,13 +284,44 @@ export default function LostMatches() {
                       </div>
 
                       <div className="mt-auto flex flex-wrap gap-4">
-                         <button
-                          onClick={() => handleContactFinder(match)}
-                          className="flex-1 min-w-[160px] py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 group/btn"
-                        >
-                          <LuMessageSquare className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5" />
-                          Contact Finder
-                        </button>
+                         {!match.is_unlocked ? (
+                           match.is_verified ? (
+                            match.payment_status === 'pending_admin_approval' ? (
+                               <button
+                                disabled
+                                className="flex-1 min-w-[200px] py-4 bg-amber-50 text-amber-600 rounded-2xl font-black text-sm border border-amber-100 flex items-center justify-center gap-2 cursor-wait"
+                              >
+                                <FiClock className="animate-spin" />
+                                Payment Verification in Progress
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handlePayToUnlock(match)}
+                                disabled={updatingMatch === match.id}
+                                className="flex-1 min-w-[200px] py-4 bg-green-600 text-white rounded-2xl font-black text-sm hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2 group/btn"
+                              >
+                                <FiDollarSign className="w-4 h-4" />
+                                Unlock Full Details ({match.admin_fee} RWF)
+                              </button>
+                            )
+                           ) : (
+                            <button
+                              disabled
+                              className="flex-1 min-w-[200px] py-4 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <FiClock className="w-4 h-4" />
+                              Awaiting Admin Verification
+                            </button>
+                           )
+                         ) : (
+                           <button
+                            onClick={() => handleContactFinder(match)}
+                            className="flex-1 min-w-[160px] py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 group/btn"
+                          >
+                            <FiMessageSquare className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5" />
+                            Contact Finder
+                          </button>
+                         )}
                         {match.status !== 'completed' && (
                           <button
                             onClick={() => handleMarkReceived(match.id)}
@@ -281,7 +331,7 @@ export default function LostMatches() {
                             {updatingMatch === match.id ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
                             ) : (
-                              <LuCheckCircle2 className="w-4 h-4" />
+                              <FiCheckCircle className="w-4 h-4" />
                             )}
                             I Got It Back
                           </button>
@@ -291,7 +341,7 @@ export default function LostMatches() {
                           className="w-12 h-14 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"
                           title="View Full Details"
                         >
-                          <LuEye className="w-5 h-5" />
+                          <FiEye className="w-5 h-5" />
                         </button>
                         <button 
                           onClick={() => handleDeleteMatch(match.id)}
@@ -311,7 +361,7 @@ export default function LostMatches() {
         ))}
       </div>
 
-      {/* Detail Modal (Same logic as DocumentUpload) */}
+      {/* Detail Modal */}
       {isDetailModalOpen && viewingMatch && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl" onClick={() => setIsDetailModalOpen(false)}></div>
@@ -320,113 +370,207 @@ export default function LostMatches() {
               onClick={() => setIsDetailModalOpen(false)}
               className="absolute top-6 right-6 z-10 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 transition"
             >
-              <FiX className="text-2xl" />
+              <FiX className="w-6 h-6" />
             </button>
-
-            {/* Left: Image */}
-            <div className="md:w-1/2 bg-slate-950 flex items-center justify-center p-12 overflow-y-auto">
-               <div className="w-full">
-                  {viewingMatch.found_image_url ? (
-                    <img
-                      src={`${BACKEND_URL}${viewingMatch.found_image_url}`}
-                      alt={viewingMatch.found_item_type}
-                      className="w-full rounded-2xl shadow-2xl border-4 border-white/10 object-contain"
-                    />
-                  ) : (
-                    <div className="text-slate-700 text-center">
-                       <FiFileText className="w-32 h-32 mx-auto opacity-20" />
-                       <p className="mt-4 font-black uppercase tracking-widest text-xs opacity-40">No preview available</p>
-                    </div>
-                  )}
-               </div>
+            <div className="md:w-1/2 bg-slate-900 flex items-center justify-center p-12">
+               {viewingMatch.found_image_url && viewingMatch.is_unlocked ? (
+                 <img 
+                  src={`${BACKEND_URL}${viewingMatch.found_image_url}`} 
+                  className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
+                  alt="Found" 
+                 />
+               ) : (
+                  <div className="text-center">
+                    <FiShield className="w-24 h-24 text-slate-700 mx-auto mb-6" />
+                    <p className="text-slate-500 font-black uppercase tracking-widest text-sm">Image Hidden Pending Unlock</p>
+                  </div>
+               )}
             </div>
-
-            {/* Right: Details */}
-            <div className="md:w-1/2 p-8 md:p-12 overflow-y-auto space-y-8 bg-white">
+            <div className="md:w-1/2 p-12 overflow-y-auto space-y-8 bg-white">
                <div>
-                  <span className="inline-flex items-center px-4 py-1 rounded-full text-xs font-black bg-green-50 text-green-700 uppercase tracking-widest border border-green-100 mb-4">
-                    Match Confidence: {viewingMatch.match_score}%
-                  </span>
-                  <h2 className="text-3xl font-black text-slate-900 leading-tight">Match Details</h2>
-                  <p className="text-slate-400 text-sm mt-2 flex items-center gap-2 font-bold">
-                    <FiCalendar /> Detected on {new Date(viewingMatch.matched_at).toLocaleDateString()}
+                  <span className="px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-200 mb-4 inline-block">Matched Item Detail</span>
+                  <h2 className="text-4xl font-black text-slate-900 tracking-tight">{viewingMatch.found_item_type}</h2>
+                  <p className="text-slate-400 font-bold mt-2 uppercase tracking-widest text-[10px]">Reference Match #{viewingMatch.id}</p>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-6">
+                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><FiMapPin /> Location</p>
+                    <p className="text-sm font-bold text-slate-700">{viewingMatch.is_unlocked ? viewingMatch.found_district : 'Information Locked'}</p>
+                  </div>
+                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><FiCalendar /> Date Found</p>
+                    <p className="text-sm font-bold text-slate-700">{new Date(viewingMatch.matched_at).toLocaleDateString()}</p>
+                  </div>
+               </div>
+
+               <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase mb-4 flex items-center gap-2"><FiInfo /> Discovery Note</p>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                    "{viewingMatch.found_description || 'The finder has provided a detailed description that will be available once the match is unlocked.'}"
                   </p>
                </div>
 
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1"><FiTag /> Category</p>
-                    <p className="text-sm font-bold text-slate-800 capitalize">{viewingMatch.found_category}</p>
-                  </div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1"><FiMapPin /> District</p>
-                    <p className="text-sm font-bold text-slate-800">{viewingMatch.found_district}</p>
-                  </div>
-               </div>
-
-               <div className="space-y-4">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Finder Details</h4>
-                  <div className="grid gap-3">
-                    <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                      <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center">
-                        <FiUser />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Registered Name</p>
-                        <p className="text-sm font-bold text-slate-800">{viewingMatch.finder_name}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                       <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                         <FiPhone className="text-green-600" />
-                         <span className="text-xs font-bold text-slate-700">{viewingMatch.finder_phone}</span>
+               {viewingMatch.is_unlocked ? (
+                 <div className="space-y-6 pt-4 border-t border-slate-100 animate-in fade-in duration-500">
+                    <p className="text-[10px] font-black text-green-600 uppercase tracking-[3px]">Finder Details (Unlocked)</p>
+                    <div className="space-y-4">
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center"><FiUser /></div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase">Name</p>
+                            <p className="font-bold text-slate-900">{viewingMatch.finder_name}</p>
+                          </div>
                        </div>
-                       <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 overflow-hidden">
-                         <FiMail className="text-green-600 flex-shrink-0" />
-                         <span className="text-xs font-bold text-slate-700 truncate">{viewingMatch.finder_email}</span>
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center"><FiPhone /></div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase">Contact</p>
+                            <p className="font-bold text-slate-900">{viewingMatch.finder_phone}</p>
+                          </div>
                        </div>
-                    </div>
-                  </div>
-               </div>
-
-               {viewingMatch.found_text && (
-                 <div className="space-y-4 pt-4 border-t border-slate-100">
-                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Deep Scan Insights (OCR)</h4>
-                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                      <p className="text-slate-700 text-sm italic font-serif leading-relaxed">"{viewingMatch.found_text}"</p>
                     </div>
                  </div>
+               ) : (
+                 <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                    <FiLock className="mx-auto text-slate-300 mb-2" />
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Finder identity is hidden until unlocked</p>
+                 </div>
                )}
-
-               <div className="pt-6">
-                 <button
-                    onClick={() => handleContactFinder(viewingMatch)}
-                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-lg shadow-xl shadow-slate-900/20 hover:-translate-y-1 transition duration-300"
-                  >
-                    Start Secure Conversation
-                  </button>
-               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Payment Modal */}
+      {isPayModalOpen && payingMatch && (
+        <PaymentModal 
+          match={payingMatch}
+          onClose={() => setIsPayModalOpen(false)}
+          onSubmit={handlePaymentSubmit}
+          loading={updatingMatch === payingMatch.id}
+        />
+      )}
+
+      {/* Messaging Modal */}
       {messageModalOpen && selectedMatch && (
-        <SendMessageModal
+        <SendMessageModal 
+          isOpen={messageModalOpen} 
+          onClose={() => setMessageModalOpen(false)} 
           item={selectedMatch}
-          isOpen={messageModalOpen}
-          onClose={() => {
-            setMessageModalOpen(false)
-            setSelectedMatch(null)
-          }}
+          isFoundItem={true}
         />
       )}
     </div>
   )
 }
 
-function FiX({ className }) {
+function PaymentModal({ match, onClose, onSubmit, loading }) {
+  const [formData, setFormData] = useState({
+    payment_method: 'Mobile Money (MTN)',
+    payment_phone: '',
+    payment_name: '',
+    transaction_id: ''
+  })
+
+  const adminPhone = "+250 788 000 000"; // Platform Admin Phone
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.payment_phone || !formData.transaction_id || !formData.payment_name) {
+      alert('Please fill in all transaction details.');
+      return;
+    }
+    onSubmit(formData);
+  }
+
   return (
-    <svg className={className} stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose}></div>
+      <div className="relative bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="bg-slate-900 p-10 text-white">
+           <h2 className="text-3xl font-black tracking-tight mb-2">Unlock Match Full Details</h2>
+           <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Fee Required: {match.admin_fee} RWF</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-10 space-y-8">
+           <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+              <p className="text-[10px] font-black text-blue-600 uppercase mb-4 flex items-center gap-2"><FiInfo /> Payment Instructions</p>
+              <div className="space-y-4 text-sm">
+                <p className="font-bold text-slate-800 leading-tight">1. Send <span className="text-blue-700 font-black">{match.admin_fee} RWF</span> to Admin via MoMo:</p>
+                <div className="bg-white p-4 rounded-xl border border-blue-200 flex justify-between items-center group shadow-sm">
+                   <span className="font-black text-blue-800 tracking-wider font-mono text-lg">{adminPhone}</span>
+                   <span className="text-[9px] font-black text-slate-400 group-hover:text-blue-600 transition uppercase tracking-tighter">Copy Number</span>
+                </div>
+                <p className="text-slate-500 font-medium text-xs">2. After payment, fill in the details below so we can verify and unlock your match.</p>
+              </div>
+           </div>
+
+           <div className="grid gap-6">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Payment Method</label>
+                 <select 
+                   value={formData.payment_method}
+                   onChange={(e) => setFormData({...formData, payment_method: e.target.value})}
+                   className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
+                 >
+                   <option>Mobile Money (MTN)</option>
+                   <option>Airtel Money</option>
+                   <option>Bank Transfer</option>
+                 </select>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Your Payment Phone</label>
+                    <input 
+                      type="text"
+                      placeholder="e.g. 078XXXXXXX"
+                      value={formData.payment_phone}
+                      onChange={(e) => setFormData({...formData, payment_phone: e.target.value})}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Sender Full Name</label>
+                    <input 
+                      type="text"
+                      placeholder="Name on Account"
+                      value={formData.payment_name}
+                      onChange={(e) => setFormData({...formData, payment_name: e.target.value})}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                 </div>
+              </div>
+
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Transaction ID / Reference Number</label>
+                 <input 
+                   type="text"
+                   placeholder="e.g. TX12345678"
+                   value={formData.transaction_id}
+                   onChange={(e) => setFormData({...formData, transaction_id: e.target.value})}
+                   className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
+                 />
+              </div>
+           </div>
+
+           <button 
+             type="submit"
+             disabled={loading}
+             className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-3 disabled:opacity-50"
+           >
+             {loading ? <FiClock className="animate-spin" /> : <FiCheckCircle />}
+             Submit Payment & Notify Admin
+           </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function FiLock({ className }) {
+  return (
+    <svg className={className} stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
   );
 }
