@@ -105,14 +105,14 @@ export const checkForMatches = async (itemId, itemType) => {
         if (matchScore >= 50) {
           const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
           if (existingMatch.rows.length === 0) {
-            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *', [lostItem.id, foundItem.id, matchScore])
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, matchScore])
             const match = matchResult.rows[0]
             const lostUpdate = await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', lostItem.id])
             const foundUpdate = await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING status', ['matched', foundItem.id])
             console.log('DEBUG: Updated lost item', lostItem.id, 'status:', lostUpdate.rows[0]?.status)
             console.log('DEBUG: Updated found item', foundItem.id, 'status:', foundUpdate.rows[0]?.status)
             await notifyMatch(match, lostItem, foundItem)
-            await createStarterMatchMessage(match, lostItem.user_id, foundItem.user_id)
+            // Removed automatic communication
             matches.push(match)
           }
         }
@@ -141,12 +141,12 @@ export const checkForMatches = async (itemId, itemType) => {
           const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
           if (existingMatch.rows.length === 0) {
             const matchScore = calculateMatchScore(lostItem, foundItem)
-            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *', [lostItem.id, foundItem.id, Math.max(matchScore, 80)])
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, Math.max(matchScore, 80)])
             const match = matchResult.rows[0]
             await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id])
             await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id])
             await notifyMatch(match, lostItem, foundItem)
-            await createStarterMatchMessage(match, lostItem.user_id, foundItem.user_id)
+            // Removed automatic communication
             matches.push(match)
           }
         }
@@ -164,12 +164,12 @@ export const checkForMatches = async (itemId, itemType) => {
         if (matchScore >= 50) {
           const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
           if (existingMatch.rows.length === 0) {
-            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *', [lostItem.id, foundItem.id, matchScore])
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, matchScore])
             const match = matchResult.rows[0]
             await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id])
             await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id])
             await notifyMatch(match, lostItem, foundItem)
-            await createStarterMatchMessage(match, lostItem.user_id, foundItem.user_id)
+            // Removed automatic communication
             matches.push(match)
           }
         }
@@ -198,12 +198,12 @@ export const checkForMatches = async (itemId, itemType) => {
           const existingMatch = await query('SELECT id FROM matches WHERE lost_item_id = $1 AND found_item_id = $2', [lostItem.id, foundItem.id])
           if (existingMatch.rows.length === 0) {
             const matchScore = calculateMatchScore(lostItem, foundItem)
-            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *', [lostItem.id, foundItem.id, Math.max(matchScore, 80)])
+            const matchResult = await query('INSERT INTO matches (lost_item_id, found_item_id, match_score, status, created_at, updated_at, matched_at, is_verified, is_unlocked, payment_status) VALUES ($1, $2, $3, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE, FALSE, \'pending\') RETURNING *', [lostItem.id, foundItem.id, Math.max(matchScore, 80)])
             const match = matchResult.rows[0]
             await query('UPDATE lost_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', lostItem.id])
             await query('UPDATE found_items SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['matched', foundItem.id])
             await notifyMatch(match, lostItem, foundItem)
-            await createStarterMatchMessage(match, lostItem.user_id, foundItem.user_id)
+            // Removed automatic communication
             matches.push(match)
           }
         }
@@ -326,3 +326,33 @@ export const updateMatchStatus = async (matchId, status, userId, userRole, notes
     return null
   }
 }
+
+export const unlockPaidMatch = async (matchId) => {
+  try {
+    const matchRes = await query(`
+      SELECT m.*, l.user_id as lost_user_id, f.user_id as found_user_id
+      FROM matches m
+      JOIN lost_items l ON m.lost_item_id = l.id
+      JOIN found_items f ON m.found_item_id = f.id
+      WHERE m.id = $1
+    `, [matchId])
+    
+    if (matchRes.rows.length === 0) throw new Error('Match not found')
+    const match = matchRes.rows[0]
+    
+    // Update match to unlocked
+    await query(`
+      UPDATE matches 
+      SET is_unlocked = TRUE, payment_status = 'paid', status = 'confirmed', updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $1
+    `, [matchId])
+    
+    // Now start the communication
+    await createStarterMatchMessage(match, match.lost_user_id, match.found_user_id)
+    
+    return { success: true, message: 'Match unlocked successfully' }
+  } catch (err) {
+    console.error('Error unlocking match:', err)
+    throw err
+  }
+}

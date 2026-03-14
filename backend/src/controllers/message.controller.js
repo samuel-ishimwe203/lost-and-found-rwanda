@@ -124,8 +124,8 @@ export const sendMessage = async (req, res) => {
 
     // Create notification for receiver
     const notificationQuery = `
-      INSERT INTO notifications (user_id, type, title, message, related_item_id, channel, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO notifications (user_id, type, title, message, related_lost_item_id, related_found_item_id, channel, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `;
 
     await query(notificationQuery, [
@@ -133,7 +133,8 @@ export const sendMessage = async (req, res) => {
       'message',
       'New Message',
       `You have a new message: ${finalSubject}`,
-      lost_item_id || found_item_id,
+      lost_item_id || null,
+      found_item_id || null,
       'in_app'
     ]);
 
@@ -221,15 +222,16 @@ export const replyToMessage = async (req, res) => {
 
     // Create notification for receiver
     const notificationQuery = `
-      INSERT INTO notifications (user_id, type, title, message, channel, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO notifications (user_id, type, title, message, related_match_id, channel, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `;
 
     await query(notificationQuery, [
       receiverId,
       'message',
       'New Message',
-      `You have a new message`,
+      `You have a new message: ${subject}`,
+      matchId || null,
       'in_app'
     ]);
 

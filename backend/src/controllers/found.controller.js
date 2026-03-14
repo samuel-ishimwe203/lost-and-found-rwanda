@@ -388,12 +388,24 @@ export const deleteFoundItem = async (req, res) => {
       });
     }
     const item = checkResult.rows[0];
-    if (item.user_id !== userId && !['police', 'admin'].includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You do not have permission to delete this item' 
-      });
+    // If it's an admin or uploader, perform a cascading delete of all related records
+    // 1. Get all match IDs for this found item
+    const matchesResult = await query('SELECT id FROM matches WHERE found_item_id = $1', [id]);
+    const matchIds = matchesResult.rows.map(m => m.id);
+
+    if (matchIds.length > 0) {
+      // 2. Delete messages related to these matches
+      await query('DELETE FROM messages WHERE match_id = ANY($1::int[])', [matchIds]);
+      // 3. Delete notifications related to these matches
+      await query('DELETE FROM notifications WHERE related_match_id = ANY($1::int[])', [matchIds]);
+      // 4. Delete the matches themselves
+      await query('DELETE FROM matches WHERE id = ANY($1::int[])', [matchIds]);
     }
+
+    // 5. Delete notifications directly related to this found item
+    await query('DELETE FROM notifications WHERE related_found_item_id = $1', [id]);
+
+    // 6. Finally delete the found item
     await query('DELETE FROM found_items WHERE id = $1', [id]);
     await logAudit({
       userId,
