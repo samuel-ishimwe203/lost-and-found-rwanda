@@ -5,8 +5,10 @@ import { AuthContext } from "../../context/AuthContext";
 import SendMessageModal from "../../components/SendMessageModal";
 import { Bot, Camera, Folder, Image, MapPin, PartyPopper, Phone, Search, User, Mail, DollarSign, CheckCircle, ShieldAlert } from "lucide-react";
 import { getImageUrl } from "../../utils/imageHelper";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function PublicHome() {
+  const { t } = useLanguage();
   const { allPosts, loading } = useContext(PostsContext);
   const { isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -46,25 +48,20 @@ export default function PublicHome() {
     )
     .slice(0, 10);
   
-  const policeItems = allPosts
-    .filter(item => item.is_police_upload === true)
-    .slice(0, 10);
-
   const uniqueCategories = new Set(allPosts.map(post => post.category)).size || 0;
   const totalMatches = allPosts.filter(post => post.status === 'matched' || post.status === 'claimed').length || 0;
   const totalUsers = new Set(allPosts.map(post => post.user_id)).size || 1;
 
   return (
     <div className="w-full overflow-x-hidden">
+      {/* HERO SECTION */}
       <section className="bg-gradient-to-br from-green-800 via-green-700 to-emerald-600 text-white py-28 px-6 text-center">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
-          Helping Rwandans Recover Lost Items Faster
+          {t("landing.heroTitle")}
         </h1>
 
         <p className="max-w-3xl mx-auto text-lg md:text-xl text-green-100 mb-10">
-          A national digital platform connecting people who lost important
-          documents and items with those who found them — safely, securely,
-          and with dignity.
+          {t("landing.heroSubtitle")}
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center gap-5">
@@ -72,18 +69,19 @@ export default function PublicHome() {
             onClick={() => window.dispatchEvent(new Event("open-search"))}
             className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition"
           >
-            Search Lost Items
+            {t("landing.searchLost")}
           </button>
 
           <button
             onClick={() => window.dispatchEvent(new Event("open-login"))}
             className="border-2 border-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-green-700 transition"
           >
-            Report Lost Item
+            {t("landing.reportLost")}
           </button>
         </div>
       </section>
 
+      {/* HOW IT WORKS */}
       <section
         id="how-it-works"
         className="py-24 px-6 text-white"
@@ -97,11 +95,10 @@ export default function PublicHome() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">
-              How Lost & Found Rwanda Works
+              {t("landing.howItWorks")}
             </h2>
             <p className="text-gray-200 max-w-2xl mx-auto">
-              Post your loss with a reward. Let honest finders help you recover
-              what matters most.
+              {t("landing.howItWorksSubtitle")}
             </p>
           </div>
 
@@ -111,10 +108,10 @@ export default function PublicHome() {
                 <Camera className="w-10 h-10 text-blue-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900">
-                1. Report with Photo
+                {t("landing.step1Title")}
               </h3>
               <p className="text-gray-600 leading-relaxed font-medium">
-                Upload your lost or found item with a photo. Our professional OCR and AI scanner extracts text to find potential matches automatically.
+                {t("landing.step1Desc")}
               </p>
             </div>
 
@@ -123,10 +120,10 @@ export default function PublicHome() {
                 <Bot className="w-10 h-10 text-white group-hover:text-green-600 transition-colors duration-300" />
               </div>
               <h3 className="text-2xl font-bold mb-3">
-                2. Professional Matching
+                {t("landing.step2Title")}
               </h3>
               <p className="text-green-50 leading-relaxed font-medium">
-                Our advanced text-first system compares extracted names and unique identifiers to ensure 100% accurate matches between images.
+                {t("landing.step2Desc")}
               </p>
             </div>
 
@@ -135,60 +132,63 @@ export default function PublicHome() {
                 <PartyPopper className="w-10 h-10 text-emerald-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900">
-                3. Secure Recovery
+                {t("landing.step3Title")}
               </h3>
               <p className="text-gray-600 leading-relaxed font-medium">
-                Connect safely through our encrypted messaging system. Arrange a secure pickup and get your important items back with dignity.
+                {t("landing.step3Desc")}
               </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* STATS */}
       <section className="bg-black text-white py-16">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div>
             <p className="text-4xl font-bold">{totalUsers + 15}</p>
-            <p className="text-sm text-gray-300">Active Users</p>
+            <p className="text-sm text-gray-300">{t("landing.statsUsers")}</p>
           </div>
           <div>
             <p className="text-4xl font-bold">{totalMatches}</p>
-            <p className="text-sm text-gray-300">Successful Matches</p>
+            <p className="text-sm text-gray-300">{t("landing.statsMatches")}</p>
           </div>
           <div>
             <p className="text-4xl font-bold">{uniqueCategories || 8}</p>
-            <p className="text-sm text-gray-300">Categories Supported</p>
+            <p className="text-sm text-gray-300">{t("landing.statsCategories")}</p>
           </div>
           <div>
             <p className="text-4xl font-bold">{allPosts.length}</p>
-            <p className="text-sm text-gray-300">Total Postings</p>
+            <p className="text-sm text-gray-300">{t("landing.statsPostings")}</p>
           </div>
         </div>
       </section>
 
+      {/* ITEMS SECTIONS */}
       <section className="py-20 px-6 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
         
         {loading ? (
           <div className="text-center py-12">
-            <div className="text-xl text-gray-600">Loading items...</div>
+            <div className="text-xl text-gray-600">{t("common.loading")}</div>
           </div>
         ) : (
           <>
+            {/* LOST ITEMS */}
             <div className="mb-16">
               <div className="max-w-7xl mx-auto mb-8">
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-2xl shadow-lg">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-3xl font-bold mb-2 flex items-center gap-2"><Search className="w-8 h-8" /> Lost Items - Help Us Find Them!</h3>
+                      <h3 className="text-3xl font-bold mb-2 flex items-center gap-2"><Search className="w-8 h-8" /> {t("landing.lostBanner")}</h3>
                       <p className="text-blue-100 text-lg">
-                        These items have been reported lost by their owners. Items with <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-500/30"><Bot className="w-3 h-3 mr-1" />AI</span> badges are automatically analyzed by our AI system to find matches with found items.
+                        {t("landing.aiLostExplainer")}
                       </p>
                     </div>
                     <button
-                      onClick={() => navigate('/all-postings')}
+                      onClick={() => navigate('/postings')}
                       className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition shadow-lg whitespace-nowrap"
                     >
-                      View All →
+                      {t("landing.viewAll")} →
                     </button>
                   </div>
                 </div>
@@ -196,8 +196,7 @@ export default function PublicHome() {
 
               {lostItems.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl shadow-md max-w-7xl mx-auto">
-                  <p className="text-xl text-gray-600">No lost items reported yet</p>
-                  <p className="text-gray-500 mt-2">Be the first to report a lost item!</p>
+                  <p className="text-xl text-gray-600">{t("items.noItemsFound")}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
@@ -212,32 +211,21 @@ export default function PublicHome() {
                       >
                         <div className="relative w-full h-36 bg-gradient-to-br from-blue-100 to-sky-200 overflow-hidden">
                           {imageUrl ? (
-                            <>
-                              <img
-                                src={imageUrl}
-                                alt={item.item_type}
-                                className="w-full h-full object-cover"
-                                crossOrigin="anonymous"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                            </>
+                            <img src={imageUrl} alt={item.item_type} className="w-full h-full object-cover" crossOrigin="anonymous" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <Image className="w-12 h-12 text-blue-300" />
                             </div>
                           )}
-                          
                           <div className="absolute top-2 right-2">
-                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-red-500 to-rose-600 text-white flex items-center gap-1">
-                              <Search className="w-3 h-3" /> LOST
+                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-red-500 to-rose-600 text-white flex items-center gap-1 uppercase">
+                              <Search className="w-3 h-3" /> {t("nav.search").substring(0,4)}
                             </span>
                           </div>
-
                           {imageUrl && (
                             <div className="absolute top-2 left-2">
-                              <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1">
-                                <Bot className="w-3 h-3" />
-                                AI
+                              <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1 uppercase">
+                                <Bot className="w-3 h-3" /> {t("landing.aiBadge")}
                               </span>
                             </div>
                           )}
@@ -245,15 +233,13 @@ export default function PublicHome() {
 
                         <div className="p-3">
                           <h4 className="text-sm font-bold text-gray-800 mb-1 line-clamp-1">{item.item_type}</h4>
-                          <p className="text-xs text-gray-600 mb-2 line-clamp-1">{item.description}</p>
-
                           <div className="space-y-1.5">
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
                                 <Folder className="w-3 h-3" />
                               </span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-500">Category</p>
+                                <p className="text-[10px] text-gray-500 uppercase">{t("items.category")}</p>
                                 <p className="text-xs font-semibold text-gray-800 capitalize truncate">{item.category}</p>
                               </div>
                             </div>
@@ -273,19 +259,7 @@ export default function PublicHome() {
                                   <User className="w-3 h-3" />
                                 </span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-blue-700">Owner</p>
                                   <p className="text-sm font-bold text-blue-900 truncate">{additionalInfo.owner_name}</p>
-                                </div>
-                              </div>
-                            )}
-
-                            {(item.contact_phone || additionalInfo.contact_phone) && (
-                              <div className="flex items-center">
-                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                                  <Phone className="w-3 h-3" />
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-semibold text-gray-800 truncate">{item.contact_phone || additionalInfo.contact_phone}</p>
                                 </div>
                               </div>
                             )}
@@ -296,14 +270,14 @@ export default function PublicHome() {
                               onClick={() => handleContactClick(item)}
                               className="w-full mb-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-blue-700 hover:to-blue-800 transition shadow-md flex items-center justify-center gap-2"
                             >
-                              <Mail className="w-4 h-4" /> Contact Owner
+                              <Mail className="w-4 h-4" /> {t("common.contact") || "Contact"}
                             </button>
 
                             {item.reward_amount && item.reward_amount > 0 && (
                               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-2 rounded-lg border border-yellow-200 flex items-center gap-2">
                                 <DollarSign className="w-4 h-4 text-yellow-700 flex-shrink-0" />
                                 <div>
-                                  <p className="text-xs text-yellow-700 font-medium">Reward</p>
+                                  <p className="text-[10px] text-yellow-700 font-medium uppercase">{t("items.rewardAmount")}</p>
                                   <p className="text-sm font-bold text-yellow-900">{item.reward_amount.toLocaleString()} RWF</p>
                                 </div>
                               </div>
@@ -317,21 +291,22 @@ export default function PublicHome() {
               )}
             </div>
 
+            {/* FOUND ITEMS */}
             <div>
               <div className="max-w-7xl mx-auto mb-8">
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-6 rounded-2xl shadow-lg">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-3xl font-bold mb-2 flex items-center gap-2"><CheckCircle className="w-8 h-8" /> Found Items - Claim What's Yours!</h3>
+                      <h3 className="text-3xl font-bold mb-2 flex items-center gap-2"><CheckCircle className="w-8 h-8" /> {t("landing.foundBanner")}</h3>
                       <p className="text-emerald-100 text-lg">
-                        These items have been found and reported by honest citizens. Items with <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-500/30"><Bot className="w-3 h-3 mr-1" />AI</span> badges are automatically analyzed by our AI system to match with lost items.
+                        {t("landing.aiFoundExplainer")}
                       </p>
                     </div>
                     <button
-                      onClick={() => navigate('/all-postings')}
+                      onClick={() => navigate('/postings')}
                       className="bg-white text-emerald-600 px-6 py-3 rounded-lg font-semibold hover:bg-emerald-50 transition shadow-lg whitespace-nowrap"
                     >
-                      View All →
+                      {t("landing.viewAll")} →
                     </button>
                   </div>
                 </div>
@@ -339,8 +314,7 @@ export default function PublicHome() {
 
               {foundItems.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl shadow-md max-w-7xl mx-auto">
-                  <p className="text-xl text-gray-600">No found items reported yet</p>
-                  <p className="text-gray-500 mt-2">Be the first to report a found item!</p>
+                  <p className="text-xl text-gray-600">{t("items.noItemsFound")}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
@@ -355,32 +329,21 @@ export default function PublicHome() {
                       >
                         <div className="relative w-full h-36 bg-gradient-to-br from-emerald-100 to-teal-200 overflow-hidden">
                           {imageUrl ? (
-                            <>
-                              <img
-                                src={imageUrl}
-                                alt={item.item_type}
-                                className="w-full h-full object-cover"
-                                crossOrigin="anonymous"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                            </>
+                            <img src={imageUrl} alt={item.item_type} className="w-full h-full object-cover" crossOrigin="anonymous" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <Image className="w-12 h-12 text-emerald-300" />
                             </div>
                           )}
-                          
                           <div className="absolute top-2 right-2">
-                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" /> FOUND
+                            <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white flex items-center gap-1 uppercase">
+                              <CheckCircle className="w-3 h-3" /> {t("common.success").substring(0,5)}
                             </span>
                           </div>
-
                           {imageUrl && (
                             <div className="absolute top-2 left-2">
-                              <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1">
-                                <Bot className="w-3 h-3" />
-                                AI
+                              <span className="px-2 py-1 rounded-full text-xs font-bold shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white flex items-center gap-1 uppercase">
+                                <Bot className="w-3 h-3" /> {t("landing.aiBadge")}
                               </span>
                             </div>
                           )}
@@ -388,15 +351,13 @@ export default function PublicHome() {
 
                         <div className="p-3">
                           <h4 className="text-sm font-bold text-gray-800 mb-1 line-clamp-1">{item.item_type}</h4>
-                          <p className="text-xs text-gray-600 mb-2 line-clamp-1">{item.description}</p>
-
                           <div className="space-y-1.5">
                             <div className="flex items-center">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 mr-2 flex-shrink-0">
                                 <Folder className="w-3 h-3" />
                               </span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-500">Category</p>
+                                <p className="text-[10px] text-gray-500 uppercase">{t("items.category")}</p>
                                 <p className="text-xs font-semibold text-gray-800 capitalize truncate">{item.category}</p>
                               </div>
                             </div>
@@ -416,19 +377,7 @@ export default function PublicHome() {
                                   <User className="w-3 h-3" />
                                 </span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-emerald-700">Found By</p>
                                   <p className="text-sm font-bold text-emerald-900 truncate">{item.contact_name}</p>
-                                </div>
-                              </div>
-                            )}
-
-                            {item.contact_phone && (
-                              <div className="flex items-center">
-                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                                  <Phone className="w-3 h-3" />
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-semibold text-gray-800 truncate">{item.contact_phone}</p>
                                 </div>
                               </div>
                             )}
@@ -439,13 +388,13 @@ export default function PublicHome() {
                               onClick={() => handleContactClick(item)}
                               className="w-full mb-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-emerald-700 hover:to-teal-600 transition shadow-md flex items-center justify-center gap-2"
                             >
-                              <Mail className="w-4 h-4" /> Contact Finder
+                              <Mail className="w-4 h-4" /> {t("common.contact") || "Contact"}
                             </button>
 
                             {item.is_police_upload && (
                               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-2 rounded-lg border border-blue-200 flex items-center gap-2 justify-center">
                                 <ShieldAlert className="w-4 h-4 text-blue-700" />
-                                <p className="text-xs text-blue-700 font-medium">Police Upload</p>
+                                <p className="text-[10px] text-blue-700 font-bold uppercase">{t("police.dashboard").split(' ')[0]}</p>
                               </div>
                             )}
                           </div>
@@ -472,43 +421,42 @@ export default function PublicHome() {
         />
       )}
 
+      {/* FOOTER */}
       <footer className="bg-gray-900 text-gray-300 py-12 px-6">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-8">
           <div>
-            <h4 className="font-bold text-white mb-3">About Us</h4>
+            <h4 className="font-bold text-white mb-3">{t("footer.about")}</h4>
             <p className="text-sm">
-              Lost & Found Rwanda is a national platform helping citizens recover
-              lost items efficiently.
+              {t("app.description")}
             </p>
           </div>
 
           <div>
-            <h4 className="font-bold text-white mb-3">User Portal</h4>
+            <h4 className="font-bold text-white mb-3">{t("dashboard.welcome")}</h4>
             <ul className="text-sm space-y-2">
-              <li>Login</li>
-              <li>Register</li>
-              <li>Forgot Password</li>
+              <li>{t("nav.login")}</li>
+              <li>{t("nav.register")}</li>
+              <li>{t("auth.forgotPassword")}</li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-bold text-white mb-3">Quick Links</h4>
+            <h4 className="font-bold text-white mb-3">{t("nav.search")}</h4>
             <ul className="text-sm space-y-2">
-              <li>All Postings</li>
-              <li>Search</li>
-              <li>Contact</li>
+              <li>{t("nav.browse")}</li>
+              <li>{t("footer.contact")}</li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-bold text-white mb-3">Contact</h4>
+            <h4 className="font-bold text-white mb-3">{t("footer.contact")}</h4>
             <p className="text-sm">Kigali, Rwanda</p>
             <p className="text-sm">support@lostfound.rw</p>
           </div>
         </div>
 
         <p className="text-center text-sm mt-10 text-gray-500">
-          © {new Date().getFullYear()} Lost & Found Rwanda. All rights reserved.
+          {t("footer.copyright")}
         </p>
       </footer>
     </div>

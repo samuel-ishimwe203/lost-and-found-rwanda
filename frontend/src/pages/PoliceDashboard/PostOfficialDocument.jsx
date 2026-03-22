@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import apiClient from "../../services/api";
 import { 
@@ -8,15 +7,15 @@ import {
 } from "react-icons/fi";
 import SendMessageModal from "../../components/SendMessageModal";
 import { getImageUrl } from "../../utils/imageHelper";
+import { useLanguage } from "../../context/LanguageContext";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
 
-// Consolidated Lu icons into Fi set for better stability
 const LuMessageSquare = FiMessageSquare;
 const LuEye = FiEye;
 
 export default function PostOfficialDocument() {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     documentType: "",
     itemName: "",
@@ -46,13 +45,10 @@ export default function PostOfficialDocument() {
     { value: "driving_license", label: "Driving License" },
     { value: "birth_certificate", label: "Birth Certificate" },
     { value: "atm_card", label: "ATM Card" },
-    { value: "other", label: "Other Document" },
+    { value: "other", label: t("categories.other") },
   ];
 
-  const districts = [
-    "Kigali", "Nyarugenge", "Gasabo", "Kicukiro", 
-    "Rubavu", "Rusizi", "Huye", "Musanze"
-  ];
+  const districts = ["Kigali", "Nyarugenge", "Gasabo", "Kicukiro", "Rubavu", "Rusizi", "Huye", "Musanze"];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,16 +79,10 @@ export default function PostOfficialDocument() {
       submitData.append("location_found", formData.location);
       submitData.append("district", formData.district);
       
-      const additionalInfo = {
-        officerName: formData.officerName,
-        badge: formData.badge,
-        notes: formData.notes
-      };
+      const additionalInfo = { officerName: formData.officerName, badge: formData.badge, notes: formData.notes };
       submitData.append("additional_info", JSON.stringify(additionalInfo));
 
-      if (formData.image) {
-        submitData.append("image", formData.image);
-      }
+      if (formData.image) submitData.append("image", formData.image);
 
       const response = await apiClient.post("/police/documents", submitData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -104,7 +94,7 @@ export default function PostOfficialDocument() {
       }
     } catch (err) {
       console.error("Upload official document error:", err);
-      setError(err.response?.data?.message || "Failed to upload official document.");
+      setError(err.response?.data?.message || t("messages.operationFailed"));
     } finally {
       setLoading(false);
     }
@@ -138,29 +128,28 @@ export default function PostOfficialDocument() {
 
   if (submitted) {
     return (
-      <div className="max-w-6xl mx-auto py-8 md:py-12 px-4 md:px-6">
-        <div className="bg-white rounded-3xl md:rounded-[40px] shadow-2xl p-8 md:p-12 text-center border border-emerald-100 relative overflow-hidden mb-8 md:mb-12">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
+      <div className="max-w-6xl mx-auto py-10 px-4 font-sans">
+        <div className="bg-white rounded-[32px] shadow-sm p-10 md:p-14 text-center border border-gray-100 mb-10 relative overflow-hidden">
           <div className="relative z-10">
-            <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 text-emerald-600 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <FiShield className="w-8 h-8 md:w-10 md:h-10" />
+            <div className="w-16 h-16 bg-emerald-50 text-[#10b981] rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <FiCheckCircle className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-4">Official Record Registered</h2>
-            <p className="text-slate-500 max-w-lg mx-auto leading-relaxed text-sm md:text-lg font-medium opacity-80">
-              The item has been securely logged into the national database. Our matching intelligence is cross-referencing all reports.
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{t("common.success")}</h2>
+            <p className="text-gray-500 max-w-lg mx-auto text-base font-medium">
+              {t("police.verified")}
             </p>
             
             {matches.length > 0 ? (
-               <div className="mt-8 inline-flex items-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-full font-black text-[10px] md:text-sm uppercase tracking-widest shadow-xl animate-bounce">
-                 <FiInfo /> {matches.length} Citizens Possibly Looking for This
+               <div className="mt-8 inline-flex items-center gap-2 px-6 py-2.5 bg-[#10b981] text-white rounded-full font-bold text-xs uppercase tracking-widest shadow-lg animate-bounce">
+                 <FiInfo /> {matches.length} {t("matches.potentialMatches")}
                </div>
             ) : (
-               <div className="mt-8 flex justify-center gap-4">
+               <div className="mt-8 flex justify-center">
                   <button 
                     onClick={() => { setSubmitted(false); handleClearForm(); }}
-                    className="px-6 md:px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg text-sm md:text-base"
+                    className="px-8 py-3.5 bg-[#10b981] text-white rounded-xl font-bold hover:bg-[#0da472] transition shadow-lg text-sm"
                   >
-                    Post Another Official Record
+                    {t("police.postOfficialDocument")}
                   </button>
                </div>
             )}
@@ -168,83 +157,61 @@ export default function PostOfficialDocument() {
         </div>
 
         {matches.length > 0 && (
-          <div className="space-y-8 animate-in slide-in-from-bottom-10 duration-700">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-2xl md:text-3xl font-black text-slate-900">Automatic Matches</h3>
-                <p className="text-emerald-600 font-black mt-1 uppercase tracking-widest text-[9px] md:text-[10px]">Instant matching with active citizen reports</p>
-              </div>
-            </div>
-
-            <div className="grid gap-8">
+          <div className="space-y-8">
+            <h3 className="text-2xl font-bold text-gray-900 text-center md:text-left">{t("matches.matchedItems")}</h3>
+            <div className="grid gap-6">
               {matches.map((match) => (
-                <div key={match.id} className="group bg-white rounded-2xl md:rounded-[32px] border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden">
-                  <div className="flex flex-col lg:flex-row">
-                    <div className="lg:w-72 h-48 sm:h-64 lg:h-auto relative overflow-hidden bg-slate-100 flex items-center justify-center">
+                <div key={match.id} className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="md:w-64 h-48 bg-gray-50 relative">
                       {match.lost_image_url ? (
-                        <img 
-                          src={getImageUrl(match.lost_image_url)} 
-                          className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                          alt="Lost report preview"
-                        />
+                        <img src={getImageUrl(match.lost_image_url)} className="w-full h-full object-cover" alt="Lost report" />
                       ) : (
-                        <div className="flex flex-col items-center">
-                           <FiFileText className="w-16 h-16 text-slate-200" />
-                           <p className="text-[8px] font-black text-slate-400 uppercase mt-4">No Image Provided</p>
+                        <div className="w-full h-full flex items-center justify-center text-gray-200">
+                           <FiFileText className="w-12 h-12" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
-                      <div className="absolute top-6 left-6">
-                        <div className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-black text-slate-900 uppercase tracking-widest">
-                          {Math.round(match.match_score)}% Accuracy
+                      <div className="absolute top-4 left-4">
+                        <div className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-black text-gray-900 uppercase">
+                          {Math.round(match.match_score)}% {t("matches.matchPercentage")}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex-1 p-6 md:p-8 lg:p-10 flex flex-col justify-between">
-                      <div>
-                        <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="text-xl md:text-2xl font-black text-slate-900 leading-tight uppercase tracking-tight">{match.lost_item_type}</h4>
-                            <div className="flex flex-wrap items-center gap-3 md:gap-4 mt-2 text-slate-400 text-[10px] md:text-sm font-bold">
-                               <span className="flex items-center gap-1"><FiMapPin /> {match.lost_district}</span>
-                               <span className="flex items-center gap-1"><FiClock /> Reported on {new Date(match.date_lost).toLocaleDateString()}</span>
-                            </div>
+                            <h4 className="text-xl font-bold text-gray-900 capitalize">{match.lost_item_type}</h4>
+                            <p className="text-[#10b981] font-bold text-[10px] uppercase tracking-widest mt-1">Found in {match.lost_district}</p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-                           <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
-                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white shadow-sm flex items-center justify-center text-emerald-600 shrink-0">
-                                   <FiUser />
-                                </div>
-                                <div className="min-w-0">
-                                   <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Citizen Name</p>
-                                   <p className="text-sm font-black text-slate-900 truncate">{match.loser_name}</p>
-                                </div>
-                             </div>
-                           </div>
-                           <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-emerald-100 flex flex-col justify-center text-center">
-                              <p className="text-[9px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1 opacity-70">Status Coverage</p>
-                              <p className="text-base md:text-lg font-black text-slate-900 uppercase tracking-tight">Metadata Match</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center gap-3">
+                              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-[#10b981] shrink-0 font-bold">
+                                 {match.loser_name?.charAt(0)}
+                              </div>
+                              <div className="min-w-0">
+                                 <p className="text-[9px] font-black text-gray-400 uppercase leading-none mb-1">{t("profile.userRole")}</p>
+                                 <p className="text-sm font-bold text-gray-900 truncate">{match.loser_name}</p>
+                              </div>
                            </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                      <div className="mt-6 flex gap-3">
                          <button 
                             onClick={() => handleContactOwner(match)}
-                            className="flex-1 bg-emerald-600 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-xs md:text-sm hover:bg-emerald-700 transition shadow-lg flex items-center justify-center gap-2 group/btn"
+                            className="flex-1 bg-[#10b981] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-[#0da472] transition shadow"
                          >
-                            <LuMessageSquare className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5" />
-                            Notify Citizen
+                            {t("common.contact")}
                          </button>
                          <button 
                             onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }}
-                            className="w-full sm:w-14 h-12 md:h-14 bg-slate-100 text-slate-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"
+                            className="w-12 h-12 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"
                          >
-                            <LuEye className="w-5 h-5" />
+                            <LuEye />
                          </button>
                       </div>
                     </div>
@@ -255,95 +222,68 @@ export default function PostOfficialDocument() {
           </div>
         )}
 
-        {/* Detail Modal */}
         {isDetailModalOpen && viewingMatch && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300">
-              <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-2xl" onClick={() => setIsDetailModalOpen(false)}></div>
-              <div className="relative bg-white w-full max-w-6xl max-h-[90vh] rounded-3xl md:rounded-[48px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-500 border border-white/20">
-                <button 
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="absolute top-6 right-6 md:top-8 md:right-8 z-10 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-white/20 transition border border-white/20"
-                >
-                  <FiX className="text-xl md:text-2xl" />
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-md" onClick={() => setIsDetailModalOpen(false)}></div>
+              <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-100">
+                <button onClick={() => setIsDetailModalOpen(false)} className="absolute top-6 right-6 z-10 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                  <FiX />
                 </button>
 
-                <div className="md:w-1/2 bg-slate-950 p-8 md:p-12 flex flex-col justify-center items-center">
-                    <div className="w-full max-w-sm space-y-6 md:space-y-8">
-                        <div className="text-center">
-                           <FiShield className="w-12 h-12 md:w-16 md:h-16 text-emerald-500 mx-auto mb-4" />
-                           <h3 className="text-white text-2xl md:text-3xl font-black mb-1">RECORD SCAN</h3>
-                           <p className="text-white/30 text-[8px] md:text-[10px] font-black uppercase tracking-[4px]">Neural Validation</p>
-                        </div>
-                        
-                        <div className="aspect-square bg-white/5 rounded-3xl md:rounded-[40px] overflow-hidden border border-white/10 p-4 relative shadow-2xl">
+                <div className="md:w-5/12 bg-gray-50 p-8 flex flex-col justify-center items-center border-r border-gray-100">
+                    <div className="w-full space-y-6">
+                        <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 p-3">
                            {viewingMatch.lost_image_url ? (
-                             <img src={getImageUrl(viewingMatch.lost_image_url)} className="w-full h-full object-contain rounded-2xl md:rounded-3xl" alt="Citizen Report" />
+                             <img src={getImageUrl(viewingMatch.lost_image_url)} className="w-full h-full object-contain" alt="Report" />
                            ) : (
-                             <div className="w-full h-full flex flex-col items-center justify-center text-white/10">
-                                <FiEye className="w-16 h-16 md:w-24 md:h-24" />
-                                <p className="text-[8px] md:text-[10px] font-black mt-4 uppercase">No Reference Image</p>
+                             <div className="w-full h-full flex flex-col items-center justify-center text-gray-200">
+                                <FiEye className="w-16 h-16" />
                              </div>
                            )}
-                           <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6">
-                              <div className="bg-emerald-600 p-4 md:p-6 rounded-2xl md:rounded-[24px] text-center shadow-2xl border border-emerald-500/20">
-                                 <p className="text-white font-black text-2xl md:text-4xl">{viewingMatch.match_score}%</p>
-                                 <p className="text-emerald-200 text-[8px] md:text-[10px] font-black uppercase tracking-widest mt-1 opacity-80">Accuracy Index</p>
-                              </div>
-                           </div>
+                        </div>
+                        <div className="bg-[#10b981] p-4 rounded-xl text-center text-white shadow-lg">
+                           <p className="font-bold text-2xl">{viewingMatch.match_score}%</p>
+                           <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t("matches.matchPercentage")}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="md:w-1/2 p-8 md:p-12 overflow-y-auto space-y-6 md:space-y-8 bg-white">
+                <div className="md:w-7/12 p-10 overflow-y-auto space-y-6 bg-white">
                     <div>
-                       <h2 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight uppercase tracking-tight">Official Analysis</h2>
-                       <p className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest mt-2 opacity-70">Verified against citizen records</p>
+                       <h2 className="text-2xl font-bold text-gray-900 capitalize">{viewingMatch.lost_item_type}</h2>
+                       <p className="text-[#10b981] text-xs font-bold uppercase tracking-widest mt-1">{t("police.verified")}</p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                       <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
-                          <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1 tracking-widest opacity-70 leading-none"><FiTag /> Category</p>
-                          <p className="text-sm font-black text-slate-800 capitalize leading-none">{viewingMatch.lost_category}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                          <p className="text-[9px] font-black text-gray-300 uppercase mb-1 tracking-widest">{t("items.category")}</p>
+                          <p className="text-sm font-bold text-gray-800 capitalize leading-none">{viewingMatch.lost_category}</p>
                        </div>
-                       <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
-                          <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1 tracking-widest opacity-70 leading-none"><FiMapPin /> Reported At</p>
-                          <p className="text-sm font-black text-slate-800 leading-none">{viewingMatch.lost_district}</p>
+                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                          <p className="text-[9px] font-black text-gray-300 uppercase mb-1 tracking-widest">{t("items.location")}</p>
+                          <p className="text-sm font-bold text-gray-800 leading-none">{viewingMatch.lost_district}</p>
                        </div>
                     </div>
 
                     <div className="space-y-4">
-                       <h4 className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-70">Submitter Contact</h4>
-                       <div className="flex flex-col sm:flex-row sm:items-center gap-4 md:gap-5 bg-emerald-50/50 p-5 md:p-6 rounded-2xl md:rounded-[32px] border border-emerald-100/50 shadow-sm">
-                          <div className="w-12 h-12 md:w-14 md:h-14 bg-emerald-600 text-white rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-xl shadow-lg shrink-0">
-                             <FiUser />
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("profile.personalInfo")}</p>
+                       <div className="flex items-center gap-4 bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                          <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-[#10b981] font-bold">
+                             {viewingMatch.loser_name?.charAt(0)}
                           </div>
                           <div className="min-w-0">
-                             <p className="text-sm font-black text-slate-900 mb-0.5 truncate uppercase tracking-tight">{viewingMatch.loser_name}</p>
-                             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-1 opacity-70">
-                                <span className="flex items-center gap-1 text-[10px] font-black text-slate-500 uppercase"><FiPhone /> {viewingMatch.loser_phone}</span>
-                                <span className="flex items-center gap-1 text-[10px] font-black text-slate-500 truncate uppercase"><FiMail /> {viewingMatch.loser_email}</span>
-                             </div>
+                             <p className="text-sm font-bold text-gray-900 truncate uppercase">{viewingMatch.loser_name}</p>
+                             <p className="text-xs font-medium text-gray-400">{viewingMatch.loser_phone}</p>
                           </div>
                        </div>
                     </div>
 
-                    {viewingMatch.lost_text && (
-                      <div className="space-y-4 pt-4 border-t border-slate-100">
-                         <h4 className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-70">Metadata Insights</h4>
-                         <div className="bg-slate-50 rounded-2xl md:rounded-[32px] p-6 md:p-8 border border-slate-100 shadow-inner">
-                           <p className="text-slate-600 text-sm font-bold italic leading-relaxed opacity-80">"{viewingMatch.lost_text}"</p>
-                         </div>
-                      </div>
-                    )}
-
-                    <div className="pt-4 md:pt-6">
-                       <button
-                          onClick={() => handleContactOwner(viewingMatch)}
-                          className="w-full py-4 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-[24px] font-black text-base md:text-lg shadow-2xl hover:translate-y-[-4px] transition duration-300 uppercase tracking-widest transform"
-                        >
-                          Alert Citizen
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => handleContactOwner(viewingMatch)}
+                        className="w-full py-4 bg-[#10b981] text-white rounded-xl font-bold text-sm shadow-lg hover:bg-black transition uppercase tracking-widest"
+                      >
+                        {t("common.contact")}
+                      </button>
                 </div>
               </div>
             </div>
@@ -353,10 +293,7 @@ export default function PostOfficialDocument() {
           <SendMessageModal
             item={selectedMatch}
             isOpen={messageModalOpen}
-            onClose={() => {
-              setMessageModalOpen(false)
-              setSelectedMatch(null)
-            }}
+            onClose={() => { setMessageModalOpen(false); setSelectedMatch(null); }}
           />
         )}
       </div>
@@ -364,74 +301,67 @@ export default function PostOfficialDocument() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 px-4 md:px-6">
-      <div className="mb-8 md:mb-12 py-6 md:py-8">
-        <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-4">
-          Official Operations
-        </span>
-        <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight uppercase">Upload Official Record</h1>
-        <p className="text-slate-500 text-base md:text-xl mt-2 font-medium opacity-80">Registering recovered items for instant citizen matching.</p>
+    <div className="max-w-4xl mx-auto pb-20 px-4 font-sans">
+      <div className="mb-10 py-6">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{t("police.postOfficialDocument")}</h1>
+        <p className="text-gray-500 text-sm mt-1 font-medium italic opacity-80">
+           {t("police.dashboard")}
+        </p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border-2 border-red-100 rounded-[32px] p-6 mb-8 flex items-center gap-4 text-red-600">
-          <FiAlertCircle className="w-8 h-8 flex-shrink-0" />
-          <p className="font-bold">{error}</p>
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 mb-8 flex items-center gap-4 text-red-600 font-bold text-sm">
+          <FiAlertCircle className="w-6 h-6 shrink-0" />
+          <p>{error}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-[32px] md:rounded-[48px] shadow-2xl border border-slate-100 p-8 md:p-14 space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-          <div className="space-y-6 md:space-y-8">
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Document Category</label>
+      <form onSubmit={handleSubmit} className="bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 md:p-12 space-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="space-y-8">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("items.category")}</label>
               <select
                 name="documentType"
                 value={formData.documentType}
                 onChange={handleChange}
                 required
-                className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-2xl md:rounded-[24px] px-5 py-3.5 md:px-6 md:py-4 font-bold text-slate-800 transition-all outline-none shadow-sm"
+                className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-5 py-3.5 font-bold text-gray-800 transition-all outline-none"
               >
-                <option value="">Select Document Type</option>
+                <option value="">{t("items.selectCategory")}</option>
                 {documentTypes.map((type) => (
                   <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
             </div>
 
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Item Reference Name</label>
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("items.title")}</label>
               <input
                 type="text"
                 name="itemName"
                 value={formData.itemName}
                 onChange={handleChange}
-                placeholder="e.g. Returned National ID"
+                placeholder="..."
                 required
-                className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-2xl md:rounded-[24px] px-5 py-3.5 md:px-6 md:py-4 font-bold text-slate-800 transition-all outline-none shadow-sm"
+                className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-5 py-3.5 font-bold text-gray-800 transition-all outline-none"
               />
             </div>
           </div>
 
-          <div className="space-y-6 md:space-y-8">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Evidence Photo</label>
-            <div className="relative h-48 sm:h-64 group">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                id="imageUpload"
-              />
-              <div className={`h-full border-4 border-dashed rounded-[32px] transition-all flex flex-col items-center justify-center p-6 md:p-8 overflow-hidden ${
-                imagePreview ? 'border-emerald-200 bg-emerald-50/10' : 'border-slate-100 bg-slate-50 group-hover:bg-white group-hover:border-emerald-400'
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("items.image")}</label>
+            <div className="relative h-44 group">
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+              <div className={`h-full border-2 border-dashed rounded-2xl transition-all flex flex-col items-center justify-center p-6 ${
+                imagePreview ? 'border-emerald-200 bg-emerald-50/10' : 'border-gray-100 bg-gray-50 group-hover:border-[#10b981]'
               }`}>
                 {imagePreview ? (
-                  <img src={imagePreview} className="max-h-full rounded-2xl shadow-xl" alt="Preview" />
+                  <img src={imagePreview} className="max-h-full rounded-lg" alt="Preview" />
                 ) : (
                   <>
-                    <FiUploadCloud className="w-8 h-8 md:w-10 md:h-10 text-slate-300 mb-4" />
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Upload for Analysis</p>
+                    <FiUploadCloud className="w-8 h-8 text-gray-300 mb-2" />
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("items.addImage")}</p>
                   </>
                 )}
               </div>
@@ -439,57 +369,57 @@ export default function PostOfficialDocument() {
           </div>
         </div>
 
-        <div className="space-y-8 pt-6">
-          <div className="group">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Official Description</label>
+        <div className="space-y-8 pt-4">
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("items.description")}</label>
             <textarea
               name="itemDescription"
               value={formData.itemDescription}
               onChange={handleChange}
-              placeholder="Provide official details for internal records..."
+              placeholder="..."
               required
               rows={3}
-              className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-3xl md:rounded-[32px] px-6 py-4 md:px-8 md:py-6 font-bold text-slate-800 transition-all outline-none resize-none shadow-sm"
+              className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-6 py-4 font-bold text-gray-800 transition-all outline-none resize-none"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Recovered on</label>
-              <input type="date" name="dateFound" value={formData.dateFound} onChange={handleChange} required className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-2xl md:rounded-[24px] px-5 py-3 md:px-6 md:py-4 font-bold text-slate-800 transition-all outline-none shadow-sm" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("items.date")}</label>
+              <input type="date" name="dateFound" value={formData.dateFound} onChange={handleChange} required className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-5 py-3 font-bold text-gray-800 transition-all outline-none" />
             </div>
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">District</label>
-              <select name="district" value={formData.district} onChange={handleChange} required className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-2xl md:rounded-[24px] px-5 py-3 md:px-6 md:py-4 font-bold text-slate-800 transition-all outline-none shadow-sm">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("items.location")}</label>
+              <select name="district" value={formData.district} onChange={handleChange} required className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-5 py-3 font-bold text-gray-800 transition-all outline-none">
                 <option value="">Select District</option>
                 {districts.map((dist) => (<option key={dist} value={dist}>{dist}</option>))}
               </select>
             </div>
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Assigned Station</label>
-              <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="e.g. Remera Station" required className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-2xl md:rounded-[24px] px-5 py-3 md:px-6 md:py-4 font-bold text-slate-800 transition-all outline-none shadow-sm" />
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("items.location")} Detail</label>
+              <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="..." required className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-5 py-3 font-bold text-gray-800 transition-all outline-none" />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Reporting Officer</label>
-              <input type="text" name="officerName" value={formData.officerName} onChange={handleChange} placeholder="Full Name" required className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-2xl md:rounded-[24px] px-5 py-3 md:px-6 md:py-4 font-bold text-slate-800 transition-all outline-none shadow-sm" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">{t("auth.firstName")}</label>
+              <input type="text" name="officerName" value={formData.officerName} onChange={handleChange} placeholder="..." required className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-5 py-3 font-bold text-gray-800 transition-all outline-none" />
             </div>
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1 opacity-70">Badge ID</label>
-              <input type="text" name="badge" value={formData.badge} onChange={handleChange} placeholder="Official ID" required className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-emerald-600 rounded-2xl md:rounded-[24px] px-5 py-3 md:px-6 md:py-4 font-bold text-slate-800 transition-all outline-none shadow-sm" />
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Badge Number</label>
+              <input type="text" name="badge" value={formData.badge} onChange={handleChange} placeholder="..." required className="w-full bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#10b981] rounded-xl px-5 py-3 font-bold text-gray-800 transition-all outline-none" />
             </div>
           </div>
         </div>
 
-        <div className="pt-6 md:pt-8">
+        <div className="pt-6">
            <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 text-white rounded-2xl md:rounded-[32px] py-4 md:py-6 font-black text-lg md:text-xl shadow-2xl hover:translate-y-[-4px] hover:bg-emerald-700 transition-all duration-300 disabled:opacity-50 uppercase tracking-widest"
+            className="w-full bg-[#10b981] text-white rounded-xl py-4 font-bold text-lg shadow-lg hover:bg-black transition-all disabled:opacity-50 uppercase tracking-widest"
           >
-            {loading ? "Neural Scanning..." : "Register Record"}
+            {loading ? t("messages.processing") : t("common.submit")}
           </button>
         </div>
       </form>

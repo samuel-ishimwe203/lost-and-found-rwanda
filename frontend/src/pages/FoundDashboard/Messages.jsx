@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react"
-import { Loader2, MessageCircle, Send, Trash } from "lucide-react"
+import { Loader2, MessageCircle, Send, Trash, ChevronLeft, Search, MoreVertical } from "lucide-react"
 import apiClient from "../../services/api"
 import { useAuth } from "../../context/AuthContext"
+import { useLanguage } from "../../context/LanguageContext"
 
 export default function FoundMessages() {
+  const { t } = useLanguage()
   const { user } = useAuth()
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
@@ -27,23 +29,27 @@ export default function FoundMessages() {
   }, [messages.length])
 
   const scrollToBottom = () => {
-    if (chatContainerRef.current) chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+    if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTo({
+            top: chatContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
   }
 
   const fetchConversations = async () => {
     try {
-      setLoading(true)
       const response = await apiClient.get('/messages')
       const allMessages = response.data.data || []
       if (!user?.id) return
 
-      // Deduplicate and group as conversations
       const conversationMap = new Map()
       allMessages.forEach(msg => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
         const otherUserName = msg.sender_id === user.id ? msg.receiver_name : msg.sender_name
         const otherUserEmail = msg.sender_id === user.id ? msg.receiver_email : msg.sender_email
         const convKey = msg.match_id || `user_${otherUserId}`
+        
         if (!conversationMap.has(convKey)) {
           conversationMap.set(convKey, {
             id: convKey,
@@ -65,17 +71,21 @@ export default function FoundMessages() {
           conv.last_message_time = msg.created_at
         }
       })
+
       const convArray = Array.from(conversationMap.values())
         .sort((a, b) => new Date(b.last_message_time) - new Date(a.last_message_time))
+      
       setConversations(convArray)
+      
       if (selectedConversation) {
         const updatedConv = convArray.find(c => c.id === selectedConversation.id)
-        if (updatedConv) setMessages(updatedConv.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)))
+        if (updatedConv) {
+            setMessages(updatedConv.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)))
+        }
       }
-      setError(null)
       setLoading(false)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load messages')
+      setError(t("messages.syncFailed"))
       setLoading(false)
     }
   }
@@ -84,15 +94,18 @@ export default function FoundMessages() {
     setSelectedConversation(conversation)
     setMessages(conversation.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)))
     setTimeout(() => scrollToBottom(), 100)
+    
     const unreadMessages = conversation.messages.filter(
       msg => !msg.is_read && msg.receiver_id === user.id && !markedAsReadRef.current.has(msg.id)
     )
+    
     if (unreadMessages.length > 0) {
       await Promise.all(unreadMessages.map(msg =>
         apiClient.patch(`/messages/${msg.id}/read`).then(() => markedAsReadRef.current.add(msg.id))
       ))
       window.dispatchEvent(new CustomEvent('messagesRead'))
     }
+    
     setConversations(conversations.map(conv =>
       conv.id === conversation.id ? { ...conv, unread_count: 0 } : conv
     ))
@@ -111,7 +124,7 @@ export default function FoundMessages() {
       setReplyText("")
       fetchConversations()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to send message')
+      console.error(err)
     } finally {
       setSending(false)
     }
@@ -119,214 +132,185 @@ export default function FoundMessages() {
 
   const getInitials = (name) => {
     if (!name) return "?"
-    const parts = name.trim().split(" ")
-    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    return name.substring(0, 2).toUpperCase()
-  }
-
-  const getAvatarColor = (name) => {
-    const colors = ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500']
-    const index = (name?.charCodeAt(0) || 0) % colors.length
-    return colors[index]
+    return name.trim().split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2)
   }
 
   const formatTime = (dateString) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffMs = now - date
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-    if (diffMins < 1) return "Just now"
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays === 1) return "Yesterday"
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const diffDays = Math.floor((now - date) / 86400000)
+    if (diffDays === 0) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (diffDays === 1) return t("messages.yesterday")
+    if (diffDays < 7) return date.toLocaleDateString([], { weekday: 'short' })
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
   }
 
-  const formatMessageTime = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-  }
-
-  const shouldShowDateSeparator = (currentMsg, prevMsg) => {
-    if (!prevMsg) return true
-    return new Date(currentMsg.created_at).toDateString() !== new Date(prevMsg.created_at).toDateString()
-  }
-
-  const formatDateSeparator = (dateString) => {
-    const date = new Date(dateString)
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    if (date.toDateString() === today.toDateString()) return "Today"
-    if (date.toDateString() === yesterday.toDateString()) return "Yesterday"
-    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-  }
-
-  const getMessageStatus = (msg) => {
-    if (msg.sender_id !== user.id) return null
-    if (msg.is_read) return <span className="text-blue-500 text-sm ml-1 font-bold">✓✓</span>
-    return <span className="text-gray-400 text-sm ml-1">✓✓</span>
-  }
-
-  if (loading && conversations.length === 0)
+  if (loading && conversations.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      <div className="h-[calc(100vh-120px)] flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin"></div>
+        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{t("messages.enteringSpace")}</p>
       </div>
     )
+  }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] lg:h-screen bg-gray-100 overflow-hidden">
-      <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 bg-white border-r border-gray-200 flex-col overflow-hidden flex-shrink-0`}>
-        <div className="p-4 bg-green-600 text-white flex-shrink-0">
-          <h2 className="text-xl font-semibold">Messages</h2>
-          <p className="text-sm text-green-100">
-            {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
-          </p>
+    <div className="h-[calc(100vh-140px)] flex bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden m-1">
+      {/* SIDEBAR */}
+      <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col border-r border-slate-100`}>
+        <div className="p-6 bg-slate-50/50 border-b border-slate-100">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">{t("messages.title")}</h1>
+            <div className="w-8 h-8 bg-green-100 text-green-700 rounded-lg flex items-center justify-center text-xs font-black">
+              {conversations.length}
+            </div>
+          </div>
+          <div className="relative">
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 h-4 w-4" />
+             <input type="text" placeholder={t("messages.searchRegistry")} className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-xs font-medium focus:border-green-500 transition-all outline-none" />
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          {error && (
-            <div className="p-4 bg-red-50 text-red-700 text-sm">{error}</div>
-          )}
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {conversations.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p>No messages yet</p>
-              <p className="text-sm mt-2">When someone messages you about a match, it will appear here</p>
+            <div className="p-12 text-center space-y-4 opacity-30 mt-10">
+              <MessageCircle className="w-12 h-12 mx-auto" strokeWidth={1} />
+              <p className="text-xs font-bold uppercase tracking-widest">{t("messages.noActiveChannels")}</p>
             </div>
           ) : (
             conversations.map((conv) => (
               <div
                 key={conv.id}
                 onClick={() => handleSelectConversation(conv)}
-                className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedConversation?.id === conv.id ? 'bg-green-50' : ''
-                }`}
+                className={`px-6 py-5 cursor-pointer transition-all border-b border-slate-50 flex items-center gap-4 relative group
+                  ${selectedConversation?.id === conv.id ? 'bg-green-50/50' : 'hover:bg-slate-50'}`}
               >
-                <div className="flex items-start space-x-3">
-                  <div className={`w-12 h-12 rounded-full ${getAvatarColor(conv.other_user)} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
-                    {getInitials(conv.other_user)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900 truncate">
-                        {conv.other_user}
-                      </h3>
-                      <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                        {formatTime(conv.last_message_time)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 truncate mt-1">
-                      {conv.last_message}
-                    </p>
-                  </div>
-                  {conv.unread_count > 0 && (
-                    <div className="bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                      {conv.unread_count}
-                    </div>
-                  )}
+                {selectedConversation?.id === conv.id && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-600"></div>
+                )}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-lg shrink-0 ${
+                   ['bg-green-600', 'bg-slate-900', 'bg-emerald-700', 'bg-teal-600'][conv.other_user.length % 4]
+                }`}>
+                  {getInitials(conv.other_user)}
                 </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h4 className="font-black text-slate-900 text-sm truncate uppercase tracking-tight">{conv.other_user}</h4>
+                    <span className="text-[10px] font-bold text-slate-300 whitespace-nowrap">{formatTime(conv.last_message_time)}</span>
+                  </div>
+                  <p className={`text-[11px] truncate ${conv.unread_count > 0 ? 'font-black text-slate-900' : 'text-slate-400 font-medium'}`}>
+                    {conv.last_message}
+                  </p>
+                </div>
+                {conv.unread_count > 0 && (
+                   <div className="w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-lg">
+                      {conv.unread_count}
+                   </div>
+                )}
               </div>
             ))
           )}
         </div>
       </div>
-      <div className={`${!selectedConversation ? 'hidden md:flex' : 'flex'} flex-1 flex-col overflow-hidden`}>
+
+      {/* CHAT AREA */}
+      <div className={`${!selectedConversation ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-white overflow-hidden`}>
         {selectedConversation ? (
           <>
-            <div className="bg-green-600 text-white p-4 shadow-sm flex items-center space-x-3 flex-shrink-0">
-              <button 
-                onClick={() => setSelectedConversation(null)}
-                className="md:hidden p-1 rounded-lg hover:bg-green-500 transition mr-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <div className={`w-10 h-10 rounded-full ${getAvatarColor(selectedConversation.other_user)} flex items-center justify-center font-semibold`}>
-                {getInitials(selectedConversation.other_user)}
-              </div>
-              <div>
-                <h3 className="font-semibold">{selectedConversation.other_user}</h3>
-                <p className="text-xs text-green-100">Online</p>
-              </div>
-            </div>
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              {messages.map((msg, index) => {
-                const isOwnMessage = msg.sender_id === user.id
-                const showDateSeparator = shouldShowDateSeparator(msg, messages[index - 1])
-                return (
-                  <div key={msg.id}>
-                    {showDateSeparator && (
-                      <div className="flex justify-center my-4">
-                        <span className="bg-white px-3 py-1 rounded-full text-xs text-gray-600 shadow-sm">
-                          {formatDateSeparator(msg.created_at)}
-                        </span>
-                      </div>
-                    )}
-                    <div className={`flex items-end space-x-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-                      {!isOwnMessage && (
-                        <div className={`w-8 h-8 rounded-full ${getAvatarColor(msg.sender_name)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
-                          {getInitials(msg.sender_name)}
-                        </div>
-                      )}
-                      <div className={`max-w-xs lg:max-w-md ${isOwnMessage ? 'order-1' : 'order-2'}`}>
-                        {!isOwnMessage && (
-                          <p className="text-xs text-gray-600 mb-1 ml-1">{msg.sender_name}</p>
-                        )}
-                        <div className={`rounded-lg px-4 py-2 ${isOwnMessage ? 'bg-green-600 text-white' : 'bg-white text-gray-900 shadow-sm'}`}>
-                          <p className="break-words">{msg.message}</p>
-                          <div className="flex items-center justify-end mt-1 space-x-1">
-                            <span className={`text-xs ${isOwnMessage ? 'text-green-100' : 'text-gray-500'}`}>{formatMessageTime(msg.created_at)}</span>
-                            {getMessageStatus(msg)}
-                          </div>
-                        </div>
-                      </div>
-                      {isOwnMessage && (
-                        <div className={`w-8 h-8 rounded-full ${getAvatarColor(user.full_name)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 order-2`}>
-                          {getInitials(user.full_name)}
-                        </div>
-                      )}
-                    </div>
+            {/* CHAT HEADER */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white z-10 shadow-sm">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setSelectedConversation(null)} className="md:hidden p-2 text-slate-400 hover:text-slate-900">
+                  <ChevronLeft />
+                </button>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-[10px] font-black shadow-md ${
+                   ['bg-green-600', 'bg-slate-900', 'bg-emerald-700', 'bg-teal-600'][selectedConversation.other_user.length % 4]
+                }`}>
+                  {getInitials(selectedConversation.other_user)}
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-sm uppercase tracking-tight leading-none mb-1">{selectedConversation.other_user}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">{t("messages.activeChannel")}</span>
                   </div>
+                </div>
+              </div>
+              <button className="w-10 h-10 text-slate-300 hover:text-slate-900 flex items-center justify-center">
+                <MoreVertical size={20} />
+              </button>
+            </div>
+
+            {/* MESSAGES BOX */}
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar bg-slate-50/30">
+              {messages.map((msg, idx) => {
+                const isMe = msg.sender_id === user.id
+                const showDate = idx === 0 || new Date(msg.created_at).toDateString() !== new Date(messages[idx-1].created_at).toDateString()
+                
+                return (
+                  <React.Fragment key={msg.id}>
+                    {showDate && (
+                       <div className="flex justify-center my-8">
+                          <span className="px-4 py-1.5 bg-white border border-slate-100 rounded-full text-[9px] font-black text-slate-300 uppercase tracking-widest shadow-sm">
+                             {new Date(msg.created_at).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}
+                          </span>
+                       </div>
+                    )}
+                    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] md:max-w-[70%] space-y-2 ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
+                         <div className={`px-5 py-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed ${
+                           isMe ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-800 rounded-tl-none'
+                         }`}>
+                           {msg.message}
+                         </div>
+                         <div className="flex items-center gap-2 group">
+                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">
+                               {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {isMe && (
+                               <div className={`w-3 h-3 rounded-full flex items-center justify-center text-[7px] font-black ${msg.is_read ? 'text-green-500' : 'text-slate-200'}`}>
+                                  {msg.is_read ? '✓✓' : '✓'}
+                               </div>
+                            )}
+                         </div>
+                      </div>
+                    </div>
+                  </React.Fragment>
                 )
               })}
               <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={handleSendReply} className="p-4 bg-white border-t border-gray-200 flex-shrink-0">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={replyText}
-                  onChange={e => setReplyText(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={sending}
-                />
-                <button
-                  type="submit"
-                  disabled={!replyText.trim() || sending}
-                  className="bg-green-600 text-white rounded-full p-3 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                >
-                  {sending ? (
-                    <Loader2 className="animate-spin h-5 w-5" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-            </form>
+
+            {/* MESSAGE INPUT */}
+            <div className="p-6 bg-white border-t border-slate-100">
+               <form onSubmit={handleSendReply} className="flex items-center gap-4 bg-slate-50 border border-slate-100 rounded-2xl p-2 focus-within:border-green-500 transition-all shadow-inner">
+                  <input 
+                    type="text" 
+                    value={replyText} 
+                    onChange={e => setReplyText(e.target.value)}
+                    placeholder={t("messages.typeMessage")}
+                    className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-sm font-medium text-slate-700 placeholder:text-slate-300"
+                    disabled={sending}
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={!replyText.trim() || sending}
+                    className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-green-600 disabled:opacity-20 transition-all shadow-xl active:scale-95"
+                  >
+                    {sending ? <Loader2 className="animate-spin h-4 w-4" /> : <Send size={18} />}
+                  </button>
+               </form>
+            </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center text-gray-500">
-              <MessageCircle className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <p className="text-lg font-medium">Select a conversation</p>
-              <p className="text-sm mt-2">Choose a conversation from the list to start messaging</p>
-            </div>
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-slate-50/30">
+             <div className="w-20 h-20 bg-white rounded-[32px] shadow-2xl flex items-center justify-center text-slate-100 mb-8 border border-slate-50">
+                <MessageCircle size={40} strokeWidth={1} />
+             </div>
+             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter mb-2 italic">{t("messages.secureRegistryChannel")}</h2>
+             <p className="text-slate-400 text-xs font-medium max-w-xs leading-relaxed italic">
+                {t("messages.selectConversation")}
+             </p>
           </div>
         )}
       </div>

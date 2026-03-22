@@ -1,16 +1,18 @@
 import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function PoliceDashboardLayout() {
+  const { user } = useAuth();
+  const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // Close sidebar on route change (mobile)
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  // Handle sidebar toggle from Navbar
   useEffect(() => {
     const handleToggle = () => setSidebarOpen(prev => !prev);
     window.addEventListener('toggle-sidebar', handleToggle);
@@ -18,102 +20,102 @@ export default function PoliceDashboardLayout() {
   }, []);
 
   const navLinks = [
-    { path: "/police-dashboard", label: "Overview", end: true },
-    { path: "/police-dashboard/upload-document", label: "Post Local Discovery" },
-    { path: "/police-dashboard/manage-claims", label: "Verify Claims" },
-    { path: "/police-dashboard/returned-documents", label: "Archive Items" },
-    { path: "/police-dashboard/document-scanner", label: "AI Document Scanner" },
+    { path: "/police-dashboard", label: t("police.dashboard"), end: true },
+    { path: "/police-dashboard/upload-document", label: t("police.postOfficialDocument") },
+    { path: "/police-dashboard/manage-claims", label: t("police.manageClaims") },
+    { path: "/police-dashboard/returned-documents", label: t("police.returnedDocuments") },
+    { path: "/police-dashboard/document-scanner", label: t("items.image") + " Scanner" },
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 overflow-x-hidden">
-      
-      {/* MOBILE OVERLAY */}
+    <div className="flex flex-col min-h-screen bg-gray-50 overflow-x-hidden font-sans">
       {sidebarOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110]"
+          className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[110]"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* MAIN CONTAINER */}
+      
       <div className="flex flex-1 relative mt-[74px]">
-
-        {/* SIDEBAR */}
         <aside className={`
           fixed top-[74px] left-0 h-[calc(100vh-74px)] z-[120] lg:z-30
-          w-72 bg-[#020617] p-8 shadow-2xl overflow-y-auto
+          w-72 bg-[#108643] p-8 shadow-2xl overflow-y-auto
           transform transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
-          {/* Close button for mobile */}
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden absolute top-6 right-6 text-white/40 hover:text-white p-2 rounded-full hover:bg-white/5 transition"
+            className="lg:hidden absolute top-6 right-6 text-white/50 hover:text-white p-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
-          <div className="mb-12">
-            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner mb-6">
-              <span className="text-3xl">🚓</span>
-            </div>
-            <h3 className="font-black text-white text-xl tracking-tight leading-none">Rwanda Police</h3>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-3">Station Portal</p>
+          <div className="mb-12 pt-4 lg:pt-0">
+             <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-lg mb-4">
+                <span className="text-white font-bold text-2xl uppercase">
+                   {user?.full_name?.charAt(0) || 'P'}
+                </span>
+             </div>
+             <div>
+               <h3 className="font-bold text-white text-lg tracking-tight truncate">{user?.full_name || 'Officer'}</h3>
+               <p className="text-white/50 text-[10px] font-black uppercase tracking-widest mt-1">{t("police.dashboard")}</p>
+             </div>
           </div>
 
-          <nav className="space-y-1">
-            <p className="text-white/20 text-[10px] font-black uppercase tracking-widest mb-6 px-1">Officer Tools</p>
+          <nav className="space-y-1.5 flex flex-col h-[calc(100%-180px)]">
             {navLinks.map((link) => (
               <NavLink
                 key={link.path}
                 to={link.path}
                 end={link.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group ${
+                  `flex items-center px-5 py-4 rounded-xl transition-all duration-300 group ${
                     isActive
-                      ? "bg-white text-slate-900 shadow-xl shadow-white/5"
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                      ? "bg-white text-[#108643] shadow-md"
+                      : "text-white/70 hover:text-white hover:bg-white/10"
                   }`
                 }
               >
-                <div className={`w-1 h-1 rounded-full bg-current transition-all ${location.pathname === link.path ? 'scale-150' : 'scale-0'}`} />
-                <span className="font-black text-xs uppercase tracking-wider">{link.label}</span>
+                <span className="font-bold tracking-tight text-sm">{link.label}</span>
               </NavLink>
             ))}
           </nav>
-
-          <div className="mt-auto pt-10">
-             <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Security Note</p>
-                <p className="text-[10px] text-slate-400 leading-relaxed italic">Unauthorized access is strictly prohibited. All actions logged.</p>
-             </div>
-          </div>
         </aside>
 
-        {/* MAIN CONTENT Area */}
         <div className="flex-1 lg:ml-72 flex flex-col min-w-0">
-           <main className="flex-1 p-4 md:p-8 lg:p-12 space-y-8 bg-white/50 min-h-screen">
-             <div className="max-w-7xl mx-auto">
-                <Outlet />
-             </div>
+           <main className="flex-1 p-4 md:p-10 min-h-screen">
+              <Outlet />
            </main>
+           <footer className="bg-slate-950 text-gray-400 py-12 px-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+              <div className="col-span-1">
+                <div className="flex items-center gap-1 mb-6">
+                  <span className="text-xl font-black tracking-tight text-white uppercase italic">{t("app.title")}</span>
+                </div>
+                <p className="text-xs font-medium leading-relaxed opacity-60">
+                   {t("police.dashboard")}
+                </p>
+              </div>
 
-           {/* FOOTER */}
-           <footer className="bg-slate-950 border-t border-white/5 text-slate-500 py-12 px-8">
-             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
-               <div className="flex items-center gap-6">
-                 <Link to="/police-dashboard" className="text-white hover:text-blue-400 transition">Police Portal Home</Link>
-                 <span className="text-slate-700">|</span>
-                 <Link to="/police-dashboard/returned-documents" className="hover:text-white transition cursor-pointer">Archive Access</Link>
-                 <span className="text-slate-700">|</span>
-                 <a href="#" className="hover:text-white transition cursor-pointer">Security Protocols</a>
-               </div>
-               <p>© {new Date().getFullYear()} Rwanda National Police. Digital Exhibits Dept.</p>
-             </div>
-           </footer>
+              <div>
+                <h4 className="font-bold text-white mb-6 text-xs uppercase tracking-widest">{t("footer.about")}</h4>
+                <ul className="text-xs space-y-3 font-medium">
+                  <li><Link to="/police-dashboard" className="hover:text-white transition">{t("dashboard.statistics")}</Link></li>
+                  <li><Link to="/police-dashboard/upload-document" className="hover:text-white transition">{t("items.postFoundItem")}</Link></li>
+                  <li><Link to="/police-dashboard/manage-claims" className="hover:text-white transition">{t("police.manageClaims")}</Link></li>
+                </ul>
+              </div>
+
+              <div className="col-span-2">
+                <h4 className="font-bold text-white mb-6 text-xs uppercase tracking-widest">{t("footer.terms")}</h4>
+                <div className="space-y-3 text-[10px] font-bold uppercase tracking-widest opacity-50">
+                  <p>{t("footer.copyright")}</p>
+                </div>
+              </div>
+            </div>
+          </footer>
         </div>
       </div>
     </div>

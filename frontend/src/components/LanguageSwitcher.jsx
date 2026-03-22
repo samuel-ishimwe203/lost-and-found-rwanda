@@ -16,27 +16,9 @@ export default function LanguageSwitcher() {
 
   const currentLang = languages.find((l) => l.code === language) || languages[0];
 
-  const triggerGoogleTranslate = (langCode) => {
-    const googleCodeMap = {
-      en: "en",
-      rw: "rw",
-      sw: "sw",
-      fr: "fr",
-    };
-
-    const targetCode = googleCodeMap[langCode] || "en";
-    
-    const select = document.querySelector(".goog-te-combo");
-    if (select) {
-      select.value = targetCode;
-      select.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-    }
-  };
-
   const handleLanguageChange = (langCode) => {
     changeLanguage(langCode);
     setIsOpen(false);
-    triggerGoogleTranslate(langCode);
   };
 
   useEffect(() => {
@@ -54,14 +36,6 @@ export default function LanguageSwitcher() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const activeLanguage = localStorage.getItem("lang") || "en";
-      triggerGoogleTranslate(activeLanguage);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <div className="relative" ref={dropdownRef}>

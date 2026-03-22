@@ -8,8 +8,10 @@ import {
 import apiClient from "../../services/api"
 import SendMessageModal from "../../components/SendMessageModal"
 import { getImageUrl } from "../../utils/imageHelper"
+import { useLanguage } from "../../context/LanguageContext"
 
 export default function LostMatches() {
+  const { t } = useLanguage()
   const { id } = useParams()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,44 +31,39 @@ export default function LostMatches() {
       setLoading(true)
       const response = await apiClient.get('/matches')
       let allMatches = response.data.data.matches || []
-      
-      if (id) {
-        allMatches = allMatches.filter(m => m.lost_item_id.toString() === id.toString())
-      }
-      
+      if (id) { allMatches = allMatches.filter(m => m.lost_item_id.toString() === id.toString()) }
       setMatches(allMatches)
       setError(null)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load matches')
+      setError(err.response?.data?.message || t("messages.operationFailed"))
     } finally {
       setLoading(false)
     }
   }
 
   const handleContactFinder = (match) => {
-    const itemData = {
-      id: match.found_item_id,
-      item_type: match.found_item_type,
-      category: match.found_category,
-      district: match.found_district,
-      contact_name: match.finder_name,
-      contact_phone: match.finder_phone,
-      user_id: match.finder_id,
-      item_source: 'found'
+    const itemData = { 
+      id: match.found_item_id, 
+      item_type: match.found_item_type, 
+      category: match.found_category, 
+      district: match.found_district, 
+      contact_name: match.finder_name, 
+      contact_phone: match.finder_phone, 
+      user_id: match.finder_id, 
+      item_source: 'found' 
     }
     setSelectedMatch(itemData)
     setMessageModalOpen(true)
   }
 
   const handleMarkReceived = async (matchId) => {
-    if (!window.confirm('Are you sure you want to confirm that you received your item back?')) { return }
+    if (!window.confirm(t("items.deleteConfirm"))) return
     try {
       setUpdatingMatch(matchId)
       await apiClient.put(`/matches/${matchId}/complete`, { notes: 'Item received by owner' })
       await fetchMatches()
-      alert('✅ Item marked as received successfully!')
     } catch (err) {
-      alert('❌ Failed to mark item as received: ' + (err.response?.data?.message || err.message))
+      alert('❌ ' + (err.response?.data?.message || err.message))
     } finally {
       setUpdatingMatch(null)
     }
@@ -85,62 +82,57 @@ export default function LostMatches() {
       setIsPayModalOpen(false)
       await fetchMatches()
     } catch (err) {
-      alert('❌ Failed to submit payment: ' + (err.response?.data?.message || err.message))
+      alert('❌ ' + (err.response?.data?.message || err.message))
     } finally {
       setUpdatingMatch(null)
     }
   }
 
   const handleDeleteMatch = async (matchId) => {
-    if (!window.confirm('Are you sure you want to dismiss this match? It will be removed from your list.')) { return }
+    if (!window.confirm(t("items.deleteConfirm"))) return
     try {
       setUpdatingMatch(matchId)
       await apiClient.delete(`/matches/${matchId}`)
       await fetchMatches()
     } catch (err) {
-      alert('❌ Failed to dismiss match: ' + (err.response?.data?.message || err.message))
+      alert('❌ ' + (err.response?.data?.message || err.message))
     } finally {
       setUpdatingMatch(null)
     }
   }
 
   const getStatusLabel = (status, match) => {
-    if (match && !match.is_verified) return 'Pending Admin Verification'
+    if (match && !match.is_verified) return t("matches.pendingVerification")
     if (match && !match.is_unlocked) {
-      if (match.payment_status === 'pending_admin_approval') return 'Payment Verification Pending'
-      return 'Awaiting Your Payment'
+      if (match.payment_status === 'pending_admin_approval') return t("matches.verifyingPayment")
+      return t("matches.paymentPending")
     }
-    const map = { pending: 'Pending Contact', confirmed: 'In Contact', completed: 'Successful Recovery', rejected: 'Not a Match' }
+    const map = { 
+      pending: t("matches.pending"), 
+      confirmed: t("matches.confirmed"), 
+      completed: t("matches.completed"), 
+      rejected: t("matches.rejected") 
+    }
     return map[status] || status
   }
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="relative w-20 h-20">
-          <div className="absolute inset-0 border-4 border-green-100 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-green-600 rounded-full border-t-transparent animate-spin"></div>
-        </div>
-        <p className="mt-4 text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">Scanning for matches...</p>
+      <div className="flex flex-col items-center justify-center min-h-[600px] space-y-8 pb-32">
+        <div className="w-16 h-16 border-4 border-green-100 border-t-green-600 rounded-full animate-spin"></div>
+        <p className="font-bold text-slate-400 uppercase tracking-widest text-xs animate-pulse">{t("matches.scanningRegistry")}</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-red-100">
-        <div className="bg-red-500 p-8 text-center text-white">
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm overflow-hidden border border-red-100 my-12">
+        <div className="bg-red-50 p-12 text-center text-red-600">
           <FiAlertCircle className="w-16 h-16 mx-auto mb-4" />
-          <h2 className="text-2xl font-black">Connection Error</h2>
-        </div>
-        <div className="p-8 text-center">
-          <p className="text-slate-600 mb-8">{error}</p>
-          <button 
-            onClick={fetchMatches}
-            className="px-8 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg hover:bg-red-700 transition"
-          >
-            Try Again
-          </button>
+          <h2 className="text-2xl font-bold uppercase tracking-tight">{t("common.error")}</h2>
+          <p className="text-slate-500 font-medium mt-4 italic">"{error}"</p>
+          <button onClick={fetchMatches} className="mt-8 px-8 py-3 bg-red-600 text-white rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg">{t("messages.tryAgain")}</button>
         </div>
       </div>
     )
@@ -148,215 +140,157 @@ export default function LostMatches() {
 
   if (matches.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto py-8 md:py-12 px-4 md:px-6">
-        <div className="bg-white rounded-3xl md:rounded-[40px] shadow-2xl p-8 md:p-16 text-center border border-slate-100 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-green-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
-          <div className="relative z-10">
-            <div className="w-16 h-16 md:w-24 md:h-24 bg-green-100 text-green-600 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 rotate-12 transition-transform hover:rotate-0">
-              <FiEye className="w-8 h-8 md:w-12 md:h-12" />
-            </div>
-            <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">No matches yet.</h2>
-            <p className="text-slate-500 font-medium max-w-md mx-auto mb-8 md:mb-10 text-sm md:text-lg">
-              We haven't found any items that match your posting. You'll receive a notification as soon as someone reports a discovery.
-            </p>
-            <div className="flex items-center justify-center gap-4">
-               <button className="px-8 md:px-10 py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black text-xs md:text-sm shadow-xl hover:bg-slate-800 transition">Go to Dashboard</button>
-            </div>
+      <div className="max-w-4xl mx-auto py-20 px-6">
+        <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-slate-100 relative overflow-hidden">
+          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-sm">
+            <FiSearch className="w-8 h-8 text-slate-300" />
           </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">{t("matches.noMatches")}</h2>
+          <p className="text-slate-400 font-medium max-w-sm mx-auto text-sm leading-relaxed">
+            {t("matches.scanningRegistry")}
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-12 pb-32">
-      <div className="mb-8 md:mb-12">
-        <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-2">Your Matches</h1>
-        <p className="text-slate-500 font-bold text-[10px] md:text-xs max-w-lg uppercase tracking-widest opacity-70">
-          Review potential discoveries for your lost items. Securely unlock details after admin verification.
-        </p>
+    <div className="space-y-8 pb-32">
+      {/* HEADER SECTION */}
+      <div className="bg-gradient-to-r from-green-600 to-emerald-700 p-6 md:p-8 rounded-2xl border border-green-400 shadow-lg relative overflow-hidden group">
+        <div className="absolute inset-0 bg-white/5 opacity-10"></div>
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+              {t("matches.potentialMatches")}
+            </h1>
+            <p className="text-green-50 text-sm md:text-base opacity-90 max-w-2xl font-medium">
+              {t("landing.step2Desc")}
+            </p>
+          </div>
+          <div className="bg-white/20 backdrop-blur-md rounded-xl px-6 py-3 border border-white/30 text-center shrink-0">
+            <p className="text-[10px] font-bold text-white uppercase tracking-widest opacity-80 mb-1">{t("matches.matchedItems")}</p>
+            <p className="text-3xl font-black text-white leading-none">{matches.length}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-16">
+      <div className="grid gap-12">
         {Object.entries(matches.reduce((acc, match) => {
           const key = `${match.lost_item_type}-${match.lost_district}`;
           if (!acc[key]) acc[key] = { item_type: match.lost_item_type, district: match.lost_district, items: [] };
           acc[key].items.push(match);
           return acc;
         }, {})).map(([groupKey, group]) => (
-          <div key={groupKey} className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            {/* Group Header */}
-            <div className="flex items-start md:items-center gap-3 pb-3 border-b-2 border-slate-100">
-               <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 rounded-xl flex items-center justify-center text-white text-lg md:text-xl shadow-md shrink-0">
-                  <FiTag />
-               </div>
-               <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Matches For Your Posting</p>
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[8px] md:text-[10px] font-black">
-                      {group.items.length} HITS
-                    </span>
-                  </div>
-                  <h2 className="text-lg md:text-2xl font-black text-slate-900 leading-tight">{group.item_type} <span className="text-slate-300 font-medium font-serif italic ml-1">in {group.district}</span></h2>
-               </div>
+          <div key={groupKey} className="space-y-6">
+            <div className="flex items-center gap-3 pb-2 border-b border-slate-100 px-1">
+              <FiTag className="text-green-600 text-lg" />
+              <h2 className="text-lg font-bold text-slate-900">
+                {group.item_type} <span className="text-slate-400 font-medium ml-1">— {t(`districts.${group.district?.toLowerCase()}`) || group.district}</span>
+              </h2>
+              <span className="ml-auto px-2.5 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold border border-green-100 uppercase tracking-widest">{group.items.length} {t("matches.potentialMatches")}</span>
             </div>
 
-            {/* Matches in this group */}
-            <div className="grid gap-8 mt-8">
+            <div className="grid gap-8">
               {group.items.map((match) => (
-                <div 
-                  key={match.id} 
-                  className="group relative bg-white rounded-2xl md:rounded-[32px] border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden"
-                >
-                  <div className="flex flex-col lg:flex-row h-full">
-                    {/* Image Section */}
-                    <div className="lg:w-64 h-48 lg:h-auto relative overflow-hidden bg-slate-100">
-                        {match.found_image_url && match.is_unlocked ? (
-                          <img 
-                            src={getImageUrl(match.found_image_url)} 
-                            alt={match.found_item_type}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          />
-                        ) : match.found_image_url && !match.is_unlocked ? (
-                          <div className="w-full h-full relative">
-                            <img 
-                              src={getImageUrl(match.found_image_url)} 
-                              alt="Blurred"
-                              className="w-full h-full object-cover blur-2xl opacity-50"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <FiShield className="w-12 h-12 text-slate-400 opacity-50" />
-                            </div>
+                <div key={match.id} className="group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-green-100 transition-all duration-300 overflow-hidden">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="md:w-64 h-52 md:h-auto relative overflow-hidden bg-slate-900 shrink-0">
+                      {match.found_image_url && match.is_unlocked ? (
+                        <img src={getImageUrl(match.found_image_url)} alt={match.found_item_type} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100" />
+                      ) : match.found_image_url && !match.is_unlocked ? (
+                        <div className="w-full h-full relative group/locked">
+                          <img src={getImageUrl(match.found_image_url)} alt="Blurred" className="w-full h-full object-cover blur-2xl opacity-30" />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/20">
+                            <FiShield className="w-10 h-10 text-white/50 mb-2" />
+                            <p className="text-[10px] font-bold text-white uppercase tracking-widest bg-slate-900/60 px-3 py-1 rounded-full">{t("matches.protectedContact")}</p>
                           </div>
-                        ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                          <FiFileText className="w-16 h-16" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest mt-2">No Image available</span>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-700 bg-slate-50">
+                          <FiFileText className="w-10 h-10 opacity-10" />
+                          <span className="text-[10px] font-bold uppercase mt-2 tracking-widest text-slate-300">{t("items.noImage")}</span>
                         </div>
                       )}
-                      <div className="absolute top-4 left-4">
-                        <div className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-black text-slate-900 uppercase tracking-widest shadow-lg">
-                          {match.found_category}
-                        </div>
-                      </div>
-                      <div className="absolute bottom-4 right-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-xl backdrop-blur-md ${
-                          match.match_score >= 80 ? 'bg-green-500/90 text-white' : 'bg-amber-500/90 text-white'
-                        }`}>
-                          <div className="text-center">
-                            <p className="text-base font-bold leading-none">{Math.round(match.match_score)}%</p>
-                            <p className="text-[7px] font-bold uppercase opacity-60">Score</p>
+                      <div className="absolute top-4 right-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-white/20 backdrop-blur-md font-bold text-white text-center ${match.match_score >= 80 ? 'bg-green-600' : 'bg-amber-500'}`}>
+                          <div>
+                            <p className="text-sm leading-none">{Math.round(match.match_score)}%</p>
+                            <p className="text-[7px] font-bold opacity-70 uppercase mt-0.5">{t("matches.matchPercentage")}</p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Content Section */}
-                    <div className="flex-1 p-5 md:p-8 flex flex-col">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="mb-4">
-                          <h3 className="text-lg md:text-xl font-black text-slate-900 group-hover:text-green-600 transition-colors uppercase tracking-tight leading-tight">{match.found_item_type}</h3>
-                          <div className="flex flex-wrap items-center gap-3 mt-1 text-slate-400 text-[10px] md:text-xs font-bold">
-                             <span className="flex items-center gap-1"><FiMapPin /> {match.found_district}</span>
-                             <span className="flex items-center gap-1"><FiClock /> {new Date(match.matched_at).toLocaleDateString()}</span>
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-between space-y-6">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t("items.myLostItems")}:</span>
+                            <h4 className="text-xl font-bold text-slate-900 leading-none">{match.found_item_type}</h4>
+                          </div>
+                          <div className="flex flex-wrap gap-4 mt-2">
+                             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                               <FiMapPin className="text-green-600" /> {match.is_unlocked ? (t(`districts.${match.found_district?.toLowerCase()}`) || match.found_district) : t("matches.protectedContact")}
+                             </div>
+                             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                               <FiClock className="text-green-600" /> {new Date(match.matched_at).toLocaleDateString()}
+                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border mb-2 ${
-                            match.status === 'completed' ? 'bg-green-50 text-green-600 border-green-100' : 
-                            match.status === 'confirmed' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-blue-50 text-blue-600 border-blue-100'
-                          }`}>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${match.status === 'completed' ? 'bg-emerald-50 text-green-700 border-green-100' : match.status === 'confirmed' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
                             {getStatusLabel(match.status, match)}
                           </span>
                           {!match.is_unlocked && match.is_verified && (
-                             <span className="flex items-center gap-1 text-[10px] font-black text-rose-600 uppercase tracking-tight">
-                               <FiDollarSign /> Fee: {match.admin_fee} RWF
-                             </span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-500 uppercase bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100"><FiDollarSign /> {match.admin_fee} RWF Fee</span>
                           )}
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
-                        <div className="bg-slate-50 p-4 rounded-xl md:rounded-2xl border border-slate-100">
-                          <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Found Item</p>
-                          <p className="text-xs md:text-sm font-bold text-slate-700 truncate">{match.found_item_type}</p>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="bg-green-50/30 p-5 rounded-xl border border-green-100 shadow-sm relative overflow-hidden group/mini">
+                          <div className="absolute top-0 right-0 w-8 h-8 bg-green-500/5 rounded-full -mr-4 -mt-4"></div>
+                          <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1 shadow-none">{t("items.myFoundItems")}</p>
+                          <p className="font-bold text-slate-900 text-sm">{match.found_item_type}</p>
                         </div>
-                        <div className="bg-slate-50 p-4 rounded-xl md:rounded-2xl border border-slate-100">
-                          <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Matches Your Post</p>
-                          <p className="text-xs md:text-sm font-bold text-slate-700 truncate">{match.lost_item_type}</p>
+                        <div className="bg-slate-900 p-5 rounded-xl text-white shadow-sm relative overflow-hidden group/mini">
+                           <div className="absolute top-0 right-0 w-8 h-8 bg-white/5 rounded-full -mr-4 -mt-4"></div>
+                          <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{t("items.myLostItems")}</p>
+                          <p className="font-bold text-white text-sm">{match.lost_item_type}</p>
                         </div>
                       </div>
 
-                      <div className="mt-auto flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
-                         {!match.is_unlocked ? (
-                           match.is_verified ? (
+                      <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-50 mt-2">
+                        {!match.is_unlocked ? (
+                          match.is_verified ? (
                             match.payment_status === 'pending_admin_approval' ? (
-                               <button
-                                disabled
-                                className="flex-1 min-w-[200px] py-4 bg-amber-50 text-amber-600 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs border border-amber-100 flex items-center justify-center gap-2 cursor-wait"
-                              >
-                                <FiClock className="animate-spin" />
-                                Payment Verification in Progress
+                              <button disabled className="flex-1 min-w-[180px] py-4 bg-amber-50 text-amber-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-amber-100 flex items-center justify-center gap-2 cursor-wait">
+                                <FiClock className="animate-spin text-sm" /> {t("matches.verifyingPayment")}
                               </button>
                             ) : (
-                               <button
-                                onClick={() => handlePayToUnlock(match)}
-                                disabled={updatingMatch === match.id}
-                                className="flex-1 min-w-[180px] py-3 md:py-4 bg-green-600 text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2 group/btn"
-                              >
-                                <FiDollarSign className="w-3.5 h-3.5" />
-                                Unlock Full Details ({match.admin_fee} RWF)
+                              <button onClick={() => handlePayToUnlock(match)} disabled={updatingMatch === match.id} className="flex-1 min-w-[150px] py-4 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2">
+                                <FiDollarSign className="text-sm" /> {t("matches.unlockDetails")} ({match.admin_fee} RWF)
                               </button>
                             )
-                           ) : (
-                            <button
-                              disabled
-                              className="flex-1 min-w-[200px] py-4 bg-slate-200 text-slate-400 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                              <FiClock className="w-4 h-4" />
-                              Awaiting Admin Verification
+                          ) : (
+                            <button disabled className="flex-1 min-w-[180px] py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-[10px] uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2">
+                              <FiShield className="text-sm" /> {t("matches.pendingVerification")}
                             </button>
-                           )
-                         ) : (
-                           <button
-                            onClick={() => handleContactFinder(match)}
-                            className="flex-1 min-w-[160px] py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 group/btn"
-                          >
-                            <FiMessageSquare className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5" />
-                            Contact Finder
+                          )
+                        ) : (
+                          <button onClick={() => handleContactFinder(match)} className="flex-1 min-w-[150px] bg-slate-950 text-white py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2">
+                            <FiMessageSquare className="text-sm" /> {t("matches.contactFinder")}
                           </button>
-                         )}
+                        )}
                         {match.status !== 'completed' && (
-                          <button
-                            onClick={() => handleMarkReceived(match.id)}
-                            disabled={updatingMatch === match.id}
-                            className="flex-1 sm:flex-none px-6 md:px-8 py-3 md:py-4 bg-green-500 text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs hover:bg-green-600 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            {updatingMatch === match.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
-                            ) : (
-                              <FiCheckCircle className="w-4 h-4" />
-                            )}
-                            I Got It Back
+                          <button onClick={() => handleMarkReceived(match.id)} disabled={updatingMatch === match.id} className="flex-1 sm:flex-none px-8 py-4 bg-green-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
+                            {updatingMatch === match.id ? <div className="animate-spin rounded-full h-3 w-3 border-2 border-white/30 border-t-white"></div> : <FiCheckCircle className="text-sm" />} {t("matches.propertyRecovered")}
                           </button>
                         )}
                         <div className="flex gap-2">
-                          <button 
-                            onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }}
-                            className="flex-1 sm:w-12 h-12 md:h-14 bg-slate-100 text-slate-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"
-                            title="View Full Details"
-                          >
-                            <FiEye className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteMatch(match.id)}
-                            disabled={updatingMatch === match.id}
-                            className="flex-1 sm:w-12 h-12 md:h-14 bg-red-50 text-red-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition disabled:opacity-50"
-                            title="Dismiss Match"
-                          >
-                            <FiTrash2 className="w-5 h-5" />
-                          </button>
+                          <button onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }} className="w-12 h-12 bg-slate-50 text-slate-500 rounded-xl flex items-center justify-center border border-slate-100 hover:bg-green-50 hover:text-green-600 transition-all" title={t("matches.viewDetails")}><FiEye /></button>
+                          <button onClick={() => handleDeleteMatch(match.id)} disabled={updatingMatch === match.id} className="w-12 h-12 bg-red-50 text-red-500 rounded-xl flex items-center justify-center border border-red-100 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50" title={t("matches.dismissMatch")}><FiTrash2 /></button>
                         </div>
                       </div>
                     </div>
@@ -368,216 +302,156 @@ export default function LostMatches() {
         ))}
       </div>
 
-      {/* Detail Modal */}
+      {/* DETAIL MODAL */}
       {isDetailModalOpen && viewingMatch && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl" onClick={() => setIsDetailModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-2xl md:rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-md" onClick={() => setIsDetailModalOpen(false)}></div>
+          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300">
             <button 
-              onClick={() => setIsDetailModalOpen(false)}
-              className="absolute top-6 right-6 z-10 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 transition"
+              onClick={() => setIsDetailModalOpen(false)} 
+              className="absolute top-4 right-4 z-20 w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 transition-all shadow-md"
             >
-              <FiX className="w-5 h-5 md:w-6 md:h-6" />
+              <FiX />
             </button>
-            <div className="md:w-1/2 bg-slate-900 flex items-center justify-center p-6 md:p-12">
-               {viewingMatch.found_image_url && viewingMatch.is_unlocked ? (
-                 <img 
-                  src={getImageUrl(viewingMatch.found_image_url)} 
-                  className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
-                  alt="Found" 
-                 />
-               ) : (
-                  <div className="text-center">
-                    <FiShield className="w-24 h-24 text-slate-700 mx-auto mb-6" />
-                    <p className="text-slate-500 font-black uppercase tracking-widest text-sm">Image Hidden Pending Unlock</p>
-                  </div>
-               )}
+
+            <div className="md:w-1/2 h-64 md:h-auto bg-slate-900 flex items-center justify-center relative overflow-hidden">
+               <div className="absolute inset-0 bg-slate-800/10 [background-size:20px_20px] bg-[radial-gradient(circle,rgba(255,255,255,0.05)_1px,transparent_1px)]"></div>
+              {viewingMatch.found_image_url && viewingMatch.is_unlocked ? (
+                <img src={getImageUrl(viewingMatch.found_image_url)} className="w-full h-full object-contain p-6 relative z-10" alt="Found Product Visualization" />
+              ) : (
+                <div className="text-center z-10 px-8">
+                  <FiShield className="w-16 h-16 text-slate-700 mx-auto mb-4 opacity-30" />
+                  <p className="text-slate-500 font-bold uppercase tracking-widest text-[9px]">{t("matches.protectedContact")}</p>
+                </div>
+              )}
             </div>
-            <div className="md:w-1/2 p-6 md:p-12 overflow-y-auto space-y-6 md:space-y-8 bg-white">
-               <div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest border border-green-200 mb-2 md:mb-3 inline-block">Matched Item Detail</span>
-                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{viewingMatch.found_item_type}</h2>
-                  <p className="text-slate-400 font-bold mt-1 uppercase tracking-widest text-[8px] md:text-[9px]">Reference Match #{viewingMatch.id}</p>
-               </div>
-               
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                  <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
-                    <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2 tracking-widest leading-none"><FiMapPin /> Location</p>
-                    <p className="text-sm font-bold text-slate-700">{viewingMatch.is_unlocked ? viewingMatch.found_district : 'Information Locked'}</p>
-                  </div>
-                  <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><FiCalendar /> Date Found</p>
-                    <p className="text-sm font-bold text-slate-700">{new Date(viewingMatch.matched_at).toLocaleDateString()}</p>
-                  </div>
-               </div>
 
-               <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-4 flex items-center gap-2"><FiInfo /> Discovery Note</p>
-                  <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
-                    "{viewingMatch.found_description || 'The finder has provided a detailed description that will be available once the match is unlocked.'}"
-                  </p>
-               </div>
+            <div className="flex-1 p-8 md:p-12 overflow-y-auto space-y-8 bg-white">
+              <div className="space-y-4">
+                <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-green-100">{t("items.itemDetails")}</span>
+                <h2 className="text-3xl font-bold text-slate-900">{viewingMatch.found_item_type}</h2>
+              </div>
 
-               {viewingMatch.is_unlocked ? (
-                 <div className="space-y-6 pt-4 border-t border-slate-100 animate-in fade-in duration-500">
-                    <p className="text-[10px] font-black text-green-600 uppercase tracking-[3px]">Finder Details (Unlocked)</p>
-                    <div className="space-y-4">
-                       <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center"><FiUser /></div>
-                          <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase">Name</p>
-                            <p className="font-bold text-slate-900">{viewingMatch.finder_name}</p>
-                          </div>
-                       </div>
-                       <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center"><FiPhone /></div>
-                          <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase">Contact</p>
-                            <p className="font-bold text-slate-900">{viewingMatch.finder_phone}</p>
-                          </div>
-                       </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm font-medium">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("items.location")}</p>
+                  <p className="text-sm font-bold text-slate-800">{viewingMatch.is_unlocked ? (t(`districts.${viewingMatch.found_district?.toLowerCase()}`) || viewingMatch.found_district) : t("matches.protectedContact")}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm font-medium">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("items.date")}</p>
+                  <p className="text-sm font-bold text-slate-800">{new Date(viewingMatch.matched_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <div className="bg-green-50/20 p-6 rounded-2xl border border-green-100/50">
+                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-3 flex items-center gap-2"><FiInfo /> {t("items.description")}</p>
+                <p className="text-slate-600 text-sm italic leading-relaxed font-medium">
+                  "{viewingMatch.found_description || t("matches.scanningRegistry")}"
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("profile.personalInfo")}</h4>
+                {viewingMatch.is_unlocked ? (
+                  <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-5 shadow-xl relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-full blur-xl transition-transform group-hover:scale-150"></div>
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="w-12 h-12 bg-white/10 text-white rounded-xl flex items-center justify-center text-lg border border-white/10"><FiUser /></div>
+                      <div>
+                        <p className="text-base font-bold text-white leading-none capitalize">{viewingMatch.finder_name}</p>
+                        <p className="text-[11px] font-bold text-green-400 flex items-center gap-1.5 mt-2 uppercase tracking-tight"><FiPhone className="text-green-500" /> {viewingMatch.finder_phone}</p>
+                      </div>
                     </div>
-                 </div>
-               ) : (
-                 <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
-                    <FiLock className="mx-auto text-slate-300 mb-2" />
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Finder identity is hidden until unlocked</p>
-                 </div>
-               )}
+                    <button onClick={() => handleContactFinder(viewingMatch)} className="w-full py-3 bg-white text-slate-900 rounded-xl font-bold uppercase tracking-widest hover:bg-green-500 hover:text-white transition-all text-[10px] relative z-10 shadow-lg">{t("matches.contactFinder")}</button>
+                  </div>
+                ) : (
+                  <div className="p-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                    <FiShield className="mx-auto text-slate-300 mb-3 w-8 h-8 opacity-40" />
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t("matches.protectedContact")}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Payment Modal */}
       {isPayModalOpen && payingMatch && (
-        <PaymentModal 
-          match={payingMatch}
-          onClose={() => setIsPayModalOpen(false)}
-          onSubmit={handlePaymentSubmit}
-          loading={updatingMatch === payingMatch.id}
-        />
+        <PaymentModal match={payingMatch} onClose={() => setIsPayModalOpen(false)} onSubmit={handlePaymentSubmit} loading={updatingMatch === payingMatch.id} />
       )}
 
-      {/* Messaging Modal */}
       {messageModalOpen && selectedMatch && (
-        <SendMessageModal 
-          isOpen={messageModalOpen} 
-          onClose={() => setMessageModalOpen(false)} 
-          item={selectedMatch}
-          isFoundItem={true}
-        />
+        <SendMessageModal isOpen={messageModalOpen} onClose={() => setMessageModalOpen(false)} item={selectedMatch} isFoundItem={true} />
       )}
     </div>
   )
 }
 
 function PaymentModal({ match, onClose, onSubmit, loading }) {
-  const [formData, setFormData] = useState({
-    payment_method: 'Mobile Money (MTN)',
-    payment_phone: '',
-    payment_name: '',
-    transaction_id: ''
-  })
-
-  const adminPhone = "+250 788 000 000"; // Platform Admin Phone
+  const { t } = useLanguage()
+  const [formData, setFormData] = useState({ payment_method: 'Mobile Money (MTN)', payment_phone: '', payment_name: '', transaction_id: '' })
+  const adminPhone = "+250 788 000 000";
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.payment_phone || !formData.transaction_id || !formData.payment_name) {
-      alert('Please fill in all transaction details.');
-      return;
-    }
+    if (!formData.payment_phone || !formData.transaction_id || !formData.payment_name) { alert(t("validation.required")); return; }
     onSubmit(formData);
   }
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose}></div>
-      <div className="relative bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="bg-slate-900 p-8 text-white">
-           <h2 className="text-xl font-black tracking-tight mb-2">Unlock Match Full Details</h2>
-           <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Fee Required: {match.admin_fee} RWF</p>
+      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" onClick={onClose}></div>
+      <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="bg-slate-950 p-8 md:p-10 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/20 rounded-full blur-[50px] -mr-16 -mt-16"></div>
+          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-bold uppercase tracking-widest inline-block mb-4">Secure Checkout</span>
+          <h2 className="text-3xl font-bold tracking-tight uppercase mb-1">{t("matches.unlockDetails")}</h2>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">Service Fee: <span className="text-white text-sm">{match.admin_fee} RWF</span></p>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-10 space-y-8">
-           <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100">
-              <p className="text-[10px] font-black text-blue-600 uppercase mb-4 flex items-center gap-2"><FiInfo /> Payment Instructions</p>
-              <div className="space-y-4 text-sm">
-                <p className="font-bold text-slate-800 leading-tight">1. Send <span className="text-blue-700 font-black">{match.admin_fee} RWF</span> to Admin via MoMo:</p>
-                <div className="bg-white p-4 rounded-xl border border-blue-200 flex justify-between items-center group shadow-sm">
-                   <span className="font-black text-blue-800 tracking-wider font-mono text-lg">{adminPhone}</span>
-                   <span className="text-[9px] font-black text-slate-400 group-hover:text-blue-600 transition uppercase tracking-tighter">Copy Number</span>
-                </div>
-                <p className="text-slate-500 font-medium text-xs">2. After payment, fill in the details below so we can verify and unlock your match.</p>
+        <form onSubmit={handleSubmit} className="p-8 md:p-10 space-y-8 bg-white">
+          <div className="bg-green-50 p-6 rounded-2xl border border-green-100 shadow-sm">
+            <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-4 flex items-center gap-2"><FiInfo /> Recovery Instruction</p>
+            <div className="space-y-4 text-xs font-medium">
+              <p className="text-slate-700">1. Transfer <span className="text-green-600 font-bold">{match.admin_fee} RWF</span> via MoMo to the official registry:</p>
+              <div className="bg-white px-4 py-3 rounded-xl border border-green-200 text-center shadow-inner">
+                <p className="font-bold text-slate-900 tracking-widest font-mono text-lg">{adminPhone}</p>
               </div>
-           </div>
+              <p className="text-slate-400 text-[10px] uppercase leading-relaxed">2. Input the reference details below to authorize immediate unlock.</p>
+            </div>
+          </div>
 
-           <div className="grid gap-6">
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Payment Method</label>
-                 <select 
-                   value={formData.payment_method}
-                   onChange={(e) => setFormData({...formData, payment_method: e.target.value})}
-                   className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
-                 >
-                   <option>Mobile Money (MTN)</option>
-                   <option>Airtel Money</option>
-                   <option>Bank Transfer</option>
-                 </select>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{t("items.category")}</label>
+                <select value={formData.payment_method} onChange={(e) => setFormData({...formData, payment_method: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-900 focus:border-green-500 transition-all text-xs">
+                  <option>Mobile Money (MTN)</option>
+                  <option>Airtel Money</option>
+                  <option>Bank Transfer</option>
+                </select>
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Your Payment Phone</label>
-                    <input 
-                      type="text"
-                      placeholder="e.g. 078XXXXXXX"
-                      value={formData.payment_phone}
-                      onChange={(e) => setFormData({...formData, payment_phone: e.target.value})}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Sender Full Name</label>
-                    <input 
-                      type="text"
-                      placeholder="Name on Account"
-                      value={formData.payment_name}
-                      onChange={(e) => setFormData({...formData, payment_name: e.target.value})}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
-                    />
-                 </div>
-              </div>
-
               <div className="space-y-2">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Transaction ID / Reference Number</label>
-                 <input 
-                   type="text"
-                   placeholder="e.g. TX12345678"
-                   value={formData.transaction_id}
-                   onChange={(e) => setFormData({...formData, transaction_id: e.target.value})}
-                   className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20"
-                 />
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{t("auth.phone")}</label>
+                <input type="text" placeholder="078..." value={formData.payment_phone} onChange={(e) => setFormData({...formData, payment_phone: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-900 focus:border-green-500 transition-all text-xs" />
               </div>
-           </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{t("auth.firstName")}</label>
+              <input type="text" placeholder="..." value={formData.payment_name} onChange={(e) => setFormData({...formData, payment_name: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-900 focus:border-green-500 transition-all text-xs" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Reference Code / TxID</label>
+              <input type="text" placeholder="..." value={formData.transaction_id} onChange={(e) => setFormData({...formData, transaction_id: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-900 focus:border-green-500 transition-all text-xs" />
+            </div>
+          </div>
 
-           <button 
-             type="submit"
-             disabled={loading}
-             className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-3 disabled:opacity-50"
-           >
-             {loading ? <FiClock className="animate-spin" /> : <FiCheckCircle />}
-             Submit Payment & Notify Admin
-           </button>
+          <button type="submit" disabled={loading} className="w-full py-4 bg-slate-950 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-xl hover:bg-green-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
+            {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div> : <FiCheckCircle />}
+            {t("common.submit")}
+          </button>
         </form>
       </div>
     </div>
   )
-}
-
-function FiLock({ className }) {
-  return (
-    <svg className={className} stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-  );
 }

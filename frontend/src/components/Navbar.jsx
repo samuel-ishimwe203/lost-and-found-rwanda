@@ -4,8 +4,10 @@ import { Search } from "lucide-react";
 import AuthModal from "./AuthModal";
 import SearchModal from "./SearchModal";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Navbar({ isAuthenticated = false, onLogout, onLoginSuccess, userRole }) {
+  const { t } = useLanguage();
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -60,27 +62,26 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
     };
   }, [menuOpen]);
 
-  // Handle mobile menu close on navigation
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
   const lostLinks = [
-    { label: "Dashboard Home", to: "/lost-dashboard" },
-    { label: "Profile", to: "/lost-dashboard/profile" },
-    { label: "My Postings", to: "/lost-dashboard/my-postings" },
-    { label: "My Matches", to: "/lost-dashboard/matches" },
-    { label: "Create Post", to: "/lost-dashboard/create-post" },
-    { label: "Messages", to: "/lost-dashboard/messages" },
+    { label: t("nav.dashboard"), to: "/lost-dashboard" },
+    { label: t("nav.profile"), to: "/lost-dashboard/profile" },
+    { label: t("items.myLostItems"), to: "/lost-dashboard/my-postings" },
+    { label: t("matches.matchedItems"), to: "/lost-dashboard/matches" },
+    { label: t("items.postLostItem"), to: "/lost-dashboard/create-post" },
+    { label: t("notifications.notifications"), to: "/lost-dashboard/messages" },
   ];
 
   const foundLinks = [
-    { label: "Dashboard Home", to: "/found-dashboard" },
-    { label: "Profile", to: "/found-dashboard/profile" },
-    { label: "My Found Items", to: "/found-dashboard/my-found-items" },
-    { label: "Post Found Item", to: "/found-dashboard/post-found-item" },
-    { label: "Matches", to: "/found-dashboard/matches" },
-    { label: "Messages", to: "/found-dashboard/messages" },
+    { label: t("nav.dashboard"), to: "/found-dashboard" },
+    { label: t("nav.profile"), to: "/found-dashboard/profile" },
+    { label: t("items.myFoundItems"), to: "/found-dashboard/my-found-items" },
+    { label: t("items.postFoundItem"), to: "/found-dashboard/post-found-item" },
+    { label: t("matches.potentialMatches"), to: "/found-dashboard/matches" },
+    { label: t("notifications.notifications"), to: "/found-dashboard/messages" },
   ];
 
   const menuLinks = userRole === "lost_user" ? lostLinks : userRole === "found_user" ? foundLinks : [];
@@ -90,7 +91,7 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
       <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-[100] h-[74px] flex items-center">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 w-full grid grid-cols-3 items-center">
           
-          {/* LEFT SECTION: Hamburger / Sidebar Toggle */}
+          {/* LEFT SECTION */}
           <div className="flex items-center">
             {isDashboard ? (
               <button 
@@ -118,21 +119,17 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
               </button>
             )}
 
-            {/* Desktop Navigation Links (Public only) */}
             {!isDashboard && (
               <div className="hidden md:flex items-center gap-1">
-                <Link to="/" className={`px-4 py-2 rounded-full font-bold transition text-xs uppercase tracking-widest ${location.pathname === '/' ? 'bg-gray-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50'}`}>Home</Link>
-                <Link to="/postings" className={`px-4 py-2 rounded-full font-bold transition text-xs uppercase tracking-widest ${location.pathname === '/postings' ? 'bg-gray-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50'}`}>Browse</Link>
+                <Link to="/" className={`px-4 py-2 rounded-full font-bold transition text-xs uppercase tracking-widest ${location.pathname === '/' ? 'bg-gray-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50'}`}>{t("nav.home")}</Link>
+                <Link to="/postings" className={`px-4 py-2 rounded-full font-bold transition text-xs uppercase tracking-widest ${location.pathname === '/postings' ? 'bg-gray-100 text-blue-900' : 'text-gray-600 hover:bg-gray-50'}`}>{t("nav.browse")}</Link>
               </div>
             )}
           </div>
 
-          {/* CENTER SECTION: Logo */}
+          {/* CENTER SECTION */}
           <div className="flex justify-center">
-            <Link 
-              to="/" 
-              className="flex flex-col items-center justify-center leading-none group notranslate relative pt-4"
-            >
+            <Link to="/" className="flex flex-col items-center justify-center leading-none group notranslate relative pt-4">
               <div className="absolute top-0 flex flex-col items-center">
                 <div className="w-12 sm:w-16">
                   <svg viewBox="0 0 100 30" className="w-full h-auto drop-shadow-sm transform translate-x-1 sm:translate-x-2 -translate-y-1">
@@ -141,7 +138,6 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
                   </svg>
                 </div>
               </div>
-
               <div className="flex items-center z-10 relative">
                 <span className="text-xl sm:text-2xl font-black tracking-tighter text-[#1e3a8a] group-hover:text-blue-800 transition">LOST</span>
                 <span className="text-xl sm:text-2xl font-black tracking-tighter text-[#c1272d] group-hover:text-red-700 transition">FOUND</span>
@@ -149,17 +145,16 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
             </Link>
           </div>
 
-          {/* RIGHT SECTION: Search & Account */}
+          {/* RIGHT SECTION */}
           <div className="flex items-center justify-end gap-2 md:gap-4" ref={menuRef}>
             <button
               onClick={() => setSearchOpen(true)}
               className="text-gray-500 hover:text-[#1e3a8a] transition p-2 flex items-center justify-center"
-              aria-label="Search"
+              aria-label={t("nav.search")}
             >
               <Search size={22} strokeWidth={2} />
             </button>
 
-            {/* Language Switcher */}
             <div className="border-l border-gray-200 pl-2 ml-1">
               <LanguageSwitcher />
             </div>
@@ -170,7 +165,7 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
                   onClick={openLogin}
                   className="bg-[#2d4990] text-white font-black text-[10px] uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-[#1e3a8a] transition shadow-lg shadow-blue-900/10"
                 >
-                  Join
+                  {t("auth.login")}
                 </button>
               ) : (
                 <div className="relative">
@@ -185,14 +180,14 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
                   {menuOpen && (
                     <div className="absolute right-0 mt-4 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 py-3 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                        <div className="px-5 py-2 mb-2 border-b border-slate-50">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Type</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("profile.userRole")}</p>
                           <p className="text-sm font-black text-blue-900">{userRole?.replace('_', ' ')}</p>
                        </div>
                        {menuLinks.map((link) => (
                          <Link key={link.to} to={link.to} className="block px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600" onClick={() => setMenuOpen(false)}>{link.label}</Link>
                        ))}
                        <div className="mt-2 pt-2 border-t border-slate-50">
-                         <button onClick={() => { setMenuOpen(false); onLogout(); }} className="w-full text-left px-5 py-2.5 text-xs font-black text-red-600 hover:bg-red-50">Log out</button>
+                         <button onClick={() => { setMenuOpen(false); onLogout(); }} className="w-full text-left px-5 py-2.5 text-xs font-black text-red-600 hover:bg-red-50">{t("nav.logout")}</button>
                        </div>
                     </div>
                   )}
@@ -202,40 +197,28 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
           </div>
         </div>
 
-        {/* Mobile Menu Drawer (Public Only) */}
+        {/* Mobile Menu */}
         {!isDashboard && (
           <div className={`md:hidden absolute top-[74px] left-0 right-0 bg-white border-b border-gray-100 overflow-hidden transition-all duration-500 ease-in-out z-50 ${mobileMenuOpen ? 'max-h-[80vh] opacity-100 shadow-2xl' : 'max-h-0 opacity-0 pointer-events-none'}`}>
             <div className="px-6 py-8 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-gray-100 sm:hidden">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Language</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("language.selectLanguage")}</p>
                 <LanguageSwitcher />
               </div>
 
               <div className="grid grid-cols-1 gap-2">
-                <Link to="/" className="px-5 py-4 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition">Home</Link>
-                <Link to="/postings" className="px-5 py-4 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition">Browse Items</Link>
-                <div 
-                  onClick={() => {
-                    if (location.pathname === '/') {
-                      document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-                    } else {
-                      navigate('/#how-it-works');
-                    }
-                  }}
-                  className="px-5 py-4 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition cursor-pointer"
-                >
-                  How it Works
-                </div>
+                <Link to="/" className="px-5 py-4 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition">{t("nav.home")}</Link>
+                <Link to="/postings" className="px-5 py-4 text-slate-700 font-black text-xs uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition">{t("nav.browse")}</Link>
               </div>
 
               {!isAuthenticated ? (
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={openLogin} className="py-4 text-center text-slate-900 font-black text-[10px] uppercase tracking-widest border border-slate-200 rounded-2xl bg-slate-50 shadow-sm">Log In</button>
-                  <button onClick={openRegister} className="py-4 text-center bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20">Join Us</button>
+                  <button onClick={openLogin} className="py-4 text-center text-slate-900 font-black text-[10px] uppercase tracking-widest border border-slate-200 rounded-2xl bg-slate-50 shadow-sm">{t("auth.login")}</button>
+                  <button onClick={openRegister} className="py-4 text-center bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20">{t("auth.register")}</button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5">Your Dashboard</p>
+                <div className="space-y-4 pt-4 border-t border-slate-50">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5">{t("nav.dashboard")}</p>
                   <div className="grid grid-cols-1 gap-2">
                     {menuLinks.map((link) => (
                       <Link key={link.to} to={link.to} className="px-5 py-4 text-blue-600 font-black text-xs uppercase tracking-widest hover:bg-blue-50 rounded-2xl transition flex justify-between items-center">
@@ -243,7 +226,7 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
                         <span>→</span>
                       </Link>
                     ))}
-                    <button onClick={onLogout} className="w-full py-4 text-red-600 font-black text-xs uppercase tracking-widest hover:bg-red-50 rounded-2xl transition text-left px-5">Sign Out</button>
+                    <button onClick={onLogout} className="w-full py-4 text-red-600 font-black text-xs uppercase tracking-widest hover:bg-red-50 rounded-2xl transition text-left px-5">{t("nav.logout")}</button>
                   </div>
                 </div>
               )}

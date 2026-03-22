@@ -4,8 +4,11 @@ import apiClient from "../../services/api";
 import { useContext } from "react";
 import { PostsContext } from "../../context/PostsContext";
 import { getImageUrl } from "../../utils/imageHelper";
+import { useLanguage } from "../../context/LanguageContext";
+import { FiSave, FiX, FiCheckCircle, FiAlertCircle, FiUploadCloud, FiInbox, FiTag, FiClock, FiMapPin, FiUser, FiSmartphone, FiDollarSign } from "react-icons/fi";
 
 export default function EditPost() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const { refreshPosts } = useContext(PostsContext);
@@ -73,14 +76,14 @@ export default function EditPost() {
         }
       } catch (err) {
         console.error('Fetch error:', err);
-        setError("Failed to load item details.");
+        setError(t("messages.operationFailed"));
       } finally {
         setFetching(false);
       }
     };
 
     fetchItemDetails();
-  }, [id]);
+  }, [id, t]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -94,11 +97,11 @@ export default function EditPost() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setError("Image size should be less than 5MB");
+        setError(t("validation.fileTooBig"));
         return;
       }
       if (!file.type.startsWith('image/')) {
-        setError("Please select a valid image file");
+        setError(t("validation.invalidFileType"));
         return;
       }
       setFormData(prev => ({ ...prev, image: file }));
@@ -116,8 +119,6 @@ export default function EditPost() {
     setLoading(true);
 
     try {
-      // For updates, we can send JSON if no new image, or FormData if there is a new image
-      // Let's use FormData to be safe and consistent with create
       const submitData = new FormData();
       submitData.append('item_type', formData.item_type);
       submitData.append('description', formData.description);
@@ -135,7 +136,6 @@ export default function EditPost() {
       };
       submitData.append('additional_info', JSON.stringify(additionalInfo));
       
-      // Explicitly set holder_name and id_number if they are top-level columns now
       submitData.append('holder_name', formData.owner_name);
       submitData.append('id_number', formData.id_number);
 
@@ -149,12 +149,12 @@ export default function EditPost() {
         },
       });
       
-      setSuccess("Post updated successfully! Redirecting...");
+      setSuccess(t("items.itemUpdated"));
       if (refreshPosts) await refreshPosts();
       setTimeout(() => navigate('/lost-dashboard/my-postings'), 2000);
     } catch (err) {
       console.error('Update error:', err);
-      setError(err.response?.data?.message || 'Failed to update post. Please try again.');
+      setError(err.response?.data?.message || t("messages.operationFailed"));
     } finally {
       setLoading(false);
     }
@@ -163,213 +163,317 @@ export default function EditPost() {
   if (fetching) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div className="w-12 h-12 border-4 border-emerald-100 border-t-[#10b981] rounded-full animate-spin"></div>
       </div>
     );
   }
 
+  const districts = ["Kigali", "Gasabo", "Kicukiro", "Nyarugenge", "Huye", "Musanze", "Rubavu", "Rusizi"];
+  const categories = [
+    { value: "national_id", label: t("categories.national_id") },
+    { value: "passport", label: t("categories.passport") },
+    { value: "driving_license", label: t("categories.driving_license") },
+    { value: "atm_card", label: t("categories.atm_card") },
+    { value: "other", label: t("categories.other") }
+  ];
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-4xl font-bold text-green-900">Edit Lost Item Post</h1>
-        <p className="text-green-700 mt-2">Update the details of your lost item posting</p>
+    <div className="space-y-8 pb-32">
+      <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-6 md:p-10 rounded-2xl border border-blue-600 shadow-xl relative overflow-hidden group">
+        <div className="absolute inset-0 bg-white/5 opacity-10"></div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tighter mb-2">
+              {t("common.edit")} {t("items.itemDetails")}
+            </h1>
+            <p className="text-blue-100 text-sm md:text-base font-medium opacity-80 max-w-xl">
+               {t("postings.itemsLost")} Record - Node ID: {id?.substring(0,8)}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
+                <FiTag className="text-white text-xl" />
+             </div>
+          </div>
+        </div>
       </div>
 
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-          {success}
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg space-y-6 border border-green-200">
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">Item Title *</label>
-          <input
-            type="text"
-            name="item_type"
-            value={formData.item_type}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">Description</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows="4"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-          ></textarea>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">Category *</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            >
-              <option value="">Select Category</option>
-              <option value="national_id">National ID</option>
-              <option value="passport">Passport</option>
-              <option value="driving_license">Driving License</option>
-              <option value="atm_card">ATM Card</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          {formData.category === "other" && (
-            <div>
-              <label className="block text-sm font-semibold text-green-900 mb-2">Other Document Name *</label>
-              <input
-                type="text"
-                name="customCategory"
-                value={formData.customCategory}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
+      {(success || error) && (
+        <div className="animate-in slide-in-from-top-4 duration-500">
+          {success && (
+            <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 p-5 rounded-xl flex items-center gap-4 shadow-sm">
+              <FiCheckCircle className="w-6 h-6 shrink-0" />
+              <p className="font-black text-xs uppercase tracking-widest">{success}</p>
+            </div>
+          )}
+          {error && (
+            <div className="bg-rose-50 border border-rose-100 text-rose-700 p-5 rounded-xl flex items-center gap-4 shadow-sm">
+              <FiAlertCircle className="w-6 h-6 shrink-0" />
+              <p className="font-black text-xs uppercase tracking-widest">{error}</p>
             </div>
           )}
         </div>
+      )}
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">Owner Name *</label>
-            <input
-              type="text"
-              name="owner_name"
-              value={formData.owner_name}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">ID Number</label>
-            <input
-              type="text"
-              name="id_number"
-              value={formData.id_number}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-12 space-y-12">
+        <div className="grid lg:grid-cols-2 gap-12">
+           <div className="space-y-10">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-1.5 bg-blue-600 rounded-full"></div>
+                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">{t("dashboard.settings")}</h3>
+              </div>
+
+              <div className="space-y-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.title")} *</label>
+                    <div className="relative">
+                       <input
+                          type="text"
+                          name="item_type"
+                          value={formData.item_type}
+                          onChange={handleChange}
+                          className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs placeholder:text-slate-300"
+                          required
+                       />
+                       <FiInbox className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                    </div>
+                 </div>
+
+                 <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.category")} *</label>
+                       <select
+                          name="category"
+                          value={formData.category}
+                          onChange={handleChange}
+                          className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs appearance-none"
+                          required
+                       >
+                          <option value="">{t("items.selectCategory")}</option>
+                          {categories.map(cat => (
+                             <option key={cat.value} value={cat.value}>{cat.label}</option>
+                          ))}
+                       </select>
+                    </div>
+
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.date")} *</label>
+                       <div className="relative">
+                          <input
+                             type="date"
+                             name="date_lost"
+                             value={formData.date_lost}
+                             onChange={handleChange}
+                             max={new Date().toISOString().split('T')[0]}
+                             className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs"
+                             required
+                          />
+                          <FiClock className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                       </div>
+                    </div>
+                 </div>
+
+                 {formData.category === "other" && (
+                    <div className="animate-in slide-in-from-top-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("categories.other")}</label>
+                       <input
+                          type="text"
+                          name="customCategory"
+                          value={formData.customCategory}
+                          onChange={handleChange}
+                          placeholder="..."
+                          className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs mt-2 shadow-inner"
+                          required
+                       />
+                    </div>
+                 )}
+              </div>
+           </div>
+
+           <div className="space-y-10">
+              <div className="flex items-center gap-3">
+                 <div className="h-6 w-1.5 bg-blue-600 rounded-full"></div>
+                 <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">{t("items.image")}</h3>
+              </div>
+
+              <div className="relative h-[256px] group">
+                 <input
+                    type="file"
+                    name="image"
+                    onChange={handleImageChange}
+                    accept="image/*"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                 />
+                 <div className={`h-full border-2 border-dashed rounded-2xl transition-all duration-300 flex flex-col items-center justify-center p-6 overflow-hidden ${ imagePreview ? 'border-blue-500 bg-blue-50/20 shadow-inner' : 'border-slate-100 bg-slate-50 group-hover:border-blue-400 group-hover:bg-white' }`}>
+                    {imagePreview ? (
+                       <div className="relative w-full h-full flex items-center justify-center">
+                          <img src={imagePreview} className="max-h-full rounded-xl shadow-2xl border-2 border-white" alt="Preview" />
+                          <div className="absolute top-2 right-2 flex gap-2">
+                             <div className="bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+                                <FiUploadCloud size={16} />
+                             </div>
+                             <button
+                                type="button"
+                                onClick={() => { setImagePreview(null); setFormData(prev => ({ ...prev, image: null })); }}
+                                className="bg-rose-500 text-white p-2 rounded-lg shadow-lg hover:bg-rose-600 transition-colors"
+                             >
+                                <FiX size={16} />
+                             </button>
+                          </div>
+                       </div>
+                    ) : (
+                       <div className="text-center space-y-4">
+                          <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-300 mx-auto transition-all group-hover:scale-110 group-hover:text-blue-500 border border-slate-50">
+                             <FiUploadCloud className="w-8 h-8" />
+                          </div>
+                          <div className="space-y-1">
+                             <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{t("items.addImage")}</p>
+                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter italic">MAX 5MB | JPG, PNG</p>
+                          </div>
+                       </div>
+                    )}
+                 </div>
+              </div>
+           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">Location Lost *</label>
-            <input
-              type="text"
-              name="location_lost"
-              value={formData.location_lost}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">District *</label>
-            <select
-              name="district"
-              value={formData.district}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            >
-              <option value="">Select District</option>
-              <option value="Kigali">Kigali</option>
-              <option value="Gasabo">Gasabo</option>
-              <option value="Kicukiro">Kicukiro</option>
-              <option value="Nyarugenge">Nyarugenge</option>
-              <option value="Huye">Huye</option>
-              <option value="Musanze">Musanze</option>
-              <option value="Rubavu">Rubavu</option>
-              <option value="Rusizi">Rusizi</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+        <div className="space-y-10">
+           <div className="flex items-center gap-3">
+              <div className="h-6 w-1.5 bg-blue-600 rounded-full"></div>
+              <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] uppercase tracking-[0.2em]">{t("items.itemDetails")}</h3>
+           </div>
+
+           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.color")}</label>
+                 <input
+                    type="text"
+                    name="color"
+                    value={formData.color}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+                 />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("auth.firstName")} *</label>
+                 <div className="relative">
+                    <input
+                       type="text"
+                       name="owner_name"
+                       value={formData.owner_name}
+                       onChange={handleChange}
+                       className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+                       required
+                    />
+                    <FiUser className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                 </div>
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">ID / Serial No</label>
+                 <input
+                    type="text"
+                    name="id_number"
+                    value={formData.id_number}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+                 />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("auth.phone")} *</label>
+                 <div className="relative">
+                    <input
+                       type="tel"
+                       name="contact_phone"
+                       value={formData.contact_phone}
+                       onChange={handleChange}
+                       className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+                       required
+                    />
+                    <FiSmartphone className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                 </div>
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.description")}</label>
+              <textarea
+                 name="description"
+                 value={formData.description}
+                 onChange={handleChange}
+                 rows="4"
+                 className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-2xl px-6 py-5 font-semibold text-slate-700 transition-all outline-none resize-none text-sm leading-relaxed italic shadow-inner"
+              ></textarea>
+           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">Date of Loss *</label>
-            <input
-              type="date"
-              name="date_lost"
-              value={formData.date_lost}
-              onChange={handleChange}
-              max={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">Reward (RWF)</label>
-            <input
-              type="number"
-              name="reward_amount"
-              value={formData.reward_amount}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">Contact Phone *</label>
-            <input
-              type="tel"
-              name="contact_phone"
-              value={formData.contact_phone}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </div>
+        <div className="space-y-10">
+           <div className="flex items-center gap-3">
+              <div className="h-6 w-1.5 bg-blue-600 rounded-full"></div>
+              <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">{t("items.location")}</h3>
+           </div>
+
+           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.location")} *</label>
+                 <select
+                    name="district"
+                    value={formData.district}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs appearance-none"
+                    required
+                 >
+                    <option value="">Select District</option>
+                    {districts.map(d => (
+                       <option key={d} value={d}>{d}</option>
+                    ))}
+                 </select>
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.location")} Detail *</label>
+                 <div className="relative">
+                    <input
+                       type="text"
+                       name="location_lost"
+                       value={formData.location_lost}
+                       onChange={handleChange}
+                       className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs"
+                       required
+                    />
+                    <FiMapPin className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                 </div>
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("items.rewardAmount")} (RWF)</label>
+                 <div className="relative">
+                    <input
+                       type="number"
+                       name="reward_amount"
+                       value={formData.reward_amount}
+                       onChange={handleChange}
+                       className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 rounded-xl pl-12 pr-5 py-4 font-black text-slate-900 outline-none text-xs"
+                    />
+                    <FiDollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-600" />
+                 </div>
+              </div>
+           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">Update Image</label>
-          <input
-            type="file"
-            name="image"
-            onChange={handleImageChange}
-            accept="image/*"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 file:bg-green-600 file:border-0 file:text-white file:px-4 file:py-2 file:rounded file:cursor-pointer file:mr-4"
-          />
-          {imagePreview && (
-            <div className="mt-4">
-              <p className="text-sm font-semibold text-green-900 mb-2">Image Preview:</p>
-              <img src={imagePreview} alt="Preview" className="max-w-xs max-h-48 rounded-lg border-2 border-green-300" />
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-4 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition shadow-lg disabled:opacity-50"
-          >
-            {loading ? "Updating..." : "Update Post"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lost-dashboard/my-postings')}
-            className="bg-gray-400 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-500 transition"
-          >
-            Cancel
-          </button>
+        <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-slate-50">
+           <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-slate-950 text-white rounded-2xl py-5 font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-blue-600 transition-all duration-300 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3"
+           >
+              {loading ? <div className="w-4 h-4 border-2 border-white/20 border-t-white animate-spin rounded-full"></div> : <FiSave />}
+              {loading ? t("messages.processing") : t("common.save")}
+           </button>
+           <button
+              type="button"
+              onClick={() => navigate('/lost-dashboard/my-postings')}
+              className="px-12 py-5 border border-slate-100 text-slate-400 font-bold rounded-2xl hover:bg-slate-50 transition-all text-xs uppercase tracking-widest"
+           >
+              {t("common.cancel")}
+           </button>
         </div>
       </form>
     </div>

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 const OcrIdMatcher = () => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState("lost");
   const [file, setFile] = useState(null);
   const [location, setLocation] = useState("");
@@ -14,7 +16,7 @@ const OcrIdMatcher = () => {
     setResult(null);
 
     if (!file) {
-      setError("Please select an ID image to upload.");
+      setError(t("validation.required"));
       return;
     }
 
@@ -44,7 +46,7 @@ const OcrIdMatcher = () => {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Failed to process image");
+        throw new Error(data.message || t("messages.operationFailed"));
       }
 
       setResult(data.data);
@@ -58,11 +60,10 @@ const OcrIdMatcher = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">
-        OCR ID Matcher
+        {t("scanner.title")}
       </h1>
       <p className="text-gray-600 mb-6">
-        Upload a clear image of a National ID card. The system will extract the name and ID number,
-        then search for possible matches.
+        {t("scanner.description")}
       </p>
 
       <form
@@ -79,7 +80,7 @@ const OcrIdMatcher = () => {
                 : "bg-white text-gray-700 border-gray-300"
             }`}
           >
-            Report Lost ID
+            {t("items.postLostItem")}
           </button>
           <button
             type="button"
@@ -90,13 +91,13 @@ const OcrIdMatcher = () => {
                 : "bg-white text-gray-700 border-gray-300"
             }`}
           >
-            Report Found ID
+            {t("items.postFoundItem")}
           </button>
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">
-            Location (optional)
+            {t("items.location")} ({t("common.info").toLowerCase()})
           </label>
           <input
             type="text"
@@ -105,15 +106,15 @@ const OcrIdMatcher = () => {
             className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder={
               mode === "lost"
-                ? "Where was the ID lost?"
-                : "Where was the ID found?"
+                ? t("items.location")
+                : t("items.location")
             }
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">
-            ID Image
+            {t("items.image")}
           </label>
           <input
             type="file"
@@ -134,7 +135,7 @@ const OcrIdMatcher = () => {
           disabled={loading}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
         >
-          {loading ? "Processing..." : "Upload & Match"}
+          {loading ? t("scanner.analyzing") : t("scanner.analyzeButton")}
         </button>
       </form>
 
@@ -142,19 +143,19 @@ const OcrIdMatcher = () => {
         <div className="mt-8 space-y-4">
           <div className="bg-white shadow rounded-lg p-4">
             <h2 className="text-lg font-semibold mb-2">
-              Extracted Information
+              {t("scanner.extractedText")}
             </h2>
             <p className="text-sm text-gray-700">
-              <span className="font-medium">Name:</span>{" "}
-              {result.name || "Not detected"}
+              <span className="font-medium">{t("auth.firstName")}:</span>{" "}
+              {result.name || "N/A"}
             </p>
             <p className="text-sm text-gray-700">
-              <span className="font-medium">ID Number:</span>{" "}
-              {result.idNumber || "Not detected"}
+              <span className="font-medium">ID:</span>{" "}
+              {result.idNumber || "N/A"}
             </p>
             <details className="mt-2">
               <summary className="text-sm text-gray-500 cursor-pointer">
-                Show raw OCR text
+                {t("scanner.rawText")}
               </summary>
               <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">
                 {result.extractedText}
@@ -164,7 +165,7 @@ const OcrIdMatcher = () => {
 
           <div className="bg-white shadow rounded-lg p-4">
             <h2 className="text-lg font-semibold mb-2">
-              Possible Matches
+              {t("matches.potentialMatches")}
             </h2>
             {result.matches && result.matches.length > 0 ? (
               <div className="grid md:grid-cols-2 gap-4">
@@ -175,32 +176,32 @@ const OcrIdMatcher = () => {
                   >
                     <p className="text-sm text-gray-700">
                       <span className="font-medium">
-                        Similarity:
+                        {t("matches.matchPercentage")}:
                       </span>{" "}
                       {m.match?.similarity_score ?? m.match?.match_score ?? 0}
                       %
                     </p>
                     <p className="text-sm text-gray-700">
                       <span className="font-medium">
-                        Holder Name:
+                        {t("auth.firstName")}:
                       </span>{" "}
                       {m.otherItem?.holder_name || "Unknown"}
                     </p>
                     <p className="text-sm text-gray-700">
                       <span className="font-medium">
-                        ID Number:
+                        ID:
                       </span>{" "}
                       {m.otherItem?.id_number || "Unknown"}
                     </p>
                     <p className="text-xs text-gray-500">
-                      Item ID: {m.otherItem?.id}
+                      ID: {m.otherItem?.id}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-sm text-gray-600">
-                No potential matches found yet.
+                {t("matches.noMatches")}
               </p>
             )}
           </div>
@@ -211,5 +212,3 @@ const OcrIdMatcher = () => {
 };
 
 export default OcrIdMatcher;
-
-

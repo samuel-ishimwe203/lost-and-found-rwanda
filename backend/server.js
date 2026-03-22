@@ -1,5 +1,6 @@
-import express from 'express';
 import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -32,9 +33,6 @@ import policeRoutes from './src/routes/police.routes.js';
 import publicRoutes from './src/routes/public.routes.js';
 import ocrRoutes from './src/routes/ocr.routes.js';
 import documentRoutes from './src/routes/document.routes.js';
-
-// Load environment variables
-dotenv.config();
 
 // Create Express app
 const app = express();

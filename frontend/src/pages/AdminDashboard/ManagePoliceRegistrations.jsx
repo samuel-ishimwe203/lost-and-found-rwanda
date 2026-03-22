@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../../services/api";
+import { FiShield, FiUser, FiMail, FiMapPin, FiCalendar, FiCheck, FiX, FiLayers, FiAlertCircle, FiSearch, FiFileText } from "react-icons/fi";
 
 export default function ManagePoliceRegistrations() {
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -47,12 +48,9 @@ export default function ManagePoliceRegistrations() {
       await apiClient.post(`/admin/police/approve/${selectedRequest.id}`, {
         remarks: approvalRemarks
       });
-
-      // Refresh the list
       fetchPendingRequests();
       setSelectedRequest(null);
       setAction(null);
-      alert("Police registration approved successfully!");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to approve registration");
     }
@@ -68,139 +66,149 @@ export default function ManagePoliceRegistrations() {
       await apiClient.post(`/admin/police/reject/${selectedRequest.id}`, {
         reason: rejectionReason
       });
-
-      // Refresh the list
       fetchPendingRequests();
       setSelectedRequest(null);
       setAction(null);
-      alert("Police registration rejected successfully!");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to reject registration");
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-xl text-gray-600">Loading pending requests...</div>
-      </div>
-    );
+     return (
+       <div className="p-12 text-center font-sans">
+          <div className="w-16 h-16 border-4 border-emerald-100 border-t-[#10b981] rounded-full animate-spin mx-auto mb-6"></div>
+          <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Validating Queue...</p>
+       </div>
+     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          👮 Police Registrations
-        </h2>
-        <p className="text-gray-600">
-          Review and approve/reject pending police officer registrations
-        </p>
+    <div className="max-w-[1400px] mx-auto pb-20 px-4 md:px-8 space-y-10 font-sans">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 py-8">
+        <div className="text-center md:text-left">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Authority Onboarding</h1>
+          <p className="text-gray-500 text-sm mt-1 font-medium opacity-80 max-w-2xl text-center md:text-left">
+            Review and validate registration requests for official police and security personnel.
+          </p>
+        </div>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 flex items-center gap-4 text-red-600 font-bold text-sm">
+          <FiAlertCircle className="w-6 h-6 shrink-0" />
+          <p>{error}</p>
         </div>
       )}
 
       {pendingRequests.length === 0 ? (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <p className="text-blue-800 font-medium">✓ No pending police registrations</p>
-          <p className="text-blue-600 text-sm mt-2">All police registrations have been reviewed</p>
+        <div className="bg-white border border-gray-100 rounded-[32px] p-24 text-center shadow-sm relative overflow-hidden group">
+          <FiShield className="w-16 h-16 text-gray-100 mx-auto mb-6 transition-transform group-hover:scale-110 duration-500" />
+          <p className="text-gray-900 font-bold text-xl uppercase tracking-tight">Queue Clear</p>
+          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2">No pending authority requests.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800 font-medium">
-              ⚠️ {pendingRequests.length} pending registration{pendingRequests.length !== 1 ? "s" : ""}
-            </p>
+        <div className="space-y-8">
+          <div className="bg-slate-950 text-white rounded-[24px] p-6 flex items-center justify-between shadow-lg">
+             <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-[#10b981]">
+                   <FiLayers />
+                </div>
+                <div>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Validation Queue</p>
+                   <p className="text-lg font-bold text-white">{pendingRequests.length} Pending Requests</p>
+                </div>
+             </div>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-8">
             {pendingRequests.map((request) => (
-              <div key={request.id} className="bg-white border border-gray-300 rounded-lg p-6 hover:shadow-lg transition">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Full Name</p>
-                    <p className="font-semibold text-gray-800">{request.full_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-semibold text-gray-800">{request.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Badge Number</p>
-                    <p className="font-semibold text-gray-800">{request.badge_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Rank</p>
-                    <p className="font-semibold text-gray-800">{request.rank}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Police Station</p>
-                    <p className="font-semibold text-gray-800">{request.police_station}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">District</p>
-                    <p className="font-semibold text-gray-800">{request.district}</p>
-                  </div>
-                  {request.department && (
+              <div key={request.id} className="bg-white border border-gray-100 rounded-[32px] p-8 md:p-12 shadow-sm hover:shadow-md transition-all group">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+                  <div className="space-y-10">
                     <div>
-                      <p className="text-sm text-gray-600">Department</p>
-                      <p className="font-semibold text-gray-800">{request.department}</p>
+                      <h3 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-6">Identity Profile</h3>
+                      <div className="grid grid-cols-2 gap-8 text-center md:text-left">
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Full Name</p>
+                          <p className="text-lg font-bold text-gray-900">{request.full_name}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Rank</p>
+                          <p className="text-lg font-bold text-gray-900">{request.rank}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Badge</p>
+                          <p className="text-lg font-bold text-gray-900">#{request.badge_number}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Date Applied</p>
+                          <p className="text-lg font-bold text-gray-900">{new Date(request.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  {request.email_official && (
-                    <div>
-                      <p className="text-sm text-gray-600">Official Email</p>
-                      <p className="font-semibold text-gray-800">{request.email_official}</p>
+
+                    <div className="pt-8 border-t border-gray-50 text-center md:text-left">
+                       <h3 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-6">Assigned Hub</h3>
+                       <div className="flex flex-col md:flex-row items-center gap-4 bg-gray-50 p-6 rounded-[24px] border border-gray-100">
+                          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#10b981] shadow-sm">
+                             <FiMapPin className="w-5 h-5" />
+                          </div>
+                          <div>
+                             <p className="text-sm font-bold text-gray-900 text-center md:text-left">{request.police_station}</p>
+                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 text-center md:text-left">{request.district}</p>
+                          </div>
+                       </div>
                     </div>
-                  )}
-                  {request.phone_official && (
-                    <div>
-                      <p className="text-sm text-gray-600">Official Phone</p>
-                      <p className="font-semibold text-gray-800">{request.phone_official}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-600">Phone Number</p>
-                    <p className="font-semibold text-gray-800">{request.phone_number}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Registration Date</p>
-                    <p className="font-semibold text-gray-800">
-                      {new Date(request.created_at).toLocaleDateString()}
-                    </p>
+
+                  <div className="space-y-10 lg:pl-10 lg:border-l border-gray-50">
+                    <div>
+                      <h3 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-6 text-center lg:text-left">Communication</h3>
+                      <div className="space-y-5">
+                         <div className="flex items-center gap-4 justify-center lg:justify-start">
+                            <FiMail className="w-4 h-4 text-[#10b981]" />
+                            <p className="text-sm font-bold text-gray-700">{request.email}</p>
+                         </div>
+                         <div className="flex items-center gap-4 justify-center lg:justify-start">
+                            <FiFileText className="w-4 h-4 text-[#10b981]" />
+                            <p className="text-sm font-bold text-gray-700">{request.phone_number}</p>
+                         </div>
+                      </div>
+                    </div>
+
+                    {request.document_url && (
+                      <div className="bg-slate-900 p-8 rounded-[24px] shadow-lg group/doc transition-colors hover:bg-black">
+                         <div className="flex justify-between items-center mb-4">
+                            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Verification Link</p>
+                            <FiShield className="text-[#10b981]" />
+                         </div>
+                         <a
+                          href={request.document_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white font-bold text-[10px] uppercase tracking-widest hover:bg-[#10b981] transition-all"
+                        >
+                          <FiFileText /> View Official Mandate
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {request.document_url && (
-                  <div className="mb-4 p-3 bg-blue-50 rounded">
-                    <p className="text-sm text-gray-600">Official Document</p>
-                    <a
-                      href={request.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      📄 View Document
-                    </a>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 pt-8 border-t border-gray-50">
                   <button
                     onClick={() => handleApprove(request)}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                    className="flex-1 px-8 py-4 bg-[#10b981] text-white rounded-xl font-bold text-[11px] uppercase tracking-widest shadow-lg hover:bg-[#0da472] transition active:scale-95 flex items-center justify-center gap-2"
                   >
-                    ✓ Approve
+                    <FiCheck /> Approve Account
                   </button>
                   <button
                     onClick={() => handleReject(request)}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                    className="flex-1 px-8 py-4 bg-red-50 text-red-600 border border-red-100 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition active:scale-95 flex items-center justify-center gap-2"
                   >
-                    ✕ Reject
+                    <FiX /> Deny Request
                   </button>
                 </div>
               </div>
@@ -209,88 +217,51 @@ export default function ManagePoliceRegistrations() {
         </div>
       )}
 
-      {/* Approval Modal */}
-      {action === "approve" && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
-              Approve Police Registration
-            </h3>
-            <div className="mb-4 p-3 bg-gray-50 rounded">
-              <p className="text-sm text-gray-600">Officer:</p>
-              <p className="font-semibold text-gray-800">{selectedRequest.full_name}</p>
-              <p className="text-sm text-gray-600 mt-1">Badge: {selectedRequest.badge_number}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Remarks (optional):
-              </label>
-              <textarea
-                value={approvalRemarks}
-                onChange={(e) => setApprovalRemarks(e.target.value)}
-                placeholder="Add any remarks about the approval..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                rows="3"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAction(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitApproval}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-              >
-                Confirm Approval
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ACTION MODAL */}
+      {selectedRequest && action && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => { setAction(null); setSelectedRequest(null); }}></div>
+           <div className="relative bg-white w-full max-w-xl rounded-[32px] shadow-2xl overflow-hidden p-10 md:p-14 animate-in zoom-in-95 duration-500 border border-gray-100">
+              <div className="text-center mb-8">
+                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl ${action === 'approve' ? 'bg-[#10b981] text-white' : 'bg-red-600 text-white'}`}>
+                    {action === 'approve' ? <FiCheck className="text-3xl" /> : <FiX className="text-3xl" />}
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 uppercase tracking-tight mb-1">
+                    {action === 'approve' ? 'Approve Access' : 'Deny Access'}
+                 </h3>
+                 <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest font-sans">{selectedRequest.full_name}</p>
+              </div>
 
-      {/* Rejection Modal */}
-      {action === "reject" && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
-              Reject Police Registration
-            </h3>
-            <div className="mb-4 p-3 bg-gray-50 rounded">
-              <p className="text-sm text-gray-600">Officer:</p>
-              <p className="font-semibold text-gray-800">{selectedRequest.full_name}</p>
-              <p className="text-sm text-gray-600 mt-1">Badge: {selectedRequest.badge_number}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason for Rejection <span className="text-red-500">*</span>:
-              </label>
-              <textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Please provide a detailed reason for rejection..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
-                rows="3"
-                required
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAction(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitRejection}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                Confirm Rejection
-              </button>
-            </div>
-          </div>
+              <div className="space-y-6">
+                 <div>
+                    <label className="block text-[10px] font-black text-gray-300 uppercase tracking-widest mb-2 px-1">
+                       {action === 'approve' ? 'Approval Note' : 'Rejection Reason'}
+                    </label>
+                    <textarea
+                      value={action === 'approve' ? approvalRemarks : rejectionReason}
+                      onChange={(e) => action === 'approve' ? setApprovalRemarks(e.target.value) : setRejectionReason(e.target.value)}
+                      placeholder={action === 'approve' ? "Optional notes..." : "Required reason for denial..."}
+                      className={`w-full bg-gray-50 border border-gray-100 rounded-xl px-6 py-4 font-bold text-gray-800 transition-all outline-none resize-none shadow-sm focus:border-gray-300`}
+                      rows="3"
+                    />
+                 </div>
+
+                 <div className="flex gap-3">
+                    <button
+                      onClick={() => { setAction(null); setSelectedRequest(null); }}
+                      className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-gray-200 transition"
+                    >
+                      Abort
+                    </button>
+                    <button
+                      onClick={action === 'approve' ? submitApproval : submitRejection}
+                      className={`flex-1 py-4 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg transition active:scale-95 ${action === 'approve' ? 'bg-[#10b981] hover:bg-[#0da472]' : 'bg-red-600 hover:bg-black'}`}
+                    >
+                      Confirm Action
+                    </button>
+                 </div>
+              </div>
+           </div>
         </div>
       )}
     </div>

@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from "react";
+import { FiActivity, FiSettings, FiUserPlus, FiPieChart, FiServer, FiShield, FiDatabase, FiSmartphone, FiChevronRight } from "react-icons/fi";
 import apiClient from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function AdminHome() {
+  const { t } = useLanguage();
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [systemStatus] = useState([
-    { name: "Database", status: "healthy", uptime: "99.9%" },
-    { name: "API Server", status: "healthy", uptime: "99.8%" },
-    { name: "Notifications", status: "healthy", uptime: "99.7%" },
-    { name: "Search Index", status: "healthy", uptime: "100%" },
+    { name: "Database", status: "healthy", uptime: "99.9%", icon: <FiDatabase /> },
+    { name: "API Cluster", status: "healthy", uptime: "99.8%", icon: <FiServer /> },
+    { name: "Notification Relay", status: "healthy", uptime: "99.7%", icon: <FiSmartphone /> },
+    { name: "Security Engine", status: "healthy", uptime: "100%", icon: <FiShield /> },
   ]);
 
   useEffect(() => {
@@ -24,8 +29,7 @@ export default function AdminHome() {
       setDashboardData(response.data.data);
       setError("");
     } catch (err) {
-      setError("Failed to load dashboard statistics. " + (err.response?.data?.message || err.message));
-      console.error(err);
+      setError(t("messages.operationFailed"));
     } finally {
       setLoading(false);
     }
@@ -33,108 +37,104 @@ export default function AdminHome() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-xl text-green-600 font-semibold animate-pulse">Loading dashboard...</div>
+      <div className="flex flex-col items-center justify-center py-32 space-y-4">
+        <div className="w-12 h-12 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin"></div>
+        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest text-[#10b981]">{t("common.loading")}</p>
       </div>
     );
   }
 
-  // Construct dynamic stats based on API response
   const stats = [
-    { label: "Total Lost Items", value: dashboardData?.lostItems?.total || 0, icon: "📋", color: "text-green-600" },
-    { label: "Total Found Items", value: dashboardData?.foundItems?.total || 0, icon: "📦", color: "text-blue-600" },
-    { label: "Matched Items", value: dashboardData?.matches?.total || 0, icon: "✅", color: "text-yellow-600" },
-    { label: "Active Users", value: dashboardData?.users?.total || 0, icon: "👥", color: "text-purple-600" },
+    { label: t("admin.totalItems"), value: dashboardData?.lostItems?.total || 0, icon: <FiActivity />, color: "text-[#10b981]" },
+    { label: t("admin.activeItems"), value: dashboardData?.foundItems?.total || 0, icon: <FiPieChart />, color: "text-[#10b981]" },
+    { label: t("admin.returnedItems"), value: dashboardData?.pendingPolice || 0, icon: <FiActivity />, color: "text-[#10b981]" },
+    { label: t("admin.pendingMatches"), value: dashboardData?.matches?.total || 0, icon: <FiShield />, color: "text-[#10b981]" },
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="bg-gradient-to-r from-teal-600 to-emerald-700 p-6 md:p-10 rounded-2xl md:rounded-[40px] border border-green-300 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-        <div className="relative z-10 text-center md:text-left">
-          <span className="px-4 py-1.5 bg-white/20 text-white rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest mb-4 inline-block backdrop-blur-md border border-white/20">System Administration</span>
-          <h1 className="text-3xl md:text-5xl font-black text-white mb-3 tracking-tight">Admin Dashboard</h1>
-          <p className="text-teal-50 text-base md:text-xl font-medium opacity-90">System Overview & Central Control Center</p>
+    <div className="space-y-8 pb-24">
+      {/* WELCOME BANNER */}
+      <div className="bg-[#10b981] p-8 md:p-12 rounded-[24px] shadow-xl relative overflow-hidden group">
+        <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+          <div className="w-24 h-24 rounded-full border-4 border-white/30 bg-white/20 text-white flex items-center justify-center text-3xl font-black shadow-2xl shrink-0">
+             {user?.full_name?.charAt(0) || 'A'}
+          </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">
+              {t("admin.welcomeBack")}, {user?.full_name?.split(' ')[0] || 'Admin'}!
+            </h1>
+            <p className="text-white text-base md:text-lg opacity-90 max-w-2xl font-medium">
+               {t("nav.dashboard")}
+            </p>
+          </div>
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      {/* STATISTICS GRID */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white p-5 md:p-6 rounded-2xl shadow-lg border border-teal-100 hover:shadow-2xl hover:border-teal-200 transition-all duration-300 transform md:hover:scale-[1.02]">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-              <div>
-                <p className={`text-2xl md:text-4xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
-              </div>
-              <span className="text-3xl md:text-4xl opacity-50">{stat.icon}</span>
+          <div key={idx} className="bg-white p-6 rounded-[16px] shadow-sm border border-gray-100 transition-all hover:shadow-md">
+             <div className="flex flex-col">
+                <p className={`text-4xl font-bold ${stat.color} mb-1`}>{stat.value}</p>
+                <p className="text-xs font-bold text-gray-400 capitalize">{stat.label}</p>
+             </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+         <div className="lg:col-span-2 space-y-6">
+            <h2 className="text-xl font-bold text-gray-900 px-1">{t("dashboard.statistics")}</h2>
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden">
+               <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                  <p className="text-xs font-black uppercase tracking-widest text-gray-400">{t("admin.nodeStatus")}</p>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+               </div>
+               <div className="divide-y divide-gray-50">
+                  {systemStatus.map((system, idx) => (
+                    <div key={idx} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                       <div className="flex items-center gap-4">
+                          <div className="text-gray-300">{system.icon}</div>
+                          <p className="font-bold text-gray-800 text-sm">{system.name}</p>
+                       </div>
+                       <div className="flex items-center gap-6">
+                          <p className="text-xs font-bold text-emerald-600">{system.uptime} {t("admin.uptime")}</p>
+                          <span className="text-[10px] font-black uppercase text-gray-300">{t("admin.online")}</span>
+                       </div>
+                    </div>
+                  ))}
+               </div>
             </div>
-          </div>
-        ))}
-      </div>
+         </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="bg-white p-6 md:p-10 rounded-2xl md:rounded-[40px] shadow-2xl border border-teal-50">
-          <div className="flex items-center gap-4 mb-8">
-             <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center text-xl shadow-inner"><FiInfo /></div>
-             <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight">System Status</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {systemStatus.map((system, idx) => (
-              <div key={idx} className="border border-teal-50 rounded-2xl p-4 md:p-5 bg-slate-50 relative group hover:bg-white hover:border-teal-200 transition-all shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-black text-slate-800 text-[10px] md:text-xs uppercase tracking-widest leading-none">{system.name}</p>
-                  <span className={`w-2.5 h-2.5 rounded-full ${system.status === 'healthy' ? 'bg-emerald-500 shadow-lg shadow-emerald-200 animate-pulse' : 'bg-amber-500 shadow-lg shadow-amber-200'}`}></span>
-                </div>
-                <p className="text-[10px] font-bold text-slate-400">Reliability Index: {system.uptime}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* DETAILED STATS */}
-        <div className="bg-white p-8 rounded-2xl shadow-lg border border-green-200">
-           <h2 className="text-2xl font-bold text-green-900 mb-6">User Breakdown</h2>
-           <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Lost Users</span>
-                <span className="font-bold text-gray-900">{dashboardData?.users?.losers || 0}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Found Users</span>
-                <span className="font-bold text-gray-900">{dashboardData?.users?.finders || 0}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Police Stations</span>
-                <span className="font-bold text-gray-900">{dashboardData?.users?.police || 0}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Admins</span>
-                <span className="font-bold text-gray-900">{dashboardData?.users?.admins || 0}</span>
-              </div>
-           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { icon: "⚙️", title: "System Settings", btn: "Configure System" },
-          { icon: "👮", title: "Police Account", btn: "New Police User" },
-          { icon: "📊", title: "Generate Report", btn: "Export Report" }
-        ].map((action, idx) => (
-          <div key={idx} className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[32px] border border-teal-100 shadow-xl hover:shadow-2xl transition-all duration-300">
-            <div className="text-3xl mb-4">{action.icon}</div>
-            <h3 className="text-base md:text-lg font-black text-slate-900 mb-6 uppercase tracking-tight">{action.title}</h3>
-            <button className="w-full bg-slate-900 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest hover:bg-black transition transform hover:translate-y-[-2px] shadow-lg">
-              {action.btn}
-            </button>
-          </div>
-        ))}
+         <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-900 px-1">{t("dashboard.statistics")}</h2>
+            <div className="bg-slate-950 p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-[#10b981]/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+               <div className="relative z-10 space-y-6">
+                  <div>
+                     <p className="text-[9px] font-black text-[#10b981] uppercase tracking-[0.2em] mb-2">{t("police.approved")}</p>
+                     <h4 className="text-xl font-black italic uppercase tracking-tighter">{t("admin.superuser")}</h4>
+                  </div>
+                  <div className="space-y-3">
+                     {[
+                        { label: t("dashboard.statistics"), path: "/admin-dashboard/system-stats" },
+                        { label: t("admin.logs"), path: "/admin-dashboard/logs" },
+                        { label: t("admin.manageUsers"), path: "/admin-dashboard/manage-users" }
+                     ].map((btn, i) => (
+                        <button 
+                           key={i}
+                           onClick={() => window.location.href = btn.path}
+                           className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white text-slate-400 hover:text-slate-900 transition-all font-black text-[10px] uppercase tracking-widest group/btn"
+                        >
+                           {btn.label}
+                           <FiChevronRight className="group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                     ))}
+                  </div>
+               </div>
+            </div>
+         </div>
       </div>
     </div>
   );

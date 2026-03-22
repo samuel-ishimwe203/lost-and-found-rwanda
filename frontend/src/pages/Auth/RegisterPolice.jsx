@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../services/auth.service";
+import { FiUser, FiMail, FiPhone, FiLock, FiArrowRight, FiShield, FiBriefcase, FiMapPin, FiFileText, FiUploadCloud } from "react-icons/fi";
 
 export default function RegisterPolice() {
   const navigate = useNavigate();
@@ -24,63 +25,27 @@ export default function RegisterPolice() {
   const [documentFile, setDocumentFile] = useState(null);
 
   const ranks = [
-    "Constable",
-    "Lance Corporal",
-    "Corporal",
-    "Sergeant",
-    "Inspector",
-    "Senior Inspector",
-    "Superintendent",
-    "Senior Superintendent",
-    "Commissioner"
+    "Constable", "Lance Corporal", "Corporal", "Sergeant", "Inspector",
+    "Senior Inspector", "Superintendent", "Senior Superintendent", "Commissioner"
   ];
 
   const districts = [
-    "Nyarugenge",
-    "Gasabo",
-    "Kicukiro",
-    "Bugesera",
-    "Gatsibo",
-    "Kayonza",
-    "Kirehe",
-    "Ngoma",
-    "Rwamagana",
-    "Karongi",
-    "Rutsiro",
-    "Nyabihu",
-    "Musanze",
-    "Burera",
-    "Gicumbi",
-    "Rulindo",
-    "Rubavu",
-    "Nyaruguru",
-    "Nyamagabe",
-    "Nyaruguru",
-    "Huye",
-    "Gisagara",
-    "Ruhango",
-    "Muhanga",
-    "Rwamagana"
+    "Nyarugenge", "Gasabo", "Kicukiro", "Bugesera", "Gatsibo", "Kayonza", "Kirehe",
+    "Ngoma", "Rwamagana", "Karongi", "Rutsiro", "Nyabihu", "Musanze", "Burera",
+    "Gicumbi", "Rulindo", "Rubavu", "Nyaruguru", "Nyamagabe", "Huye", "Gisagara",
+    "Ruhango", "Muhanga"
   ];
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError("");
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // In a real application, upload the file to cloud storage
-      // For now, we'll just store the file reference
       setDocumentFile(file);
-      setFormData({
-        ...formData,
-        document_url: file.name // In production, upload to S3 or similar
-      });
+      setFormData({ ...formData, document_url: file.name });
     }
   };
 
@@ -88,17 +53,7 @@ export default function RegisterPolice() {
     e.preventDefault();
     setError("");
 
-    // Validation
-    if (
-      !formData.full_name ||
-      !formData.email ||
-      !formData.badge_number ||
-      !formData.rank ||
-      !formData.police_station ||
-      !formData.district ||
-      !formData.password ||
-      !documentFile
-    ) {
+    if (!formData.full_name || !formData.email || !formData.badge_number || !formData.rank || !formData.police_station || !formData.district || !formData.password || !documentFile) {
       setError("Please fill in all required fields and upload an official document");
       return;
     }
@@ -116,10 +71,6 @@ export default function RegisterPolice() {
     setLoading(true);
 
     try {
-      // In a real application, first upload the document file
-      // and get the URL, then submit the registration
-      
-      // For now, we'll use a simple document URL reference
       const documentName = documentFile.name.replace(/[^a-z0-9.-]/gi, '_');
       const registrationData = {
         full_name: formData.full_name,
@@ -137,305 +88,169 @@ export default function RegisterPolice() {
         document_url: `documents/${Date.now()}_${documentName}`
       };
 
-      const response = await authService.registerPolice(registrationData);
+      await authService.registerPolice(registrationData);
 
-      // Show success message
       navigate("/login", {
         state: {
-          message:
-            "Police registration submitted successfully! Your official documents are being verified by admin. You will receive a notification once approved.",
+          message: "Police registration submitted successfully! Your official documents are being verified by admin.",
           email: formData.email
         },
         replace: true
       });
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Police registration failed. Please try again."
-      );
+      setError(err.response?.data?.message || "Police registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-8">
-        {/* Title */}
-        <h2 className="text-3xl font-bold text-center text-blue-700 mb-2">
-          Police Officer Registration
-        </h2>
-        <p className="text-center text-gray-500 mb-8">
-          Register as a police officer to help recover lost items and serve the community
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-20 font-sans">
+      <div className="w-full max-w-3xl bg-white rounded-[40px] shadow-sm border border-gray-100 p-8 md:p-14">
+        
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mb-6 mx-auto shadow-sm">
+             <FiShield />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Law Enforcement Registration</h2>
+          <p className="text-gray-400 text-sm font-medium">Official portal for Rwanda National Police verification</p>
+        </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+          <div className="mb-8 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-xs font-bold">
             {error}
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleChange}
-                placeholder="Your full name"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                placeholder="+250 7XX XXX XXX"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-
-            {/* Badge Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Badge Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="badge_number"
-                value={formData.badge_number}
-                onChange={handleChange}
-                placeholder="e.g., PL-2024-001"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            {/* Rank */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rank <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="rank"
-                value={formData.rank}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              >
-                <option value="">Select rank</option>
-                {ranks.map((rank) => (
-                  <option key={rank} value={rank}>
-                    {rank}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* District */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                District <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="district"
-                value={formData.district}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              >
-                <option value="">Select district</option>
-                {districts.map((district) => (
-                  <option key={district} value={district}>
-                    {district}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Police Station */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Police Station <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="police_station"
-                value={formData.police_station}
-                onChange={handleChange}
-                placeholder="Name of your police station"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            {/* Department */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Department
-              </label>
-              <input
-                type="text"
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                placeholder="e.g., CID, Traffic, Patrol"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-
-            {/* Official Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Official Email
-              </label>
-              <input
-                type="email"
-                name="email_official"
-                value={formData.email_official}
-                onChange={handleChange}
-                placeholder="official@police.rw"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-
-            {/* Official Phone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Official Phone
-              </label>
-              <input
-                type="tel"
-                name="phone_official"
-                value={formData.phone_official}
-                onChange={handleChange}
-                placeholder="Official phone number"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
+        <form onSubmit={handleSubmit} className="space-y-10">
+          
+          <div className="space-y-6">
+            <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] border-l-4 border-blue-600 pl-4">Personal Credentials</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+               <div className="relative group">
+                 <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors" />
+                 <input
+                   type="text" name="full_name" value={formData.full_name} onChange={handleChange}
+                   placeholder="Full Name"
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800"
+                   required
+                 />
+               </div>
+               <div className="relative group">
+                 <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors" />
+                 <input
+                   type="email" name="email" value={formData.email} onChange={handleChange}
+                   placeholder="Personal Email"
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800"
+                   required
+                 />
+               </div>
             </div>
           </div>
 
-          {/* Document Upload */}
-          <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Official Document <span className="text-red-500">*</span>
-            </label>
-            <p className="text-gray-500 text-sm mb-3">
-              Upload an official document (ID card, badge, or appointment letter)
-            </p>
-            <input
-              type="file"
-              onChange={handleFileChange}
-              accept=".pdf,.jpg,.jpeg,.png"
-              className="w-full"
-              required
-            />
-            {documentFile && (
-              <p className="text-green-600 text-sm mt-2">
-                ✓ {documentFile.name} selected
-              </p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a strong password"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                required
-              />
+          <div className="space-y-6">
+            <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] border-l-4 border-blue-600 pl-4">Service Details</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+               <div className="relative group text-gray-400">
+                 <FiBriefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+                 <select
+                   name="rank" value={formData.rank} onChange={handleChange}
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800 appearance-none"
+                   required
+                 >
+                   <option value="">Select Rank</option>
+                   {ranks.map(r => <option key={r} value={r}>{r}</option>)}
+                 </select>
+               </div>
+               <div className="relative group">
+                 <FiFileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors" />
+                 <input
+                   type="text" name="badge_number" value={formData.badge_number} onChange={handleChange}
+                   placeholder="Badge Identification"
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800"
+                   required
+                 />
+               </div>
+               <div className="relative group text-gray-400">
+                 <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+                 <select
+                   name="district" value={formData.district} onChange={handleChange}
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800 appearance-none"
+                   required
+                 >
+                   <option value="">Deployment District</option>
+                   {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                 </select>
+               </div>
+               <div className="relative group">
+                 <FiBriefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors" />
+                 <input
+                   type="text" name="police_station" value={formData.police_station} onChange={handleChange}
+                   placeholder="Primary Station"
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800"
+                   required
+                 />
+               </div>
             </div>
           </div>
 
-          {/* Important Notice */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>📝 Note:</strong> Your registration will be pending admin
-              verification. An admin will review your official document and
-              approve or reject your registration. You will receive an email
-              notification once your status is updated.
-            </p>
+          <div className="space-y-6">
+            <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] border-l-4 border-blue-600 pl-4">Verification Artifact</h3>
+            <div className="relative group h-40 border-2 border-dashed border-gray-100 rounded-3xl flex flex-col items-center justify-center transition-all hover:bg-blue-50/50 hover:border-blue-200 cursor-pointer overflow-hidden">
+               <input
+                 type="file" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png"
+                 className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                 required
+               />
+               <div className="text-center group-hover:scale-110 transition-transform duration-500">
+                 <FiUploadCloud className={`w-10 h-10 ${documentFile ? 'text-blue-600' : 'text-gray-200'} mx-auto mb-2`} />
+                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    {documentFile ? documentFile.name : 'Upload Service ID / Credentials'}
+                 </p>
+               </div>
+            </div>
           </div>
 
-          {/* Register Button */}
+          <div className="space-y-6">
+            <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] border-l-4 border-blue-600 pl-4">Network Access</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+               <div className="relative group">
+                 <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors" />
+                 <input
+                   type="password" name="password" value={formData.password} onChange={handleChange}
+                   placeholder="Create Key"
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800"
+                   required
+                 />
+               </div>
+               <div className="relative group">
+                 <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors" />
+                 <input
+                   type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
+                   placeholder="Verify Key"
+                   className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-blue-600 transition-all outline-none font-bold text-gray-800"
+                   required
+                 />
+               </div>
+            </div>
+          </div>
+
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+            type="submit" disabled={loading}
+            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-xl hover:bg-black transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 group/btn"
           >
-            {loading ? "Submitting Registration..." : "Submit Registration"}
+            {loading ? "Transmitting Registry..." : "Submit Official Request"}
+            {!loading && <FiArrowRight className="transition-transform group-hover/btn:translate-x-1" />}
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="my-6 text-center text-gray-400 text-sm">
-          — already have an account? —
+        <div className="mt-12 text-center">
+          <button onClick={() => navigate("/login")} className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-blue-600 transition">
+             Back to Secure Portal
+          </button>
         </div>
-
-        {/* Login link */}
-        <p className="text-center text-sm text-gray-600">
-          <span
-            onClick={() => navigate("/login")}
-            className="text-blue-700 font-medium cursor-pointer hover:underline"
-          >
-            Login here
-          </span>
-        </p>
       </div>
     </div>
   );

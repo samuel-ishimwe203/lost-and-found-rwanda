@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { authService } from "../../services/auth.service";
 import { useAuth } from "../../context/AuthContext";
+import { FiMail, FiLock, FiArrowRight, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,7 +17,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Clear success message after 5 seconds
     if (successMessage) {
       const timer = setTimeout(() => setSuccessMessage(""), 5000);
       return () => clearTimeout(timer);
@@ -24,10 +24,7 @@ export default function Login() {
   }, [successMessage]);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError("");
   };
 
@@ -47,19 +44,12 @@ export default function Login() {
       const response = await authService.login(formData);
       login(response.user, response.token);
 
-      // Redirect based on role
       const role = response.user.role;
-      if (role === "loser") {
-        navigate("/lost-dashboard");
-      } else if (role === "finder") {
-        navigate("/found-dashboard");
-      } else if (role === "police") {
-        navigate("/police-dashboard");
-      } else if (role === "admin") {
-        navigate("/admin-dashboard");
-      } else {
-        navigate("/");
-      }
+      if (role === "loser") navigate("/lost-dashboard");
+      else if (role === "finder") navigate("/found-dashboard");
+      else if (role === "police") navigate("/police-dashboard");
+      else if (role === "admin") navigate("/admin-dashboard");
+      else navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password");
     } finally {
@@ -68,98 +58,96 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-sans">
+      <div className="w-full max-w-md bg-white rounded-[32px] shadow-sm border border-gray-100 p-10 md:p-12">
         
-        {/* Title */}
-        <h2 className="text-3xl font-bold text-center text-green-700 mb-2">
-          Welcome Back
-        </h2>
-        <p className="text-center text-gray-500 mb-8">
-          Login to continue to Lost & Found Rwanda
-        </p>
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-1 mb-6">
+            <span className="text-2xl font-black tracking-tighter text-gray-900 uppercase">LOST</span>
+            <span className="text-2xl font-black tracking-tighter text-[#10b981] uppercase">FOUND</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+          <p className="text-gray-400 text-sm font-medium">Access your secure dashboard hub</p>
+        </div>
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
-            {successMessage}
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-[#10b981] rounded-2xl text-xs font-bold flex items-center gap-3">
+            <FiCheckCircle className="shrink-0" /> {successMessage}
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            {error}
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-xs font-bold flex items-center gap-3">
+            <FiAlertCircle className="shrink-0" /> {error}
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-5">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Email Identity</label>
+              <div className="relative group">
+                <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#10b981] transition-colors" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="name@example.com"
+                  className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#10b981] transition-all outline-none font-bold text-gray-800"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Access Key</label>
+              <div className="relative group">
+                <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#10b981] transition-colors" />
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#10b981] transition-all outline-none font-bold text-gray-800"
+                  required
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-              required
-            />
-          </div>
-
-          {/* Forgot password */}
           <div className="text-right">
-            <span className="text-sm text-green-700 cursor-pointer hover:underline">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-[#10b981] transition">
               Forgot password?
             </span>
           </div>
 
-          {/* Login button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-[#10b981] text-white py-4 rounded-xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 group/btn"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Authenticating..." : "Login to Portal"}
+            {!loading && <FiArrowRight className="transition-transform group-hover/btn:translate-x-1" />}
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="my-6 text-center text-gray-400 text-sm">
-          — or —
+        <div className="mt-10 pt-8 border-t border-gray-50 text-center">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            Don't have an account?{" "}
+            <span 
+              onClick={() => navigate("/register")}
+              className="text-[#10b981] cursor-pointer hover:underline"
+            >
+              Register Now
+            </span>
+          </p>
         </div>
-
-        {/* Register link */}
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <span 
-            onClick={() => navigate("/register")}
-            className="text-green-700 font-medium cursor-pointer hover:underline"
-          >
-            Register
-          </span>
-        </p>
       </div>
     </div>
   );

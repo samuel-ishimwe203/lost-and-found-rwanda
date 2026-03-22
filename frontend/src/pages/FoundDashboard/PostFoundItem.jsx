@@ -1,24 +1,17 @@
-
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import apiClient from "../../services/api";
 import { 
-  FiCheckCircle, FiAlertCircle, FiMessageSquare, FiEye, FiMapPin, 
+  FiCheckCircle, FiAlertCircle, FiEye, FiMapPin, 
   FiClock, FiUser, FiPhone, FiMail, FiTag, FiDollarSign, FiInfo,
-  FiUploadCloud, FiX
+  FiUploadCloud, FiX, FiCheck, FiChevronRight, FiCheckSquare, FiArchive
 } from "react-icons/fi";
 import SendMessageModal from "../../components/SendMessageModal";
 import { getImageUrl } from "../../utils/imageHelper";
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
-
-// Consolidated Lu icons into Fi set for better stability
-const LuMessageSquare = FiMessageSquare;
-const LuCheckCircle2 = FiCheckCircle;
-const LuEye = FiEye;
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function PostFoundItem() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     item_type: "",
@@ -43,39 +36,26 @@ export default function PostFoundItem() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const categories = [
-    { value: "national_id", label: "National ID" },
-    { value: "passport", label: "Passport" },
-    { value: "driving_license", label: "Driving License" },
-    { value: "atm_card", label: "ATM Card" },
-    { value: "student_card", label: "Student Card" },
-    { value: "other", label: "Other" },
+    { value: "national_id", label: t("categories.national_id") },
+    { value: "passport", label: t("categories.passport") },
+    { value: "driving_license", label: t("categories.driving_license") },
+    { value: "atm_card", label: t("categories.atm_card") },
+    { value: "other", label: t("categories.other") },
   ];
 
-  const districts = [
-    "Kigali", "Nyarugenge", "Gasabo", "Kicukiro", 
-    "Rubavu", "Rusizi", "Huye", "Musanze"
-  ];
+  const districts = ["Kigali", "Nyarugenge", "Gasabo", "Kicukiro", "Rubavu", "Rusizi", "Huye", "Musanze"];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        image: file,
-      }));
-      
+      setFormData((prev) => ({ ...prev, image: file }));
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
+      reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -94,15 +74,10 @@ export default function PostFoundItem() {
       submitData.append('location_found', formData.location_found);
       submitData.append('district', formData.district);
       submitData.append('additional_info', formData.additional_info);
-      
-      if (formData.image) {
-        submitData.append('image', formData.image);
-      }
+      if (formData.image) submitData.append('image', formData.image);
 
       const response = await apiClient.post('/found-items', submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       if (response.data.success) {
@@ -110,465 +85,367 @@ export default function PostFoundItem() {
         setSubmitted(true);
       }
     } catch (err) {
-      console.error('Post found item error:', err);
-      setError(`❌ ${err.response?.data?.message || 'Failed to post item. Please try again.'}`);
+      setError(`❌ ${err.response?.data?.message || t("messages.operationFailed")}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleClearForm = () => {
-    setFormData({
-      item_type: "",
-      category: "",
-      customCategory: "",
-      description: "",
-      date_found: "",
-      location_found: "",
-      district: "",
-      additional_info: "",
-      image: null,
-    });
+    setFormData({ item_type: "", category: "", customCategory: "", description: "", date_found: "", location_found: "", district: "", additional_info: "", image: null });
     setImagePreview(null);
     setError('');
   };
 
   const handleContactOwner = (match) => {
-    const itemData = {
-      id: match.lost_item_id,
-      item_type: match.lost_item_type,
-      category: match.lost_category,
-      district: match.lost_district,
-      contact_name: match.loser_name,
-      contact_phone: match.loser_phone,
-      user_id: match.loser_id,
-      item_source: 'lost'
-    }
+    const itemData = { id: match.lost_item_id, item_type: match.lost_item_type, category: match.lost_category, district: match.lost_district, contact_name: match.loser_name, contact_phone: match.loser_phone, user_id: match.loser_id, item_source: 'lost' }
     setSelectedMatch(itemData);
     setMessageModalOpen(true);
   };
 
   if (submitted) {
     return (
-      <div className="max-w-6xl mx-auto py-6 md:py-12 px-4 md:px-6">
-        <div className="bg-white rounded-2xl md:rounded-[40px] shadow-2xl p-6 md:p-12 text-center border border-green-100 relative overflow-hidden mb-8 md:mb-12">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-green-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
-          <div className="relative z-10">
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <FiCheckCircle className="w-10 h-10" />
+      <div className="space-y-12 pb-32">
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 md:p-16 text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-green-50 rounded-full blur-[80px] -mr-32 -mt-32 opacity-40"></div>
+          <div className="relative z-10 space-y-8">
+            <div className="w-20 h-20 bg-green-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-xl animate-bounce">
+              <FiCheckSquare className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-3">Item Posted Successfully!</h2>
-            <p className="text-slate-500 max-w-lg mx-auto leading-relaxed text-sm md:text-lg">
-              Your found item has been securely registered. Our neural engine has already started scanning for owners.
-            </p>
+            <div className="space-y-3">
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">{t("common.success")}</h2>
+              <p className="text-slate-500 font-medium max-w-xl mx-auto text-sm leading-relaxed italic">
+                {t("items.itemPosted")}
+              </p>
+            </div>
             
             {matches.length > 0 ? (
-               <div className="mt-8 inline-flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-full font-black text-sm uppercase tracking-widest shadow-xl animate-bounce">
-                 <FiInfo /> {matches.length} Potential Matches Found!
+               <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-full font-bold text-[10px] uppercase tracking-widest shadow-lg">
+                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                 System Alert: {matches.length} {t("matches.potentialMatches")}
                </div>
             ) : (
-               <div className="mt-8 flex justify-center gap-4">
-                  <button 
-                    onClick={() => { setSubmitted(false); handleClearForm(); }}
-                    className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition"
-                  >
-                    Post Another Item
-                  </button>
-               </div>
+               <button onClick={() => { setSubmitted(false); handleClearForm(); }} className="px-10 py-4 bg-green-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-green-700 transition-all shadow-xl active:scale-95">{t("items.postFoundItem")}</button>
             )}
           </div>
         </div>
 
         {matches.length > 0 && (
-          <div className="space-y-8 animate-in slide-in-from-bottom-10 duration-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl md:text-3xl font-black text-slate-900">Immediate Matches</h3>
-                <p className="text-slate-400 font-bold mt-1 uppercase tracking-widest text-xs">Based on Neural Scan & Document OCR</p>
-              </div>
+          <div className="space-y-8">
+            <div className="flex items-center gap-4 px-2">
+               <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+               <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em]">{t("matches.matchedItems")}</h3>
             </div>
 
-            <div className="grid gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {matches.map((match) => (
-                <div key={match.id} className="group bg-white rounded-2xl md:rounded-[32px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden">
-                  <div className="flex flex-col lg:flex-row">
-                    <div className="lg:w-80 h-64 lg:h-auto relative overflow-hidden bg-slate-100">
-                      {match.lost_image_url ? (
-                        <img 
-                          src={getImageUrl(match.lost_image_url)} 
-                          className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                          alt="Lost"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                           <FiEye className="w-16 h-16 opacity-30" />
-                           <span className="text-[8px] font-black uppercase mt-3 tracking-widest">Neural Reference Only</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
-                      <div className="absolute top-6 left-6">
-                        <div className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-black text-slate-900 uppercase tracking-widest">
-                          {Math.round(match.match_score)}% Score
-                        </div>
+                <div key={match.id} className="group bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-500 hover:shadow-2xl flex flex-col md:flex-row h-full">
+                  <div className="md:w-52 h-48 md:h-auto relative overflow-hidden bg-slate-50 shrink-0">
+                    {match.lost_image_url ? (
+                      <img src={getImageUrl(match.lost_image_url)} className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt="Lost Reference" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50">
+                         <FiArchive className="text-4xl opacity-50" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="px-3 py-1.5 bg-white/90 backdrop-blur-md text-slate-900 rounded-lg text-[9px] font-black uppercase tracking-widest text-center shadow-lg border border-white">
+                        {Math.round(match.match_score)}% {t("matches.matchPercentage")}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex-1 p-5 md:p-8 lg:p-10 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start mb-6">
-                          <div>
-                            <h4 className="text-lg md:text-2xl font-black text-slate-900">{match.lost_item_type}</h4>
-                            <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-2 text-slate-400 text-xs md:text-sm font-bold">
-                               <span className="flex items-center gap-1"><FiMapPin /> {match.lost_district}</span>
-                               <span className="flex items-center gap-1"><FiClock /> Lost on {new Date(match.date_lost).toLocaleDateString()}</span>
-                            </div>
-                          </div>
+                  <div className="flex-1 p-8 flex flex-col justify-between space-y-6">
+                     <div>
+                        <h4 className="text-xl font-black text-slate-900 uppercase italic leading-none mb-4">{match.lost_item_type}</h4>
+                        <div className="flex flex-wrap gap-4 text-slate-400">
+                           <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest"><FiMapPin className="text-green-600" /> {match.lost_district}</span>
+                           <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest"><FiClock className="text-green-600" /> {new Date(match.date_lost).toLocaleDateString().toUpperCase()}</span>
                         </div>
+                     </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-                           <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100">
-                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600">
-                                   <FiUser />
-                                </div>
-                                <div>
-                                   <p className="text-[10px] font-black text-slate-400 uppercase">Possible Owner</p>
-                                   <p className="text-sm font-black text-slate-900">{match.loser_name}</p>
-                                </div>
-                             </div>
-                           </div>
-                           <div className="bg-emerald-500 rounded-2xl md:rounded-3xl p-4 md:p-6 text-white text-center flex flex-col justify-center shadow-lg shadow-emerald-500/20">
-                              <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Potential Reward</p>
-                              <p className="text-lg md:text-2xl font-black">{match.reward_amount ? `${match.reward_amount.toLocaleString()} RWF` : 'Personal Gratitude'}</p>
-                           </div>
+                     <div className="bg-slate-50 px-5 py-4 rounded-xl border border-slate-100">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t("profile.personalInfo")}</p>
+                        <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-green-600"><FiUser size={14} /></div>
+                           <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{match.loser_name}</p>
                         </div>
-                      </div>
+                     </div>
 
-                      <div className="flex gap-4">
-                         <button 
-                            onClick={() => handleContactOwner(match)}
-                            className="flex-1 bg-slate-900 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-xs md:text-sm hover:translate-y-[-2px] transition shadow-xl flex items-center justify-center gap-2 group/btn"
-                         >
-                            <LuMessageSquare className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5" />
-                            Connect & Verify
-                         </button>
-                         <button 
-                            onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }}
-                            className="w-14 h-14 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition"
-                         >
-                            <LuEye className="w-5 h-5" />
-                         </button>
-                      </div>
-                    </div>
+                     <div className="flex gap-2">
+                        <button onClick={() => handleContactOwner(match)} className="flex-1 bg-slate-950 text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-green-600 transition-all">{t("common.contact")}</button>
+                        <button onClick={() => { setViewingMatch(match); setIsDetailModalOpen(true); }} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 flex items-center justify-center hover:bg-green-50 hover:text-green-600 transition-all" title={t("matches.viewDetails")}><FiEye /></button>
+                     </div>
                   </div>
                 </div>
               ))}
             </div>
             
-            <div className="flex justify-center pt-10">
-               <button 
-                  onClick={() => { setSubmitted(false); handleClearForm(); }}
-                  className="px-12 py-4 bg-white border-2 border-slate-100 text-slate-400 font-black rounded-3xl hover:border-slate-300 hover:text-slate-600 transition uppercase tracking-widest text-xs shadow-sm"
-               >
-                  I'm done for now
-               </button>
+            <div className="flex justify-center pt-12">
+               <button onClick={() => { setSubmitted(false); handleClearForm(); }} className="px-12 py-4 border border-slate-200 text-slate-400 font-black rounded-xl hover:border-green-600 hover:text-green-600 transition-all uppercase tracking-widest text-[10px]">{t("common.back")}</button>
             </div>
           </div>
-        )}
-
-        {/* Detail Modal */}
-        {isDetailModalOpen && viewingMatch && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300">
-              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl" onClick={() => setIsDetailModalOpen(false)}></div>
-              <div className="relative bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl md:rounded-[48px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-500 border border-white/20">
-                <button 
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="absolute top-8 right-8 z-10 w-12 h-12 bg-white/10 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-white/20 transition border border-white/20"
-                >
-                  <FiX className="text-2xl" />
-                </button>
-
-                <div className="md:w-1/2 bg-slate-950 p-6 md:p-12 flex flex-col justify-center items-center">
-                    <div className="w-full max-w-sm space-y-8">
-                        <div className="text-center">
-                           <h3 className="text-white text-xl md:text-3xl font-black mb-1 italic uppercase underline decoration-blue-500 underline-offset-8">Match Scan</h3>
-                           <p className="text-white/30 text-[10px] font-black uppercase tracking-[4px]">Direct Comparison</p>
-                        </div>
-                        
-                        <div className="space-y-4">
-                           <div className="aspect-video bg-white/5 rounded-[32px] overflow-hidden border border-white/10 flex items-center justify-center p-4 relative shadow-2xl">
-                              {viewingMatch.lost_image_url ? (
-                                <img src={getImageUrl(viewingMatch.lost_image_url)} className="w-full h-full object-contain rounded-2xl" alt="Match" />
-                              ) : (
-                                <FiEye className="w-16 h-16 text-white/5" />
-                              )}
-                              <div className="absolute top-4 left-4 bg-blue-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase">Owner's Report Image</div>
-                           </div>
-                           
-                           <div className="bg-white/5 p-8 rounded-[40px] border border-white/10 text-center">
-                              <p className="text-white font-black text-6xl italic">
-                                {viewingMatch.match_score}<span className="text-blue-500 ml-1">%</span>
-                              </p>
-                              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[3px] mt-2 font-mono">NEURAL_CONFIDENCE_STABLE</p>
-                           </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="md:w-1/2 p-6 md:p-12 overflow-y-auto space-y-6 md:space-y-10 bg-white shadow-[-40px_0_60px_rgba(0,0,0,0.05)]">
-                    <div>
-                       <h2 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight">Post Analysis</h2>
-                       <p className="text-slate-400 text-xs font-black uppercase tracking-widest mt-2">Verified by Rwanda Lost & Found Engine</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                          <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1"><FiTag /> Category</p>
-                          <p className="text-sm font-black text-slate-800 capitalize bg-white px-4 py-2 rounded-xl shadow-sm inline-block">{viewingMatch.lost_category}</p>
-                       </div>
-                       <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                          <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1"><FiMapPin /> District</p>
-                          <p className="text-sm font-black text-slate-800 bg-white px-4 py-2 rounded-xl shadow-sm inline-block">{viewingMatch.lost_district}</p>
-                       </div>
-                    </div>
-
-                    <div className="space-y-6">
-                       <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loser Identity</h4>
-                       <div className="flex items-center gap-5 bg-blue-50/50 p-6 rounded-[32px] border border-blue-100/50">
-                          <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center text-xl shadow-xl">
-                             <FiUser />
-                          </div>
-                          <div>
-                             <p className="text-sm font-black text-slate-900 mb-0.5">{viewingMatch.loser_name}</p>
-                             <div className="flex gap-4 mt-1">
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500"><FiPhone /> {viewingMatch.loser_phone}</span>
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 truncate max-w-[150px]"><FiMail /> {viewingMatch.loser_email}</span>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-
-                    {viewingMatch.lost_text && (
-                      <div className="space-y-4 pt-4 border-t border-slate-100">
-                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Document OCR Insights</h4>
-                         <div className="bg-slate-50 rounded-[32px] p-8 border border-slate-100 border-dashed border-2">
-                           <p className="text-slate-600 text-sm font-bold italic leading-relaxed">"{viewingMatch.lost_text}"</p>
-                         </div>
-                      </div>
-                    )}
-
-                    <div className="pt-6">
-                       <button
-                          onClick={() => handleContactOwner(viewingMatch)}
-                          className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-black text-lg shadow-2xl hover:translate-y-[-4px] transition duration-300"
-                        >
-                          Initiate Verification
-                        </button>
-                    </div>
-                </div>
-              </div>
-            </div>
-        )}
-
-        {messageModalOpen && selectedMatch && (
-          <SendMessageModal
-            item={selectedMatch}
-            isOpen={messageModalOpen}
-            onClose={() => {
-              setMessageModalOpen(false)
-              setSelectedMatch(null)
-            }}
-          />
         )}
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 px-4 md:px-6">
-      <div className="mb-12">
-        <span className="inline-block px-4 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest mb-4">
-          Community Support
-        </span>
-        <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">Post a Found Item</h1>
-        <p className="text-slate-500 text-sm md:text-lg mt-2 font-medium">Your report will be instantly matched against thousands of lost records.</p>
+    <div className="space-y-8 pb-32">
+       {/* HEADER SECTION */}
+      <div className="bg-gradient-to-r from-green-600 to-emerald-700 p-6 md:p-8 rounded-2xl border border-green-400 shadow-lg relative overflow-hidden group">
+        <div className="absolute inset-0 bg-white/5 opacity-10"></div>
+        <div className="relative z-10">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+            {t("items.postFoundItem")}
+          </h1>
+          <p className="text-green-50 text-sm md:text-base opacity-90 max-w-2xl font-medium">
+            {t("app.description")}
+          </p>
+        </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border-2 border-red-100 rounded-[32px] p-6 mb-8 flex items-center gap-4 text-red-600 animate-in shake duration-500">
-          <FiAlertCircle className="w-8 h-8 flex-shrink-0" />
-          <p className="font-bold">{error}</p>
+        <div className="bg-red-50 border border-red-200 text-red-800 p-5 rounded-xl flex items-center gap-4 shadow-sm animate-in shake">
+          <FiAlertCircle className="w-6 h-6 shrink-0" />
+          <p className="font-bold text-sm uppercase tracking-tight">{error}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl md:rounded-[48px] shadow-2xl border border-slate-100 p-5 md:p-10 lg:p-14 space-y-8 md:space-y-10">
-        <div className="grid md:grid-cols-2 gap-6 md:gap-10">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-12 space-y-12">
+        <div className="grid lg:grid-cols-2 gap-12">
+          {/* DISCOVERY CORE */}
           <div className="space-y-8">
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Item Title</label>
-              <input
-                type="text"
-                name="item_type"
-                value={formData.item_type}
-                onChange={handleChange}
-                placeholder="e.g. Blue Leather Wallet"
-                required
-                className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-xl md:rounded-[24px] px-4 md:px-6 py-3 md:py-4 font-bold text-slate-800 transition-all outline-none text-sm"
-              />
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+              <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("items.itemDetails")}</h3>
             </div>
-
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Category</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                required
-                className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-xl md:rounded-[24px] px-4 md:px-6 py-3 md:py-4 font-bold text-slate-800 transition-all outline-none text-sm"
-              >
-                <option value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {formData.category === "other" && (
-              <div className="animate-in slide-in-from-top-2 duration-300">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Specify Type</label>
-                <input
-                  type="text"
-                  name="customCategory"
-                  value={formData.customCategory}
-                  onChange={handleChange}
-                  placeholder="e.g. Student ID"
-                  required
-                  className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-xl md:rounded-[24px] px-4 md:px-6 py-3 md:py-4 font-bold text-slate-800 transition-all outline-none text-sm"
+            
+            <div className="grid gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.title")} *</label>
+                <input 
+                  type="text" 
+                  name="item_type" 
+                  value={formData.item_type} 
+                  onChange={handleChange} 
+                  placeholder="..." 
+                  required 
+                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs placeholder:text-slate-300" 
                 />
               </div>
-            )}
+
+              <div className="grid md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.category")} *</label>
+                  <select 
+                    name="category" 
+                    value={formData.category} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs appearance-none"
+                  >
+                    <option value="">{t("items.selectCategory")}</option>
+                    {categories.map((cat) => ( <option key={cat.value} value={cat.value}>{cat.label}</option> ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.date")} *</label>
+                  <input 
+                    type="date" 
+                    name="date_found" 
+                    value={formData.date_found} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs" 
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+
+              {formData.category === "other" && (
+                <div className="animate-in slide-in-from-top-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("categories.other")}</label>
+                  <input 
+                    type="text" 
+                    name="customCategory" 
+                    value={formData.customCategory} 
+                    onChange={handleChange} 
+                    placeholder="..." 
+                    required 
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs mt-2" 
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-8">
-            <div className="h-full">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Item Image</label>
-              <div className="relative h-[calc(100%-35px)] group">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  id="imageUpload"
-                />
-                <div className={`h-64 md:h-full border-4 border-dashed rounded-[32px] transition-all flex flex-col items-center justify-center p-8 overflow-hidden ${
-                  imagePreview ? 'border-blue-200 bg-blue-50/10' : 'border-slate-100 bg-slate-50 group-hover:bg-white group-hover:border-blue-400'
-                }`}>
-                  {imagePreview ? (
-                     <div className="relative w-full h-full flex items-center justify-center">
-                        <img src={imagePreview} className="max-h-full rounded-2xl shadow-xl" alt="Preview" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
-                           <p className="text-white font-black text-xs uppercase tracking-widest">Change Image</p>
-                        </div>
-                     </div>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 bg-white rounded-[20px] shadow-sm flex items-center justify-center text-slate-300 mb-4 transition-transform group-hover:scale-110">
-                        <FiUploadCloud className="w-8 h-8" />
-                      </div>
-                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Click to Upload</p>
-                      <p className="text-[10px] text-slate-400 mt-2">JPG, PNG up to 10MB</p>
-                    </>
-                  )}
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+              <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("items.image")}</h3>
+            </div>
+            
+            <div className="relative h-[256px] group">
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+              />
+              <div className={`h-full border-2 border-dashed rounded-2xl transition-all duration-300 flex flex-col items-center justify-center p-6 overflow-hidden ${ imagePreview ? 'border-green-500 bg-green-50/20 shadow-inner' : 'border-slate-100 bg-slate-50 group-hover:border-green-400 group-hover:bg-white' }`}>
+                {imagePreview ? (
+                   <div className="relative w-full h-full flex items-center justify-center">
+                      <img src={imagePreview} className="max-h-full rounded-xl shadow-2xl border-2 border-white" alt="Preview" />
+                      <button 
+                         type="button" 
+                         onClick={() => { setImagePreview(null); setFormData(prev => ({...prev, image: null})); }} 
+                         className="absolute top-2 right-2 bg-slate-950/80 backdrop-blur-md text-white rounded-lg w-10 h-10 flex items-center justify-center hover:bg-red-500 shadow-md z-20 transition-all"
+                      >
+                         <FiX />
+                      </button>
+                   </div>
+                ) : (
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-300 mx-auto border border-slate-50 transition-all group-hover:scale-110 group-hover:text-green-500">
+                      <FiUploadCloud className="text-3xl" />
+                    </div>
+                    <div className="space-y-1">
+                       <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{t("items.addImage")}</p>
+                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight italic">JPG, PNG | MAX 10MB</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-8 pt-6">
-          <div className="group">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Describe markings, color, condition, etc. for better matching."
-              required
-              rows={4}
-              className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-2xl md:rounded-[32px] px-5 md:px-8 py-4 md:py-6 font-bold text-slate-800 transition-all outline-none resize-none text-sm"
-            />
+        <div className="space-y-10">
+           <div className="flex items-center gap-3">
+            <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("items.location")}</h3>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 md:gap-10">
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Date Found</label>
-              <input
-                type="date"
-                name="date_found"
-                value={formData.date_found}
-                onChange={handleChange}
-                required
-                className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-xl md:rounded-[24px] px-4 md:px-6 py-3 md:py-4 font-bold text-slate-800 transition-all outline-none text-sm"
-              />
-            </div>
-            <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">District</label>
-              <select
-                name="district"
-                value={formData.district}
-                onChange={handleChange}
-                required
-                className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-xl md:rounded-[24px] px-4 md:px-6 py-3 md:py-4 font-bold text-slate-800 transition-all outline-none text-sm"
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.location")} *</label>
+              <select 
+                name="district" 
+                value={formData.district} 
+                onChange={handleChange} 
+                required 
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs appearance-none"
               >
                 <option value="">Select District</option>
-                {districts.map((dist) => (
-                  <option key={dist} value={dist}>{dist}</option>
-                ))}
+                {districts.map((dist) => ( <option key={dist} value={dist}>{dist}</option> ))}
               </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.location")} Detail *</label>
+              <input 
+                type="text" 
+                name="location_found" 
+                value={formData.location_found} 
+                onChange={handleChange} 
+                placeholder="..." 
+                required 
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs placeholder:text-slate-300" 
+              />
             </div>
           </div>
 
-          <div className="group">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Exact Location</label>
-            <input
-              type="text"
-              name="location_found"
-              value={formData.location_found}
-              onChange={handleChange}
-              placeholder="Building name, street, landmarks..."
-              required
-              className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-xl md:rounded-[24px] px-4 md:px-6 py-3 md:py-4 font-bold text-slate-800 transition-all outline-none text-sm"
-            />
-          </div>
-
-          <div className="group">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Additional Notes</label>
-            <textarea
-              name="additional_info"
-              value={formData.additional_info}
-              onChange={handleChange}
-              placeholder="Any other clues..."
-              rows={2}
-              className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-xl md:rounded-[24px] px-4 md:px-6 py-3 md:py-4 font-bold text-slate-800 transition-all outline-none resize-none text-sm"
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.description")} *</label>
+            <textarea 
+              name="description" 
+              value={formData.description} 
+              onChange={handleChange} 
+              placeholder="..." 
+              required 
+              rows={4} 
+              className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-2xl px-6 py-5 font-semibold text-slate-700 transition-all outline-none resize-none text-sm leading-relaxed italic" 
             />
           </div>
         </div>
 
         <div className="pt-8">
-           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-slate-900 text-white rounded-xl md:rounded-[32px] py-4 md:py-6 font-black text-base md:text-xl shadow-2xl hover:translate-y-[-4px] hover:bg-black transition-all duration-300 disabled:opacity-50 disabled:translate-y-0"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Neural Scanning...
-              </div>
-            ) : "Confirm & Post Found Item"}
+           <button 
+             type="submit" 
+             disabled={loading} 
+             className="w-full bg-slate-950 text-white rounded-2xl py-6 font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-green-600 transition-all duration-300 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3"
+           >
+            {loading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white animate-spin rounded-full"></div> : <FiCheckCircle />}
+            {loading ? t("messages.processing") : t("common.submit")}
           </button>
         </div>
       </form>
+
+      {isDetailModalOpen && viewingMatch && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-md" onClick={() => setIsDetailModalOpen(false)}></div>
+              <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300">
+                <button onClick={() => setIsDetailModalOpen(false)} className="absolute top-4 right-4 z-20 w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 transition-all shadow-md"><FiX /></button>
+
+                <div className="md:w-2/5 p-8 bg-slate-900 text-white flex flex-col justify-between">
+                  <div className="space-y-6">
+                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">{t("matches.matchPercentage")}</p>
+                    <div className="relative">
+                      <span className="text-7xl font-black italic">{Math.round(viewingMatch.match_score)}<span className="text-green-500 text-3xl ml-1">%</span></span>
+                    </div>
+                  </div>
+                  {viewingMatch.lost_image_url ? (
+                    <div className="mt-8 overflow-hidden rounded-xl border border-white/10">
+                      <img src={getImageUrl(viewingMatch.lost_image_url)} className="w-full h-48 object-cover" alt="Reference" />
+                    </div>
+                  ) : (
+                    <div className="mt-8 aspect-video bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-white/20 uppercase font-black text-[9px] tracking-widest">No Visual Seed</div>
+                  )}
+                </div>
+
+                <div className="flex-1 p-8 md:p-12 overflow-y-auto space-y-8 bg-white">
+                  <div className="space-y-3">
+                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-green-100">{viewingMatch.lost_category}</span>
+                    <h2 className="text-4xl font-black text-slate-900 leading-tight italic uppercase">{viewingMatch.lost_item_type}</h2>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 shadow-sm">
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">{t("items.location")}</p>
+                      <p className="font-black text-slate-800 text-sm uppercase">{viewingMatch.lost_district}</p>
+                    </div>
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 shadow-sm">
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">{t("items.date")}</p>
+                      <p className="font-black text-slate-800 text-sm uppercase">{new Date(viewingMatch.date_lost).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">{t("profile.personalInfo")}</p>
+                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="font-black text-slate-950 uppercase tracking-tight text-lg mb-2">{viewingMatch.loser_name}</p>
+                      <div className="flex flex-wrap gap-6 text-[10px] font-black text-slate-400">
+                        <span className="flex items-center gap-2"><FiPhone className="text-green-600" /> {viewingMatch.loser_phone}</span>
+                        <span className="flex items-center gap-2"><FiMail className="text-green-600" /> {viewingMatch.loser_email}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => handleContactOwner(viewingMatch)} 
+                    className="w-full py-5 bg-slate-950 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-green-600 transition-all shadow-xl active:scale-95"
+                  >
+                    {t("common.contact")}
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
+
+      {messageModalOpen && selectedMatch && (
+        <SendMessageModal item={selectedMatch} isOpen={messageModalOpen} onClose={() => { setMessageModalOpen(false); setSelectedMatch(null); }} />
+      )}
     </div>
   );
 }

@@ -10,15 +10,26 @@ const languages = { en, rw, sw, fr };
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
-    const saved = localStorage.getItem("lang");
-    if (!saved) {
-      localStorage.setItem("lang", "en");
-      return "en";
-    }
-    return saved;
+    return localStorage.getItem("lang") || "en";
   });
 
-  const t = (key) => languages[language][key] || key;
+  // Helper to get nested value from object
+  const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  };
+
+  const t = (key) => {
+    const value = getNestedValue(languages[language], key);
+    if (value) return value;
+    
+    // Fallback to English if current language is not English
+    if (language !== 'en') {
+      const fallback = getNestedValue(languages['en'], key);
+      if (fallback) return fallback;
+    }
+    
+    return key;
+  };
 
   const changeLanguage = (lang) => {
     setLanguage(lang);
@@ -26,16 +37,16 @@ export function LanguageProvider({ children }) {
   };
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      const storedLang = localStorage.getItem("lang") || "en";
-      if (storedLang !== language) {
-        setLanguage(storedLang);
+    // Sync language if it changes in other tabs
+    const handleStorageChange = (e) => {
+      if (e.key === "lang" && e.newValue) {
+        setLanguage(e.newValue);
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [language]);
+  }, []);
 
   return (
     <LanguageContext.Provider value={{ t, language, changeLanguage }}>

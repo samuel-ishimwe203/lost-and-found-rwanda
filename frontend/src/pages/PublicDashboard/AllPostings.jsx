@@ -1,13 +1,15 @@
-import { Folder, MapPin, Phone, User, Image } from "lucide-react";
-import { FiCalendar } from "react-icons/fi";
+import React, { useContext, useState, useMemo } from "react";
+import { Folder, MapPin, Phone, User, Image, Search, Send, CheckCircle, AlertCircle, Calendar, Filter, ArrowRight, Bot, Shield, DollarSign, Globe } from "lucide-react";
+import { FiCalendar, FiArrowRight, FiSliders, FiShield } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useContext, useState } from "react";
 import { PostsContext } from "../../context/PostsContext";
 import { AuthContext } from "../../context/AuthContext";
 import SendMessageModal from "../../components/SendMessageModal";
 import { getImageUrl } from "../../utils/imageHelper";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function AllPostings() {
+  const { t } = useLanguage();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const { allPosts, loading } = useContext(PostsContext);
@@ -20,217 +22,156 @@ export default function AllPostings() {
   const category = params.get("category");
   const title = params.get("title");
 
-  const handleContactClick = (item) => {
-    if (!isAuthenticated) {
+  const processedItems = useMemo(() => {
+    return allPosts.filter((item) => {
+      const matchesSearch = (!city || item.district === city) &&
+                           (!category || item.category === category) &&
+                           (!title || item.item_type.toLowerCase().includes(title.toLowerCase()));
+      return matchesSearch;
+    }).map(item => {
+      const isLost = !item.item_source || item.item_source === 'lost' || item.location_lost || item.date_lost;
+      return { ...item, _isLost: isLost };
+    });
+  }, [allPosts, city, category, title]);
 
-      navigate('/auth?mode=login');
-      return;
-    }
-    setSelectedItem(item);
-    setMessageModalOpen(true);
+  const lostItems = processedItems.filter(i => i._isLost);
+  const foundItems = processedItems.filter(i => !i._isLost);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 font-sans">
+        <div className="w-16 h-16 border-4 border-emerald-100 border-t-[#10b981] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  const ItemCard = ({ item }) => {
+    const additionalInfo = item.additional_info ? (typeof item.additional_info === 'string' ? JSON.parse(item.additional_info) : item.additional_info) : {};
+    const imageUrl = getImageUrl(item.image_url);
+    
+    return (
+      <div className="bg-white rounded-[16px] border border-blue-100/50 shadow-sm overflow-hidden flex flex-col h-full transform transition-all duration-300 hover:shadow-lg">
+        <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
+          {imageUrl ? (
+            <img src={imageUrl} alt={item.item_type} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center opacity-10">
+              <Image className="w-12 h-12 text-gray-900" />
+            </div>
+          )}
+          
+          <div className="absolute top-2 left-2 flex gap-2">
+             {imageUrl && (
+                <div className="bg-indigo-600 text-white px-2 py-1 rounded-lg text-[9px] font-bold flex items-center gap-1 shadow-lg">
+                   <Bot size={10} /> {t("landing.aiBadge")}
+                </div>
+             )}
+          </div>
+          <div className="absolute top-2 right-2">
+             <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1 ${item._isLost ? 'bg-rose-600' : 'bg-[#10b981]'}`}>
+                <Search size={10} /> {item._isLost ? t("postings.itemsLost").split(' ')[1] : t("postings.itemsFound").split(' ')[1]}
+             </div>
+          </div>
+        </div>
+
+        <div className="p-4 flex flex-col flex-1">
+          <div className="mb-4">
+             <h3 className="text-sm font-bold text-gray-900 capitalize mb-0.5">{item.item_type}</h3>
+             <p className="text-[10px] text-gray-500 line-clamp-1">{item.description || t("items.noDescription")}</p>
+          </div>
+
+          <div className="space-y-3 flex-1">
+             <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+                   <Folder size={14} />
+                </div>
+                <div>
+                   <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-none">{t("items.category")}</p>
+                   <p className="text-[10px] font-bold text-gray-700 capitalize">{t(`categories.${item.category?.toLowerCase()}`) || item.category}</p>
+                </div>
+             </div>
+
+             <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center text-sky-500">
+                   <MapPin size={14} />
+                </div>
+                <p className="text-[11px] font-bold text-gray-700">{t(`districts.${item.district?.toLowerCase()}`) || item.district}</p>
+             </div>
+
+             {additionalInfo.owner_name && (
+                <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-xl flex items-center gap-3 shadow-inner">
+                   <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                      <User size={16} />
+                   </div>
+                   <div className="flex-1 min-w-0">
+                      <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest leading-none mb-0.5">{item._isLost ? t("postings.itemsLost").split(' ')[0] : t("postings.itemsFound").split(' ')[0]}</p>
+                      <p className="text-[11px] font-bold text-blue-900 truncate">{additionalInfo.owner_name}</p>
+                   </div>
+                </div>
+             )}
+          </div>
+
+          {item.reward_amount > 0 && (
+            <div className="mt-4 bg-orange-50 border border-orange-100 p-3 rounded-xl flex items-center gap-3">
+               <div className="text-orange-600">
+                  <DollarSign size={16} className="font-bold" />
+               </div>
+               <div>
+                  <p className="text-[9px] font-bold text-orange-600 uppercase tracking-widest leading-none">{t("items.rewardAmount")}</p>
+                  <p className="text-[12px] font-black text-orange-900">{item.reward_amount.toLocaleString()} RWF</p>
+               </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
-  const filteredItems = allPosts.filter((item) => {
-    return (
-      (!city || item.district === city) &&
-      (!category || item.category === category) &&
-      (!title || item.item_type.toLowerCase().includes(title.toLowerCase()))
-    );
-  });
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 p-10">
-      <h2 className="text-3xl font-bold mb-6">
-        All Postings ({allPosts.length})
-      </h2>
-
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="text-xl text-gray-600">Loading items...</div>
+    <div className="min-h-screen bg-slate-50 font-sans pb-32">
+      <div className="bg-white border-b border-gray-100 mb-10">
+        <div className="max-w-[1400px] mx-auto px-6 py-10">
+           <div className="flex items-center gap-2 mb-2">
+              <Globe className="text-[#10b981] w-4 h-4" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">{t("app.tagline")}</span>
+           </div>
+           <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight italic">{t("nav.browse")} {t("postings.stream")}</h1>
         </div>
-      ) : filteredItems.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-xl text-gray-600">No items found for your search criteria.</p>
-          <p className="text-gray-500 mt-2">Try adjusting your filters or browse all postings.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredItems.map((item) => {
-            // Parse additional_info to get document owner details
-            const additionalInfo = item.additional_info ? (typeof item.additional_info === 'string' ? JSON.parse(item.additional_info) : item.additional_info) : {};
-            
-            // Determine if it's a lost or found item - FIXED: Check item_source field
-            const isLostItem = !item.item_source || item.item_source === 'lost' || item.location_lost || item.date_lost;
-            
-            // Construct full image URL
-            const imageUrl = getImageUrl(item.image_url);
-            
-            return (
-              <div
-                key={item.id}
-                className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-purple-100 transform hover:-translate-y-1"
-              >
-                {/* Image Section - Reduced height */}
-                <div className="relative w-full h-36 bg-gradient-to-br from-purple-100 to-indigo-200 overflow-hidden">
-                  {imageUrl ? (
-                    <>
-                      <img
-                        src={imageUrl}
-                        alt={item.item_type}
-                        className="w-full h-full object-cover"
-                        crossOrigin="anonymous"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Image className="w-12 h-12 text-purple-300" />
-                    </div>
-                  )}
-                  
-                  {/* Status Badge - Top Right */}
-                  <div className="absolute top-2 right-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold shadow-lg ${
-                      isLostItem 
-                        ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white' 
-                        : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-                    }`}>
-                      {isLostItem ? '🔍 LOST' : '✓ FOUND'}
-                    </span>
-                  </div>
-                </div>
+      </div>
 
-                {/* Content Section - Reduced padding */}
-                <div className="p-3">
-                  {/* Title - Smaller */}
-                  <h3 className="text-sm font-bold text-gray-800 mb-1 line-clamp-1">{item.item_type}</h3>
-                  
-                  {/* Description - Smaller */}
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-1">{item.description}</p>
+      <div className="max-w-[1400px] mx-auto px-6 space-y-16">
+        <section>
+          <div className="mb-6 border-l-4 border-rose-600 pl-4 py-1">
+             <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">{t("postings.itemsLost")} {t("postings.reports")}</h2>
+             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{lostItems.length} {t("admin.logs").split(' ')[0]}</p>
+          </div>
+          {lostItems.length === 0 ? (
+            <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+               <p className="text-xs font-bold text-gray-400">{t("items.noItemsFound")}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {lostItems.map(item => <ItemCard key={item.id} item={item} />)}
+            </div>
+          )}
+        </section>
 
-                  {/* Info Grid - Compact */}
-                  <div className="space-y-1.5">
-                    {/* Category */}
-                    <div className="flex items-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-100 text-indigo-600 mr-2 flex-shrink-0">
-                        <Folder className="w-3 h-3" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500">Category</p>
-                        <p className="text-xs font-semibold text-gray-800 capitalize truncate">{item.category}</p>
-                      </div>
-                    </div>
-
-                    {/* Location */}
-                    <div className="flex items-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-rose-100 text-rose-600 mr-2 flex-shrink-0">
-                        <MapPin className="w-3 h-3" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-800 truncate">{item.district}</p>
-                      </div>
-                    </div>
-
-                    {/* Owner Name - Most Important */}
-                    {additionalInfo.owner_name && (
-                      <div className="flex items-center bg-gradient-to-r from-emerald-50 to-teal-50 p-2 rounded-lg border border-emerald-200">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-500 text-white mr-2 flex-shrink-0">
-                          <User className="w-3 h-3" />
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-emerald-700">Name</p>
-                          <p className="text-sm font-bold text-emerald-900 truncate">{additionalInfo.owner_name}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Color */}
-                    {additionalInfo.color && (
-                      <div className="flex items-center">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gray-100 text-gray-600 mr-2 flex-shrink-0">
-                          <span className="w-3 h-3 rounded-full border border-gray-300" style={{ backgroundColor: additionalInfo.color.toLowerCase() }}></span>
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-gray-800 truncate">Color: {additionalInfo.color}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Date */}
-                    <div className="flex items-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                        <FiCalendar className="w-3 h-3" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-800 truncate">
-                          {isLostItem ? 'Lost on: ' : 'Found on: '}
-                          {new Date(item.date_lost || item.date_found).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Phone Number */}
-                    {(item.contact_phone || additionalInfo.contact_phone) && (
-                      <div className="flex items-center">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 text-blue-600 mr-2 flex-shrink-0">
-                          <Phone className="w-3 h-3" />
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-gray-800 truncate">{item.contact_phone || additionalInfo.contact_phone}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer Section - Compact */}
-                  <div className="mt-2 pt-2 border-t border-gray-200">
-                    {/* Contact Owner Button */}
-                    <button
-                      onClick={() => handleContactClick(item)}
-                      className="w-full mb-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-green-700 hover:to-emerald-600 transition shadow-md"
-                    >
-                      📧 Contact Owner
-                    </button>
-
-                    {/* Reward */}
-                    {item.reward_amount && item.reward_amount > 0 && (
-                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-2 rounded-lg border border-yellow-300 mb-1">
-                        <div className="flex items-center">
-                          <span className="text-lg mr-1">💰</span>
-                          <div>
-                            <p className="text-xs text-yellow-800 font-bold">{item.reward_amount.toLocaleString()} RWF</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Posted By */}
-                    <div className="flex items-center text-xs text-gray-500">
-                      <span className="truncate">By: {item.contact_name || 'Anonymous'}</span>
-                      {item.is_police_upload && (
-                        <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">👮</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Send Message Modal */}
-      {selectedItem && (
-        <SendMessageModal
-          isOpen={messageModalOpen}
-          onClose={() => {
-            setMessageModalOpen(false);
-            setSelectedItem(null);
-          }}
-          item={selectedItem}
-          isFoundItem={selectedItem.item_source === 'found' || selectedItem.location_found}
-        />
-      )}
+        <section>
+          <div className="mb-6 border-l-4 border-[#10b981] pl-4 py-1">
+             <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">{t("postings.itemsFound")} {t("postings.observations")}</h2>
+             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{foundItems.length} {t("police.approved")}</p>
+          </div>
+          {foundItems.length === 0 ? (
+            <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+               <p className="text-xs font-bold text-gray-400">{t("items.noItemsFound")}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {foundItems.map(item => <ItemCard key={item.id} item={item} />)}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

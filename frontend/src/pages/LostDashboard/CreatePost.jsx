@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../services/api";
-import { useContext } from "react";
 import { PostsContext } from "../../context/PostsContext";
+import { FiUploadCloud, FiX, FiCheckCircle, FiInfo, FiMapPin, FiCalendar, FiTag, FiDollarSign, FiSearch, FiAlertCircle, FiChevronRight } from "react-icons/fi";
+import { getImageUrl } from "../../utils/imageHelper";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function CreatePost() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { refreshPosts } = useContext(PostsContext);
   const [loading, setLoading] = useState(false);
@@ -40,21 +43,15 @@ export default function CreatePost() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setError("Image size should be less than 5MB");
+        setError(t("validation.fileTooBig"));
         return;
       }
-
-      // Validate file type
       if (!file.type.startsWith('image/')) {
-        setError("Please select a valid image file");
+        setError(t("validation.invalidFileType"));
         return;
       }
-
       setFormData(prev => ({ ...prev, image: file }));
-      
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -83,6 +80,7 @@ export default function CreatePost() {
     setImagePreview(null);
     setError("");
     setSuccess("");
+    setMatches([]);
   };
 
   const handleSubmit = async (e) => {
@@ -92,18 +90,15 @@ export default function CreatePost() {
     setLoading(true);
 
     try {
-      // Prepare form data for file upload
       const submitData = new FormData();
       submitData.append('item_type', formData.item_type);
       submitData.append('description', formData.description);
-      // Use custom category if "other" is selected, otherwise use selected category
       submitData.append('category', formData.category === 'other' ? formData.customCategory : formData.category);
       submitData.append('location_lost', formData.location_lost);
       submitData.append('district', formData.district);
       submitData.append('date_lost', formData.date_lost);
       submitData.append('reward_amount', parseInt(formData.reward_amount) || 0);
       
-      // Add additional_info as JSON
       const additionalInfo = {
         color: formData.color,
         contact_phone: formData.contact_phone,
@@ -112,7 +107,6 @@ export default function CreatePost() {
       };
       submitData.append('additional_info', JSON.stringify(additionalInfo));
       
-      // Add image if present
       if (formData.image) {
         submitData.append('image', formData.image);
       }
@@ -123,363 +117,362 @@ export default function CreatePost() {
         },
       });
       
-      setSuccess("Lost item posted successfully! Redirecting...");
       const potentialMatches = response.data?.data?.potentialMatches || [];
       setMatches(potentialMatches);
 
-      // If there are matches, keep user on page so they can review them.
-      // Otherwise, redirect back to My Postings as before.
       if (potentialMatches.length === 0) {
-        setSuccess("Lost item posted successfully! Redirecting...");
-        if (refreshPosts) {
-          await refreshPosts();
-        }
-        setTimeout(() => {
-          navigate('/lost-dashboard/my-postings');
-        }, 2000);
+        setSuccess(t("items.itemPosted"));
+        if (refreshPosts) await refreshPosts();
+        setTimeout(() => navigate('/lost-dashboard/my-postings'), 2000);
       } else {
-        setSuccess("Lost item posted! We found possible matches below.");
-        if (refreshPosts) {
-          await refreshPosts();
-        }
+        setSuccess(t("matches.potentialMatches"));
+        if (refreshPosts) await refreshPosts();
       }
     } catch (err) {
       console.error('Post error:', err);
-      setError(err.response?.data?.message || 'Failed to post item. Please try again.');
+      setError(err.response?.data?.message || t("messages.operationFailed"));
     } finally {
       setLoading(false);
     }
   };
 
+  const districts = ["Kigali", "Gasabo", "Kicukiro", "Nyarugenge", "Huye", "Musanze", "Rubavu", "Rusizi"];
+  const categories = [
+    { value: "national_id", label: t("categories.national_id") },
+    { value: "passport", label: t("categories.passport") },
+    { value: "driving_license", label: t("categories.driving_license") },
+    { value: "atm_card", label: t("categories.atm_card") },
+    { value: "other", label: t("categories.other") }
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-green-900">Create Lost Item Post</h1>
-        <p className="text-green-700 mt-1 text-sm md:text-base">
-          Post details about your lost item to help finders locate it
-        </p>
+    <div className="space-y-8 pb-32">
+      <div className="bg-gradient-to-r from-green-600 to-emerald-700 p-6 md:p-8 rounded-2xl border border-green-400 shadow-lg relative overflow-hidden group">
+        <div className="absolute inset-0 bg-white/5 opacity-10"></div>
+        <div className="relative z-10">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+            {t("items.postLostItem")}
+          </h1>
+          <p className="text-green-50 text-sm md:text-base opacity-90 max-w-2xl font-medium">
+            {t("landing.heroSubtitle")}
+          </p>
+        </div>
       </div>
 
-      {/* SUCCESS/ERROR MESSAGES */}
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-          {success}
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* FORM */}
-      <form onSubmit={handleSubmit} className="bg-white p-4 md:p-6 lg:p-8 rounded-2xl shadow-lg space-y-5 border border-green-200">
-        {/* ITEM TITLE */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Item Title *
-          </label>
-          <input
-            type="text"
-            name="item_type"
-            value={formData.item_type}
-            onChange={handleChange}
-            placeholder="e.g., National ID Card"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-            required
-          />
-        </div>
-
-        {/* DESCRIPTION */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Description
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Describe the item in detail..."
-            rows="4"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-          ></textarea>
-        </div>
-
-        {/* CATEGORY */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Category *
-          </label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            required
-          >
-            <option value="">Select Category</option>
-            <option value="national_id">National ID</option>
-            <option value="passport">Passport</option>
-            <option value="driving_license">Driving License</option>
-            <option value="atm_card">ATM Card</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        {/* CUSTOM CATEGORY - Show when Other is selected */}
-        {formData.category === "other" && (
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">
-              Other Document Name *
-            </label>
-            <input
-              type="text"
-              name="customCategory"
-              value={formData.customCategory}
-              onChange={handleChange}
-              placeholder="e.g., Birth Certificate, School ID, etc."
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-              required
-            />
-          </div>
-        )}
-
-        {/* COLOR */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Color
-          </label>
-          <input
-            type="text"
-            name="color"
-            value={formData.color}
-            onChange={handleChange}
-            placeholder="e.g., Black, Red, etc."
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-          />
-        </div>
-
-        {/* OWNER NAME - Name on the document */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Owner Name (Name on the document) *
-          </label>
-          <input
-            type="text"
-            name="owner_name"
-            value={formData.owner_name}
-            onChange={handleChange}
-            placeholder="e.g., John Doe (as written on the ID/document)"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-            required
-          />
-          <p className="text-green-600 text-sm mt-1">Enter the name as it appears on the lost document/ID</p>
-        </div>
-
-        {/* ID NUMBER */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            ID Number (on the document)
-          </label>
-          <input
-            type="text"
-            name="id_number"
-            value={formData.id_number}
-            onChange={handleChange}
-            placeholder="e.g., 1199XXXXXXXXXXXX"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-          />
-          <p className="text-green-600 text-sm mt-1">If you know the exact ID number, enter it to improve automatic matching.</p>
-        </div>
-
-        {/* LOCATION AND DISTRICT */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">
-              Location Lost *
-            </label>
-            <input
-              type="text"
-              name="location_lost"
-              value={formData.location_lost}
-              onChange={handleChange}
-              placeholder="e.g., Kimironko Market"
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-green-900 mb-2">
-              District *
-            </label>
-            <select
-              name="district"
-              value={formData.district}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            >
-              <option value="">Select District</option>
-              <option value="Kigali">Kigali</option>
-              <option value="Gasabo">Gasabo</option>
-              <option value="Kicukiro">Kicukiro</option>
-              <option value="Nyarugenge">Nyarugenge</option>
-              <option value="Huye">Huye</option>
-              <option value="Musanze">Musanze</option>
-              <option value="Rubavu">Rubavu</option>
-              <option value="Rusizi">Rusizi</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-        </div>
-
-        {/* DATE OF LOSS */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Date of Loss *
-          </label>
-          <input
-            type="date"
-            name="date_lost"
-            value={formData.date_lost}
-            onChange={handleChange}
-            max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            required
-          />
-        </div>
-
-        {/* IMAGE UPLOAD */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Upload Image
-          </label>
-          <input
-            type="file"
-            name="image"
-            onChange={handleImageChange}
-            accept="image/*"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 file:bg-green-600 file:border-0 file:text-white file:px-4 file:py-2 file:rounded file:cursor-pointer file:mr-4"
-          />
-          <p className="text-green-600 text-sm mt-1">Max size: 5MB. Supported formats: JPG, PNG, GIF</p>
-          
-          {/* IMAGE PREVIEW */}
-          {imagePreview && (
-            <div className="mt-4">
-              <p className="text-sm font-semibold text-green-900 mb-2">Preview:</p>
-              <div className="relative inline-block">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="max-w-xs max-h-48 rounded-lg border-2 border-green-300"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImagePreview(null);
-                    setFormData(prev => ({ ...prev, image: null }));
-                  }}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                >
-                  ×
-                </button>
-              </div>
+      {(success || error) && (
+        <div className="animate-in slide-in-from-top-4">
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-800 p-5 rounded-xl flex items-center gap-4 shadow-sm">
+              <FiCheckCircle className="w-6 h-6 shrink-0" />
+              <p className="font-bold text-sm uppercase tracking-tight">{success}</p>
+            </div>
+          )}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 p-5 rounded-xl flex items-center gap-4 shadow-sm">
+              <FiAlertCircle className="w-6 h-6 shrink-0" />
+              <p className="font-bold text-sm uppercase tracking-tight">{error}</p>
             </div>
           )}
         </div>
+      )}
 
-        {/* REWARD AMOUNT */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Reward Amount (RWF)
-          </label>
-          <input
-            type="number"
-            name="reward_amount"
-            value={formData.reward_amount}
-            onChange={handleChange}
-            placeholder="e.g., 50000"
-            min="0"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-          />
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-12 space-y-12">
+        <div className="grid lg:grid-cols-2 gap-12">
+          <div className="space-y-8">
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+              <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("profile.personalInfo")}</h3>
+            </div>
+            
+            <div className="grid gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.title")} *</label>
+                <input
+                  type="text"
+                  name="item_type"
+                  value={formData.item_type}
+                  onChange={handleChange}
+                  placeholder="e.g. National ID Card"
+                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs placeholder:text-slate-300"
+                  required
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.category")} *</label>
+                  <div className="relative">
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs appearance-none"
+                      required
+                    >
+                      <option value="">{t("items.selectCategory")}</option>
+                      {categories.map(cat => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
+                      ▼
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.date")} *</label>
+                  <input
+                    type="date"
+                    name="date_lost"
+                    value={formData.date_lost}
+                    onChange={handleChange}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs"
+                    required
+                  />
+                </div>
+              </div>
+
+              {formData.category === "other" && (
+                <div className="animate-in slide-in-from-top-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("categories.other")}</label>
+                  <input
+                    type="text"
+                    name="customCategory"
+                    value={formData.customCategory}
+                    onChange={handleChange}
+                    placeholder="..."
+                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs mt-2"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+              <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("items.image")}</h3>
+            </div>
+            
+            <div className="relative h-[256px] group">
+              <input
+                type="file"
+                name="image"
+                onChange={handleImageChange}
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className={`h-full border-2 border-dashed rounded-2xl transition-all duration-300 flex flex-col items-center justify-center p-6 overflow-hidden ${ imagePreview ? 'border-green-500 bg-green-50/20 shadow-inner' : 'border-slate-100 bg-slate-50 group-hover:border-green-400 group-hover:bg-white' }`}>
+                {imagePreview ? (
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <img src={imagePreview} className="max-h-full rounded-xl shadow-2xl border-2 border-white" alt="Preview" />
+                    <button
+                      type="button"
+                      onClick={() => { setImagePreview(null); setFormData(prev => ({ ...prev, image: null })); }}
+                      className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-md text-white rounded-lg w-10 h-10 flex items-center justify-center hover:bg-red-500 shadow-md z-20 transition-all"
+                    >
+                      <FiX size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-300 mx-auto transition-all group-hover:scale-110 group-hover:text-green-500 border border-slate-50">
+                      <FiUploadCloud className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{t("items.addImage")}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter italic">MAX 5MB | JPG, PNG</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* CONTACT PHONE */}
-        <div>
-          <label className="block text-sm font-semibold text-green-900 mb-2">
-            Contact Phone *
-          </label>
-          <input
-            type="tel"
-            name="contact_phone"
-            value={formData.contact_phone}
-            onChange={handleChange}
-            placeholder="e.g., +250788123456"
-            pattern="[+]?[0-9]{10,15}"
-            className="w-full px-4 py-2 border border-green-300 bg-green-50 text-green-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-green-400"
-            required
-          />
+        <div className="space-y-10">
+           <div className="flex items-center gap-3">
+            <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("items.itemDetails")}</h3>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.color")}</label>
+              <input
+                type="text"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+                placeholder="..."
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("auth.firstName")} *</label>
+              <input
+                type="text"
+                name="owner_name"
+                value={formData.owner_name}
+                onChange={handleChange}
+                placeholder="..."
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">ID / Serial No</label>
+              <input
+                type="text"
+                name="id_number"
+                value={formData.id_number}
+                onChange={handleChange}
+                placeholder="..."
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("auth.phone")} *</label>
+              <input
+                type="tel"
+                name="contact_phone"
+                value={formData.contact_phone}
+                onChange={handleChange}
+                placeholder="+250..."
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 outline-none text-xs"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 leading-relaxed">{t("items.description")}</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="..."
+              rows="4"
+              className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-2xl px-6 py-5 font-semibold text-slate-700 transition-all outline-none resize-none text-sm leading-relaxed italic"
+            ></textarea>
+          </div>
         </div>
 
-        {/* SUBMIT BUTTONS */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+        <div className="space-y-10">
+           <div className="flex items-center gap-3">
+            <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("items.location")}</h3>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.location")} *</label>
+              <select
+                name="district"
+                value={formData.district}
+                onChange={handleChange}
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs appearance-none"
+                required
+              >
+                <option value="">Select District</option>
+                {districts.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.location")} Detail *</label>
+              <input
+                type="text"
+                name="location_lost"
+                value={formData.location_lost}
+                onChange={handleChange}
+                placeholder="..."
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl px-5 py-4 font-bold text-slate-900 transition-all outline-none text-xs placeholder:text-slate-300"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">{t("items.rewardAmount")} (RWF)</label>
+              <div className="relative">
+                 <input
+                  type="number"
+                  name="reward_amount"
+                  value={formData.reward_amount}
+                  onChange={handleChange}
+                  placeholder="0"
+                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-green-500 rounded-xl pl-12 pr-5 py-4 font-black text-slate-900 outline-none text-xs"
+                />
+                <FiDollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-green-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 pt-8">
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 sm:flex-none bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg font-semibold text-sm hover:from-green-700 hover:to-emerald-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-slate-950 text-white rounded-2xl py-5 font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-green-600 transition-all duration-300 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3"
           >
-            {loading ? "Posting..." : "Post Item"}
+            {loading ? <div className="w-4 h-4 border-2 border-white/20 border-t-white animate-spin rounded-full"></div> : <FiCheckCircle />}
+            {loading ? t("messages.processing") : t("common.submit")}
           </button>
           <button
             type="button"
             onClick={handleReset}
-            disabled={loading}
-            className="flex-1 sm:flex-none bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold text-sm hover:bg-gray-500 transition disabled:opacity-50"
+            className="px-12 py-5 border border-slate-100 text-slate-400 font-bold rounded-2xl hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all text-xs uppercase tracking-widest"
           >
-            Reset
+            {t("common.cancel")}
           </button>
         </div>
       </form>
 
-      {/* POSSIBLE MATCHES AFTER POST */}
       {matches.length > 0 && (
-        <div className="mt-8 bg-white p-6 rounded-2xl shadow-lg border border-green-200">
-          <h2 className="text-2xl font-bold text-green-900 mb-4">
-            Possible Matches Found
-          </h2>
-          <p className="text-green-700 mb-4">
-            We found items that might match your lost document. Please review them carefully.
-          </p>
-          <div className="grid md:grid-cols-2 gap-4">
+        <div className="space-y-8 animate-in slide-in-from-bottom-12 duration-1000">
+          <div className="flex items-center gap-4 px-2">
+            <div className="h-6 w-1.5 bg-green-600 rounded-full"></div>
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.3em]">{t("matches.potentialMatches")}</h3>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {matches.map((item) => (
-              <div
-                key={item.id}
-                className="border border-green-200 rounded-xl p-4 bg-green-50 space-y-1"
-              >
-                <p className="font-semibold text-green-900">
-                  {item.item_type || 'Found Document'}
-                </p>
-                <p className="text-sm text-green-800">
-                  <span className="font-medium">Category:</span> {item.category}
-                </p>
-                <p className="text-sm text-green-800">
-                  <span className="font-medium">District:</span> {item.district}
-                </p>
-                {item.holder_name && (
-                  <p className="text-sm text-green-800">
-                    <span className="font-medium">Name on Document:</span> {item.holder_name}
+              <div key={item.id} className="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:border-green-100 flex flex-col">
+                <div className="relative h-40 bg-slate-50 overflow-hidden shrink-0">
+                  {item.image_url ? (
+                    <img src={getImageUrl(item.image_url)} alt={item.item_type} className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-200">
+                      <FiTag className="text-4xl opacity-50" />
+                    </div>
+                  )}
+                  <div className="absolute top-4 right-4">
+                    <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-md text-white rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/10 uppercase">{t("common.success")}</span>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4 flex-1 flex flex-col">
+                  <div>
+                    <h4 className="text-lg font-black text-slate-900 leading-tight truncate">{item.item_type || 'Discovery Entry'}</h4>
+                    <div className="flex items-center gap-4 mt-2">
+                       <span className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest"><FiMapPin className="text-green-500" /> {item.location_found || 'Unknown'}</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-slate-500 text-[11px] font-medium leading-relaxed line-clamp-2 italic mb-4">
+                    {item.description}
                   </p>
-                )}
-                {item.id_number && (
-                  <p className="text-sm text-green-800">
-                    <span className="font-medium">ID Number:</span> {item.id_number}
-                  </p>
-                )}
-                <p className="text-xs text-green-700 mt-1">
-                  Found in: {item.location_found || 'Unknown'} on{" "}
-                  {item.date_found || 'Unknown date'}
-                </p>
+
+                  <button 
+                    onClick={() => navigate(`/lost-dashboard/matches`)}
+                    className="w-full mt-auto py-3 bg-slate-50 text-slate-900 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-green-600 hover:text-white transition-all border border-slate-100 flex items-center justify-center gap-2"
+                  >
+                    {t("matches.viewDetails")} <FiChevronRight />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

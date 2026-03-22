@@ -7,10 +7,15 @@ export const connectDB = async () => {
   try {
     // Parse the DATABASE_URL to handle Neon's connection string
     const connectionString = process.env.DATABASE_URL;
+    console.log('📡 Attempting to connect with DATABASE_URL:', connectionString ? 'Defined (length: ' + connectionString.length + ')' : 'UNDEFINED');
+    
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is not defined. Please check your .env file in the backend root directory.');
+    }
     
     pool = new Pool({
       connectionString: connectionString,
-      ssl: connectionString.includes('neon.tech') ? {
+      ssl: connectionString?.includes('neon.tech') ? {
         rejectUnauthorized: false
       } : false,
       // Connection pool configuration to prevent disconnections
