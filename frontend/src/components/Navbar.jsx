@@ -229,11 +229,19 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
 
             <div className="grid grid-cols-1 gap-2">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5 mb-2">{t("nav.home")}</p>
-              <Link to="/" className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between">
+              <Link 
+                to="/" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between"
+              >
                  {t("nav.home")}
                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
               </Link>
-              <Link to="/postings" className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between">
+              <Link 
+                to="/postings" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between"
+              >
                  {t("nav.browse")}
                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
               </Link>
@@ -249,7 +257,12 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5">{t("nav.dashboard")}</p>
                 <div className="grid grid-cols-1 gap-2">
                   {menuLinks.map((link) => (
-                    <Link key={link.to} to={link.to} className="px-5 py-4 text-blue-600 font-black text-xs uppercase tracking-widest bg-blue-50/30 hover:bg-blue-50 rounded-2xl transition flex justify-between items-center border border-blue-50">
+                    <Link 
+                      key={link.to} 
+                      to={link.to} 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-5 py-4 text-blue-600 font-black text-xs uppercase tracking-widest bg-blue-50/30 hover:bg-blue-50 rounded-2xl transition flex justify-between items-center border border-blue-50"
+                    >
                       {link.label}
                       <span className="text-blue-300">→</span>
                     </Link>

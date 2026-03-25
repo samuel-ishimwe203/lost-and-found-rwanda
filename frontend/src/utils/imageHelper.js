@@ -8,10 +8,11 @@ const getBaseUrl = () => {
     const origin = window.location.origin;
     const hostname = window.location.hostname;
     
-    // In production (Vercel/Render), use the current window's origin
-    // This fixes Mixed Content errors by ensuring we use HTTPS and the same domain
+    // In production (Vercel/Render), point explicitly to the Render backend.
+    // This fixes Mixed Content errors and prevents images from trying to load
+    // from the Vercel frontend domain itself.
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return origin.replace(/\/$/, '');
+      return 'https://lost-and-found-rwanda.onrender.com';
     }
   }
 
