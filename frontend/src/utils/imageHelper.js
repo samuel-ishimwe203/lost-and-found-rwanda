@@ -4,11 +4,18 @@ const getBaseUrl = () => {
     return viteApiUrl.replace(/\/api\/?$/, '');
   }
   
-  // If we are on a hosted domain (not localhost) but VITE_API_URL is missing,
-  // we might still be able to guess the backend if it's relative or same-origin,
-  // but usually it's better to warn.
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    console.warn('VITE_API_URL is missing in production! Images might fail to load.');
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // Auto-detect Render deployment if on .onrender.com
+    if (hostname.includes('onrender.com')) {
+      const origin = window.location.origin;
+      return origin.replace(/\/$/, '');
+    }
+
+    if (hostname !== 'localhost') {
+      console.warn('VITE_API_URL is missing in production! Images might fail to load.');
+    }
   }
 
   return 'http://localhost:3001';
