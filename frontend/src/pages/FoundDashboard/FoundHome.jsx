@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import apiClient from "../../services/api";
 import { getImageUrl } from "../../utils/imageHelper";
-import { useLanguage } from "../../context/LanguageContext";import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Loading from "../../components/Loading";
 
 export default function FoundHome() {
@@ -15,6 +15,7 @@ export default function FoundHome() {
     .map((name) => name[0]?.toUpperCase())
     .slice(0, 2)
     .join('');
+  
   const [stats, setStats] = useState({
     totalFoundItems: 0,
     activeItems: 0,
@@ -87,7 +88,6 @@ export default function FoundHome() {
 
   return (
     <div className="space-y-8 pb-24">
-      {/* WELCOME MESSAGE */}
       <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 md:p-8 rounded-2xl border border-green-300 shadow-lg">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
           {avatarUrl ? (
@@ -118,7 +118,6 @@ export default function FoundHome() {
         </div>
       )}
 
-      {/* STATS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsCards.map((stat, idx) => (
           <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl transition-all group">
@@ -129,7 +128,6 @@ export default function FoundHome() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* RECENT ACTIVITY */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 h-full">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-xl font-bold text-slate-900">{t("activity.recentActivity")}</h2>
@@ -155,7 +153,6 @@ export default function FoundHome() {
           )}
         </div>
 
-        {/* PROFILE SUMMARY */}
         <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
           <h2 className="text-xl font-bold mb-8 relative z-10">{t("profile.myProfile")}</h2>

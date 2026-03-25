@@ -91,9 +91,9 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
       <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-[100] h-[74px] flex items-center shadow-sm">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 w-full flex justify-between items-center h-full">
           
-          {/* LEFT SECTION */}
+          {/* LEFT SECTION - Navigation Links */}
           <div className="flex items-center min-w-[80px] sm:min-w-[150px]">
-            {isDashboard ? (
+            {isDashboard && (
               <button 
                 className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
                 onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
@@ -101,21 +101,6 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-              </button>
-            ) : (
-              <button 
-                className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                {mobileMenuOpen ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                )}
               </button>
             )}
 
@@ -161,12 +146,20 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
 
             <div className="flex items-center gap-2 border-l border-gray-200 pl-2 md:pl-4">
               {!isAuthenticated ? (
-                <button
-                  onClick={openLogin}
-                  className="bg-[#2d4990] text-white font-black text-[10px] uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-[#1e3a8a] transition shadow-lg shadow-blue-900/10 hidden sm:block"
-                >
-                  {t("auth.login")}
-                </button>
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    onClick={openLogin}
+                    className="bg-[#2d4990] text-white font-black text-[10px] uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-[#1e3a8a] transition shadow-lg shadow-blue-900/10"
+                  >
+                    {t("auth.login")}
+                  </button>
+                  <button
+                    onClick={openRegister}
+                    className="bg-red-600 text-white font-black text-[10px] uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-900/10"
+                  >
+                    {t("auth.register")}
+                  </button>
+                </div>
               ) : (
                 <div className="relative hidden sm:block">
                   <button
@@ -195,9 +188,9 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
               )}
             </div>
 
-            {/* HAMBURGER FOR MOBILE (AUTHENTICATED OR NOT) */}
+            {/* SINGLE MOBILE MENU BUTTON */}
             <button 
-              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition ml-2"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
@@ -234,19 +227,17 @@ export default function Navbar({ isAuthenticated = false, onLogout, onLoginSucce
               <LanguageSwitcher />
             </div>
 
-            {!isDashboard && (
-              <div className="grid grid-cols-1 gap-2">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5 mb-2">{t("nav.home")}</p>
-                <Link to="/" className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between">
-                   {t("nav.home")}
-                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                </Link>
-                <Link to="/postings" className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between">
-                   {t("nav.browse")}
-                   <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                </Link>
-              </div>
-            )}
+            <div className="grid grid-cols-1 gap-2">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5 mb-2">{t("nav.home")}</p>
+              <Link to="/" className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between">
+                 {t("nav.home")}
+                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              </Link>
+              <Link to="/postings" className="px-5 py-4 text-slate-700 font-bold text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition border border-transparent hover:border-slate-100 flex items-center justify-between">
+                 {t("nav.browse")}
+                 <span className="w-2 h-2 rounded-full bg-red-500"></span>
+              </Link>
+            </div>
 
             {!isAuthenticated ? (
               <div className="grid grid-cols-2 gap-4 pt-4">
