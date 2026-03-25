@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import apiClient from "../../services/api";
 import { getImageUrl } from "../../utils/imageHelper";
+import { useLanguage } from "../../context/LanguageContext";
+import Loading from "../../components/Loading";
 
 export default function LostDashboardHome() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const avatarUrl = getImageUrl(user?.profile_image || user?.avatar || user?.photo || user?.photo_url);
   const userInitials = (user?.full_name || user?.email || '?')
@@ -99,13 +102,7 @@ export default function LostDashboardHome() {
     return `${diffDays} days ago`;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl text-green-600">Loading dashboard...</div>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
 
   return (
     <div className="space-y-8">

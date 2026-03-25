@@ -56,27 +56,34 @@ export default function PublicHome() {
     <div className="w-full overflow-x-hidden">
       {/* HERO SECTION */}
       <section className="bg-gradient-to-br from-green-800 via-green-700 to-emerald-600 text-white py-28 px-6 text-center">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
-          {t("landing.heroTitle")}
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight break-words max-w-[95vw] mx-auto">
+          {t('landing.heroTitle')}
         </h1>
 
         <p className="max-w-3xl mx-auto text-lg md:text-xl text-green-100 mb-10">
-          {t("landing.heroSubtitle")}
+          {t('landing.heroSubtitle')}
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center gap-5">
           <button
             onClick={() => window.dispatchEvent(new Event("open-search"))}
-            className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition"
+            className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition shadow-lg"
           >
-            {t("landing.searchLost")}
+            {t('landing.searchLost')}
           </button>
 
           <button
-            onClick={() => window.dispatchEvent(new Event("open-login"))}
+            onClick={() => window.dispatchEvent(new Event("open-search"))}
+            className="bg-green-50 text-green-800 px-8 py-4 rounded-xl font-semibold hover:bg-white transition shadow-lg"
+          >
+            {t('landing.viewAll')}
+          </button>
+
+          <button
+            onClick={() => navigate('/auth?mode=register')}
             className="border-2 border-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-green-700 transition"
           >
-            {t("landing.reportLost")}
+            {t('landing.reportLost')}
           </button>
         </div>
       </section>

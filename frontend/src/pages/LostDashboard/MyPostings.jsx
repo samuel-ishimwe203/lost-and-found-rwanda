@@ -6,7 +6,7 @@ import { getImageUrl } from "../../utils/imageHelper";
 import { useLanguage } from "../../context/LanguageContext";
 
 export default function MyPostings() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [postings, setPostings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,8 +123,12 @@ export default function MyPostings() {
           <div key={posting.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="font-bold text-slate-900 truncate max-w-[200px]">{posting.item_type}</h3>
-                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mt-1 opacity-70">{t(`categories.${posting.category?.toLowerCase()}`) || posting.category}</p>
+                <h3 className="font-bold text-slate-900 truncate max-w-[200px]">
+                  {posting[`item_type_${language}`] || posting.item_type}
+                </h3>
+                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mt-1 opacity-70">
+                  {t(`categories.${posting.category?.toLowerCase()}`) || posting.category}
+                </p>
               </div>
               <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${
                 posting.status === "active" ? "bg-green-50 text-green-700 border-green-100" :

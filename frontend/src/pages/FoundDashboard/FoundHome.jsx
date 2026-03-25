@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import apiClient from "../../services/api";
 import { getImageUrl } from "../../utils/imageHelper";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../context/LanguageContext";import { useLanguage } from "../../context/LanguageContext";
+import Loading from "../../components/Loading";
 
 export default function FoundHome() {
   const { t } = useLanguage();
@@ -82,14 +83,7 @@ export default function FoundHome() {
     { label: t("admin.status"), value: stats.totalFoundItems - stats.matchedItems - stats.returnedItems },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="w-12 h-12 border-4 border-green-100 border-t-green-600 rounded-full animate-spin"></div>
-        <p className="text-sm font-bold text-green-700 uppercase tracking-widest animate-pulse">{t("common.loading")}</p>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
 
   return (
     <div className="space-y-8 pb-24">

@@ -7,6 +7,7 @@ import { AuthContext } from "../../context/AuthContext";
 import SendMessageModal from "../../components/SendMessageModal";
 import { getImageUrl } from "../../utils/imageHelper";
 import { useLanguage } from "../../context/LanguageContext";
+import Loading from "../../components/Loading";
 
 export default function AllPostings() {
   const { t } = useLanguage();
@@ -37,13 +38,7 @@ export default function AllPostings() {
   const lostItems = processedItems.filter(i => i._isLost);
   const foundItems = processedItems.filter(i => !i._isLost);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 font-sans">
-        <div className="w-16 h-16 border-4 border-emerald-100 border-t-[#10b981] rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
 
   const ItemCard = ({ item }) => {
     const additionalInfo = item.additional_info ? (typeof item.additional_info === 'string' ? JSON.parse(item.additional_info) : item.additional_info) : {};
